@@ -1,0 +1,16 @@
+{
+  "name": "법ON - 근로감독 법령·적용기준",
+  "short_name": "법ON",
+  "description": "근로기준·산업안전 법령 검색과 사업장 적용기준 확인",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F2F4F8",
+  "theme_color": "#14284A",
+  "orientation": "portrait",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
