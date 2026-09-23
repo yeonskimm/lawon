@@ -1,0 +1,45 @@
+# 법ON: 테스트 통과해야 배포 (하나라도 실패하면 배포 중단, 기존 화면 유지)
+name: 테스트 후 배포
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 경계값 판정 (4→5명, 49→50명 등)
+        run: node tests/judge_boundary.js index.html
+      - name: 안전·보건관리자 인원 판정
+        run: node tests/judge_headcount.js index.html
+      - name: 현장 검색어 회귀
+        run: node tests/search_regression.js index.html
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 배포 파일만 모으기 (tests·.github 제외)
+        run: |
+          mkdir _site
+          rsync -a --exclude '.git' --exclude '.github' --exclude 'tests' --exclude '_site' ./ _site/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
