@@ -467,7 +467,7 @@ button.brand:active{opacity:.7}
     <div class="card lcard" id="lcard" hidden>
       <button type="button" class="otog" id="ltog" data-otog="1" aria-expanded="false" aria-controls="lbody"><span class="ot" id="lt"></span><span class="oe"><span id="le">입력</span><i class="dd" aria-hidden="true"></i></span></button>
       <div class="obody" id="lbody" hidden>
-      <div class="lrow"><label for="n3">상시근로자 수</label><span class="lin"><input id="n3" data-f="n" type="text" inputmode="decimal" autocomplete="off" placeholder="예: 4.5"><em>명</em></span></div>
+      <div class="lrow"><label for="n3">상시근로자 수</label><span class="lin"><input id="n3" data-f="n" type="text" inputmode="decimal" autocomplete="off" placeholder="예: 5"><em>명</em></span></div>
       <div class="lsum" id="lsum"></div>
       </div>
     </div>
@@ -486,7 +486,7 @@ button.brand:active{opacity:.7}
       <button type="button" class="condl" id="condl" aria-expanded="false" aria-controls="condf"><span class="v" id="condv"></span><span class="e" id="conde"></span></button>
       <div class="card condf" id="condf" hidden>
         <div class="fgrid">
-          <label class="fld"><span>상시근로자 수</span><input id="n2" data-f="n" type="text" inputmode="decimal" autocomplete="off" placeholder="예: 4.5"></label>
+          <label class="fld"><span>상시근로자 수</span><input id="n2" data-f="n" type="text" inputmode="decimal" autocomplete="off" placeholder="예: 5"></label>
           <label class="fld"><span>업종</span><select id="ind2" data-f="ind"></select></label>
           <label class="fld amt" id="amtBox2" hidden><span>건설공사 금액 (억원)</span><input id="amt2" data-f="amt" type="text" inputmode="decimal" autocomplete="off" placeholder="예: 60"></label>
         </div>
@@ -502,11 +502,11 @@ button.brand:active{opacity:.7}
     <div class="seg" role="tablist" aria-label="분야"><button type="button" role="tab" id="tabL" aria-selected="true">근로기준</button><button type="button" role="tab" id="tabO" aria-selected="false">산업안전</button></div>
     <div class="card scard">
       <div class="fgrid" id="sgrid">
-        <label class="fld"><span>상시근로자 수</span><input id="n" data-f="n" type="text" inputmode="decimal" autocomplete="off" placeholder="예: 4.5"></label>
+        <label class="fld"><span>상시근로자 수</span><input id="n" data-f="n" type="text" inputmode="decimal" autocomplete="off" placeholder="예: 5"></label>
         <div class="fld" id="indBox"><span>업종</span><select id="ind" data-f="ind" hidden aria-hidden="true" tabindex="-1"></select><button type="button" class="isel e" id="isel" data-iopen="1"><span id="iselv">업종 선택</span><i class="dd" aria-hidden="true"></i></button></div>
         <label class="fld amt" id="amtBox" hidden><span>건설공사 금액 (억원)</span><input id="amt" data-f="amt" type="text" inputmode="decimal" autocomplete="off" placeholder="예: 60"></label>
       </div>
-      <div class="frow"><p class="hint" id="hint">근로기준법 시행령 제7조의2로 산정 · 4.9명은 5명 미만</p><button type="button" class="clr" data-clearprof="1" hidden>조건 지우기</button></div>
+      <div class="frow"><p class="hint" id="hint">근로기준법 시행령 제7조의2(제2항 포함)로 판단한 규모를 입력하세요.</p><button type="button" class="clr" data-clearprof="1" hidden>조건 지우기</button></div>
     </div>
     <section class="card panel" id="panel" aria-label="판정 요약"></section>
     <div id="lists"></div>
@@ -1170,7 +1170,7 @@ function bsearch(D,q,fld){
       :'<span class="g">상시근로자 수를 입력하면 법 적용 여부를 함께 확인할 수 있습니다.</span>';
     $('le').textContent=open?'접기':(ready?'바꾸기':'입력');
     $('ltog').setAttribute('aria-expanded',String(open)); $('lbody').hidden=!open; if(!open)return;
-    $('lsum').innerHTML=!ready?'<p class="lsz">근로기준법 시행령 제7조의2로 산정 · 4.9명은 5명 미만</p>'
+    $('lsum').innerHTML=!ready?'<p class="lsz">근로기준법 시행령 제7조의2(제2항 포함)로 판단한 규모를 입력하세요.</p>'
       :'<p class="lsz"><b>'+(small?'5명 미만 사업장':'5명 이상 사업장')+'</b> · '+(small?'근로기준법 시행령 별표1의 조문만 적용':'근로기준법 적용 · 일부 조문은 별도 인원 기준')+'</p>'
         +'<p class="lst">'+ps.map(function(x){return '<span>'+x[0]+'<b>'+x[1]+'</b></span>';}).join('')+'</p>'
         +'<div class="lact"><button type="button" class="lnk" data-nav="site">적용 확인에서 전체 보기</button>'+(small&&BT.tabById.GD1?'<button type="button" class="lnk" data-bt="GD1">시행령 별표1</button>':'')+'<button type="button" class="lnk" data-clearprof="1">지우기</button></div>';
