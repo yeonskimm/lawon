@@ -427,6 +427,43 @@ button.brand:active{opacity:.7}
 #ilist .row[aria-pressed="true"]{box-shadow:inset 3px 0 0 var(--pri)}
 #ilist .row[aria-pressed="true"] .ttl{color:var(--pri);font-weight:800}
 #ilist .r2{white-space:normal}
+
+/* 상시근로자 수 계산기 */
+.tool{display:flex;align-items:center;gap:12px;position:relative;width:100%;margin:18px 0 0;padding:13px 40px 13px 14px;border-radius:14px;background:transparent;border:1.5px solid var(--line2);text-align:left;color:var(--ink)}
+.tool:active{border-color:var(--prbg)}
+.tico{flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:11px;background:var(--card);border:1px solid var(--line);color:var(--pri)}
+.tico svg{width:22px;height:22px}
+.ttx{flex:1;min-width:0}.ttx b{display:block;font-size:1rem;font-weight:800}.ttx span{display:block;margin-top:2px;font-size:.8125rem;color:var(--ink2)}
+.tool+.btn{margin-top:12px}
+#csheet .shcard{height:88%}
+#cbase button{height:auto;min-height:52px;padding:6px 2px;line-height:1.25}
+#cbase button small{display:block;margin-top:2px;font-size:.6875rem;font-weight:600;opacity:.8}
+.chint{margin:8px 2px 0;font-size:.8125rem;line-height:1.55;color:var(--ink3)}
+.cday{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:0 12px}
+.cday summary{min-height:44px;display:flex;align-items:center;font-size:.9375rem;font-weight:700;color:var(--pri);cursor:pointer}
+.cday[open]{padding-bottom:12px}
+.cday textarea{width:100%;min-height:84px;border-radius:10px;border:1.5px solid var(--line2);background:var(--fld);color:var(--ink);padding:10px 12px;font:inherit;font-size:max(16px,1rem);line-height:1.5;resize:vertical;-webkit-appearance:none;appearance:none}
+.cday textarea:focus{border-color:var(--pri);outline:none}
+.cfl{margin-top:6px}
+.cfl .lrow{margin-top:10px}
+.cfl .lrow label small{display:block;margin-top:1px;font-size:.75rem;font-weight:400;color:var(--ink3)}
+.cres{margin-top:16px;padding:14px 16px;border-radius:14px;background:var(--fld);border:1px solid var(--line)}
+.cres .cn{margin:0;font-size:.875rem;color:var(--ink2)}
+.cres .cn b{font-size:2rem;font-weight:800;color:var(--ink);letter-spacing:-.01em;margin-right:3px}
+.cres .cf{margin:2px 0 0;font-size:.8125rem;color:var(--ink3)}
+.cres .cv{margin:12px 0 0;padding-top:12px;border-top:1px solid var(--line);font-size:1.0625rem;font-weight:800;color:var(--pri)}
+.cres .cw{margin:4px 0 0;font-size:.875rem;line-height:1.6;color:var(--ink2)}
+.cres .ce{margin:0;font-size:.875rem;font-weight:700;color:var(--pen)}
+.cres .c0{margin:0;font-size:.875rem;color:var(--ink3)}
+#csheet .about{margin-top:0;border-top:1px solid var(--line)}
+#csheet .frow+.about{margin-top:8px}
+#csheet .about summary{justify-content:space-between;list-style:none}
+#csheet .about summary::-webkit-details-marker{display:none}
+#csheet .about summary::after{content:'';width:8px;height:8px;margin:0 6px 4px 0;border-right:2px solid var(--ink3);border-bottom:2px solid var(--ink3);transform:rotate(45deg)}
+#csheet .about[open] summary::after{transform:rotate(-135deg);margin-bottom:-4px}
+#csheet .frow{min-height:0;margin-top:4px;justify-content:flex-end}
+.art7 p{margin:8px 0}
+.art7 .ho{padding-left:12px}
 </style>
 </head>
 <body>
@@ -455,8 +492,9 @@ button.brand:active{opacity:.7}
       <h2 class="sq">주 업무 분야 선택</h2>
       <button type="button" class="pick" data-field="labor"><span class="pico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7.5L19 7.5V21H7z"/><path d="M14.5 3v4.5H19"/><path d="M9.8 12h6.4M9.8 15.5h6.4M9.8 8.7h2.6"/></svg></span><span class="ptx"><b>근로기준</b><span>근로기준법 · 최저임금법 · 퇴직급여법 · 남녀고용평등법 · 기간제법 · 파견법 · 근로자참여법</span></span><i class="chev" aria-hidden="true"></i></button>
       <button type="button" class="pick" data-field="osh"><span class="pico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 15.2v-1.7a7.2 7.2 0 0 1 14.4 0v1.7"/><path d="M12 6.3v5.2"/><path d="M9.1 7v3.4M14.9 7v3.4"/><rect x="2.6" y="15.2" width="18.8" height="3.6" rx="1.4"/></svg></span><span class="ptx"><b>산업안전</b><span>산업안전보건법 · 산업안전보건기준에 관한 규칙 · 중대재해처벌법</span></span><i class="chev" aria-hidden="true"></i></button>
-      <button type="button" class="btn sec" id="instStart" data-install="1" hidden>홈 화면에 앱 설치</button>
       <p class="sn">선택한 분야를 우선 표시합니다. 검색은 수록 법령 전체를 대상으로 하며, 주 업무 분야는 상단에서 변경할 수 있습니다.</p>
+      <button type="button" class="tool" id="calcOpen" data-copen="1"><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2.8" width="14" height="18.4" rx="2.4"/><path d="M8.2 6.4h7.6v3.2H8.2z"/><path d="M8.6 13.3h.01M12 13.3h.01M15.4 13.3h.01M8.6 16.9h.01M12 16.9h.01M15.4 16.9h.01" stroke-width="2.4"/></svg></span><span class="ttx"><b>상시근로자 수 계산</b><span>연인원 ÷ 가동일수, 기준 미달 일수 판정</span></span><i class="chev" aria-hidden="true"></i></button>
+      <button type="button" class="btn sec" id="instStart" data-install="1" hidden>홈 화면에 앱 설치</button>
     </div>
   </section>
 
@@ -554,6 +592,47 @@ button.brand:active{opacity:.7}
     <div class="seg s4" id="iseg"><button type="button" data-iseg="const">건설업</button><button type="button" data-iseg="mfg">제조업</button><button type="button" data-iseg="svc">서비스업</button><button type="button" data-iseg="etc">그 밖</button></div>
     <div class="q" role="search"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M13 13l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input id="iq" type="search" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="업종 검색" placeholder="식당, 병원, 경비처럼 검색"></div>
     <div id="ilist"></div>
+  </div>
+</div>
+<div class="sheet" id="csheet" hidden role="dialog" aria-modal="true" aria-labelledby="csheetT">
+  <div class="shbg" data-cclose="1"></div>
+  <div class="shcard">
+    <div class="shh"><h2 id="csheetT">상시근로자 수 계산</h2><button type="button" data-cclose="1">닫기</button></div>
+    <p class="slb">판단 기준</p>
+    <div class="seg s3" id="cbase"><button type="button" data-cbase="5">5명<small>근로기준법 적용</small></button><button type="button" data-cbase="10">10명<small>취업규칙만</small></button><button type="button" data-cbase="x">다른 인원<small>30·50명 등</small></button></div>
+    <p class="chint" id="cbh"></p>
+    <details class="cday" id="cday"><summary>일별 인원으로 계산</summary>
+      <textarea id="cdays" rows="3" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="일별 인원" placeholder="예: 6 5 4 6 7 …"></textarea>
+      <p class="chint">가동일마다 일한 인원을 띄어쓰기·쉼표·줄바꿈으로 구분해 넣으면 아래 칸이 채워집니다. 0은 가동일에서 뺍니다.</p>
+    </details>
+    <div class="cfl">
+      <div class="lrow"><label for="cman">연인원</label><span class="lin"><input id="cman" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 132"><em>명</em></span></div>
+      <div class="lrow"><label for="cdn">가동일수</label><span class="lin"><input id="cdn" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 22"><em>일</em></span></div>
+      <div class="lrow" id="cshortRow"><label for="cshort"><span id="cshortL">5명 미만인 날</span><small>기준 미달 일수</small></label><span class="lin"><input id="cshort" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 3"><em>일</em></span></div>
+      <div class="lrow" id="cstdRow" hidden><label for="cstd">비교할 인원<small>판단하려는 기준 인원</small></label><span class="lin"><input id="cstd" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 50"><em>명</em></span></div>
+    </div>
+    <div class="cres" id="cres" aria-live="polite"></div>
+    <div class="frow"><button type="button" class="clr" id="cclr" hidden>지우기</button></div>
+    <details class="about"><summary>연인원에 넣는 사람</summary>
+      <p>넣음: 통상 근로자, 기간제·단시간 근로자 등 고용형태와 관계없이 그 사업장에서 근로하는 모든 근로자(제4항제1호)</p>
+      <p>동거하는 친족: 다른 근로자가 1명이라도 있으면 넣음(제4항제2호)</p>
+      <p>뺌: 파견근로자(제4항)</p>
+    </details>
+    <details class="about"><summary>산정기간과 연차휴가</summary>
+      <p>산정기간: 법 적용 사유 발생일 전 1개월. 사업 성립 후 1개월이 안 되면 성립일 이후 기간(제1항)</p>
+      <p>연차휴가(법 제60조부터 제62조까지, 제60조제2항 제외): 월 단위로 산정해 발생일 전 1년 동안 계속 5명 이상이어야 적용(제3항). 이 계산기로는 한 달씩 확인</p>
+    </details>
+    <details class="about art7"><summary>근로기준법 시행령 제7조의2 조문</summary>
+      <p><b>제7조의2(상시 사용하는 근로자 수의 산정 방법)</b> ① 법 제11조제3항에 따른 “상시 사용하는 근로자 수”는 해당 사업 또는 사업장에서 법 적용 사유(휴업수당 지급, 근로시간 적용 등 법 또는 이 영의 적용 여부를 판단하여야 하는 사유를 말한다. 이하 이 조에서 같다) 발생일 전 1개월(사업이 성립한 날부터 1개월 미만인 경우에는 그 사업이 성립한 날 이후의 기간을 말한다. 이하 “산정기간”이라 한다) 동안 사용한 근로자의 연인원을 같은 기간 중의 가동 일수로 나누어 산정한다.</p>
+      <p>② 제1항에도 불구하고 다음 각 호의 구분에 따라 그 사업 또는 사업장에 대하여 5명(법 제93조의 적용 여부를 판단하는 경우에는 10명을 말한다. 이하 이 조에서 “법 적용 기준”이라 한다) 이상의 근로자를 사용하는 사업 또는 사업장(이하 이 조에서 “법 적용 사업 또는 사업장”이라 한다)으로 보거나 법 적용 사업 또는 사업장으로 보지 않는다.</p>
+      <p class="ho">1. 법 적용 사업 또는 사업장으로 보는 경우: 제1항에 따라 해당 사업 또는 사업장의 근로자 수를 산정한 결과 법 적용 사업 또는 사업장에 해당하지 않는 경우에도 산정기간에 속하는 일(日)별로 근로자 수를 파악하였을 때 법 적용 기준에 미달한 일수(日數)가 2분의 1 미만인 경우</p>
+      <p class="ho">2. 법 적용 사업 또는 사업장으로 보지 않는 경우: 제1항에 따라 해당 사업 또는 사업장의 근로자 수를 산정한 결과 법 적용 사업 또는 사업장에 해당하는 경우에도 산정기간에 속하는 일별로 근로자 수를 파악하였을 때 법 적용 기준에 미달한 일수가 2분의 1 이상인 경우</p>
+      <p>③ 법 제60조부터 제62조까지의 규정(제60조제2항에 따른 연차유급휴가에 관한 부분은 제외한다)의 적용 여부를 판단하는 경우에 해당 사업 또는 사업장에 대하여 제1항 및 제2항에 따라 월 단위로 근로자 수를 산정한 결과 법 적용 사유 발생일 전 1년 동안 계속하여 5명 이상의 근로자를 사용하는 사업 또는 사업장은 법 적용 사업 또는 사업장으로 본다.</p>
+      <p>④ 제1항의 연인원에는 「파견근로자보호 등에 관한 법률」 제2조제5호에 따른 파견근로자를 제외한 다음 각 호의 근로자 모두를 포함한다. &lt;개정 2018. 6. 29.&gt;</p>
+      <p class="ho">1. 해당 사업 또는 사업장에서 사용하는 통상 근로자, 「기간제 및 단시간근로자 보호 등에 관한 법률」 제2조제1호에 따른 기간제근로자, 단시간근로자 등 고용형태를 불문하고 하나의 사업 또는 사업장에서 근로하는 모든 근로자</p>
+      <p class="ho">2. 해당 사업 또는 사업장에 동거하는 친족과 함께 제1호에 해당하는 근로자가 1명이라도 있으면 동거하는 친족인 근로자</p>
+      <p class="ho">[본조신설 2008. 6. 25.]</p>
+    </details>
   </div>
 </div>
 <div class="updbar" id="updbar" hidden role="status"><span>새 버전이 있습니다.</span><button type="button" id="updgo">지금 적용</button></div>
@@ -1661,9 +1740,53 @@ function bsearch(D,q,fld){
   $('fieldsw').addEventListener('click',function(){ setField(st.field==='labor'?'osh':'labor'); });
   $('gear').addEventListener('click',openSheet);
   $('hback').addEventListener('click',goBack);
-  document.addEventListener('keydown',function(ev){ if(ev.key==='Escape'){ if(!$('isheet').hidden)closeISheet(); else if(!$('sheet').hidden)closeSheet(); } });
+  document.addEventListener('keydown',function(ev){ if(ev.key==='Escape'){ if(!$('csheet').hidden)closeCalc(); else if(!$('isheet').hidden)closeISheet(); else if(!$('sheet').hidden)closeSheet(); } });
   window.addEventListener('resize',setHdrH);
   if(window.matchMedia){ var mq=window.matchMedia('(prefers-color-scheme: dark)'), onMq=function(){ if(ui.theme==='auto')applyUI(); }; if(mq.addEventListener)mq.addEventListener('change',onMq); else if(mq.addListener)mq.addListener(onMq); }
+
+
+  // ── 상시근로자 수 계산기(근로기준법 시행령 제7조의2). 법령 조회·사업장 조건과 연동하지 않고, 입력값도 저장하지 않음 ──
+  var calc={base:'5'};
+  var CBH={'5':'근로기준법 적용 범위 등 5명 기준을 판단할 때. 기준 미달 일수는 5명 미만인 날(제2항)',
+    '10':'취업규칙 작성·신고(법 제93조) 대상인지 판단할 때만. 기준 미달 일수는 10명 미만인 날(제2항). 다른 10명 기준은 다른 인원에서 계산',
+    'x':'노사협의회 설치 기준 30명, 안전관리자 선임 기준 50명 등 근로기준법 적용(5명)·제93조(10명) 외의 인원 기준. 미달 일수 판정 없이 평균 인원으로 비교'};
+  function cInt(v){ v=String(v||'').replace(/[^0-9]/g,''); return v===''?null:parseInt(v,10); }
+  function floor2(x){ return Math.floor(x*100+1e-9)/100; }
+  function fmtN(x){ var t=floor2(x); return (t%1===0?String(t):t.toFixed(2).replace(/0$/,'')); }
+  function openCalc(){ closeSheet(); calcBase(calc.base); $('csheet').hidden=false; }
+  function closeCalc(){ $('csheet').hidden=true; }
+  function calcBase(b){ calc.base=b; each('[data-cbase]',function(x){ x.setAttribute('aria-pressed',String(x.getAttribute('data-cbase')===b)); });
+    $('cbh').textContent=CBH[b]; var th=b==='x'; $('cshortRow').hidden=th; $('cstdRow').hidden=!th;
+    if(!th)$('cshortL').textContent=b+'명 미만인 날'; if($('cdays').value.trim())fromDays(); else $('cshort').value=''; calcRun(); }
+  function fromDays(){ var raw=$('cdays').value; if(!raw.trim()){ return; }
+    var ds=raw.split(/[\s,，;；·、\/]+/).map(function(t){ t=t.replace(/[^0-9.]/g,''); return t===''?null:parseFloat(t); }).filter(function(n){ return n!=null&&!isNaN(n)&&n>0; });
+    var sum=0,sh=0,b=+calc.base; ds.forEach(function(n){ sum+=n; if(calc.base!=='x'&&n<b)sh++; });
+    $('cman').value=ds.length?String(Math.round(sum*100)/100):''; $('cdn').value=ds.length?String(ds.length):'';
+    if(calc.base!=='x')$('cshort').value=ds.length?String(sh):''; }
+  function calcRun(){
+    var man=num($('cman').value), dn=cInt($('cdn').value), sh=cInt($('cshort').value), std=cInt($('cstd').value), b=calc.base, el=$('cres');
+    $('cclr').hidden=!($('cman').value||$('cdn').value||$('cshort').value||$('cstd').value||$('cdays').value);
+    if(man==null||!dn){ el.innerHTML='<p class="c0">연인원과 가동일수를 넣으면 계산합니다.</p>'; return; }
+    var avg=man/dn, h='<p class="cn"><b>'+fmtN(avg)+'</b>명</p><p class="cf">연인원 '+fmtN(man)+'명 ÷ 가동일수 '+dn+'일'+(floor2(avg)!==avg?' (소수 셋째 자리 버림)':'')+'</p>';
+    if(b==='x'){
+      if(std){ var up=avg>=std; h+='<p class="cv">'+std+'명 '+(up?'이상':'미만')+'</p><p class="cw">평균 인원으로 비교(미달 일수 판정 없음)</p>'; }
+      el.innerHTML=h; return; }
+    var base=+b, lab=base+'명', over=avg>=base;
+    if(sh==null){ h+='<p class="cv">평균으로는 '+lab+' '+(over?'이상':'미만')+'</p><p class="cw">'+lab+' 미만인 날을 넣으면 제2항에 따른 판정을 함께 보여 줍니다.</p>'; el.innerHTML=h; return; }
+    if(sh>dn){ el.innerHTML=h+'<p class="ce">'+lab+' 미만인 날('+sh+'일)이 가동일수('+dn+'일)보다 많습니다.</p>'; return; }
+    var half=sh*2<dn, rate=sh+'일(가동일수 '+dn+'일의 2분의 1 '+(half?'미만':'이상')+')', res, why;
+    if(over&&half){ res=true; why='평균 '+lab+' 이상, 미달 일수 '+rate; }
+    else if(!over&&!half){ res=false; why='평균 '+lab+' 미만, 미달 일수 '+rate; }
+    else if(!over&&half){ res=true; why='평균은 '+lab+' 미만이지만 미달 일수 '+rate+' → 제2항제1호에 따라 '+lab+' 이상으로 봄'; }
+    else { res=false; why='평균은 '+lab+' 이상이지만 미달 일수 '+rate+' → 제2항제2호에 따라 '+lab+' 이상으로 보지 않음'; }
+    h+='<p class="cv">'+lab+' 이상 사업장'+(res?'':'이 아님')+(base===10?' (제93조 판단)':'')+'</p><p class="cw">'+why+'</p>';
+    el.innerHTML=h; }
+  function calcClear(){ ['cdays','cman','cdn','cshort','cstd'].forEach(function(id){ $(id).value=''; }); calcRun(); }
+  document.addEventListener('click',function(ev){ var t=ev.target.closest('[data-copen],[data-cclose],[data-cbase]'); if(!t)return;
+    if(t.hasAttribute('data-copen'))openCalc(); else if(t.hasAttribute('data-cclose'))closeCalc(); else calcBase(t.getAttribute('data-cbase')); });
+  $('cdays').addEventListener('input',function(){ fromDays(); calcRun(); });
+  ['cman','cdn','cshort','cstd'].forEach(function(id){ $(id).addEventListener('input',calcRun); });
+  $('cclr').addEventListener('click',calcClear);
 
   // ── 시작 ──
   (function(){ var gs=[],by={}; D.inds.forEach(function(i){if(!by[i.grp]){by[i.grp]=[];gs.push(i.grp);}by[i.grp].push(i);});
@@ -1707,7 +1830,7 @@ function bsearch(D,q,fld){
   function tagOf(r){ return r?(r.headers.get('ETag')||r.headers.get('Last-Modified')||''):''; }
   function serverTag(){ try{ return fetch('./index.html?lawon-check='+Date.now(),{method:'HEAD',cache:'no-store'}).then(function(r){ return r.ok?tagOf(r):''; },function(){ return ''; }); }catch(e){ return Promise.resolve(''); } }
   function cachedTag(){ try{ return caches.match('./index.html').then(tagOf,function(){ return ''; }); }catch(e){ return Promise.resolve(''); } }
-  function idle(){ var a=document.activeElement; return (nav==='start'||(!topOf(nav)&&!st.q.trim()))&&$('sheet').hidden&&$('isheet').hidden&&!(a&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)); }
+  function idle(){ var a=document.activeElement; return (nav==='start'||(!topOf(nav)&&!st.q.trim()))&&$('sheet').hidden&&$('isheet').hidden&&$('csheet').hidden&&!(a&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)); }
   function applyUpdate(){ try{ sessionStorage.setItem('lawon.updated','1'); }catch(e){} location.reload(); }
   function onUpdate(){ UPD.pending=true; if(document.visibilityState!=='hidden'&&idle())applyUpdate(); else $('updbar').hidden=false; }
   function checkUpdate(force){ var now=Date.now(); if(!force&&now-UPD.last<60000)return; UPD.last=now;
