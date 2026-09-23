@@ -1,0 +1,43 @@
+name: 법령 개정 점검
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'   # 매주 월요일 09:00(한국 시간)
+  workflow_dispatch:       # Actions 탭에서 수동 실행
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 공포번호 대조
+        id: check
+        env:
+          LAW_API_KEY: ${{ secrets.LAW_API_KEY }}
+        run: python3 tools/check_laws.py
+
+      - name: 이슈로 알림
+        if: steps.check.outputs.alert == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh label create law-check --color B60205 --description "법령 개정 자동 점검" --force || true
+          num=$(gh issue list --label law-check --state open --json number --jq '.[0].number // empty')
+          if [ -n "$num" ]; then
+            gh issue comment "$num" --body-file report.md
+          else
+            gh issue create --title "$(cat title.txt)" --body-file report.md --label law-check
+          fi
+
+      - name: 점검 실패 표시
+        if: steps.check.outputs.status == 'error'
+        run: |
+          echo "법령 점검 중 오류가 있었습니다. 위 '공포번호 대조' 단계와 이슈를 확인하세요."
+          exit 1
