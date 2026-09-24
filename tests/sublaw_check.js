@@ -23,4 +23,11 @@ const rowById={}; D.bt.rows.forEach(r=>rowById[r.id]=r);
 for(const [k,tb] of ACT){ const L=(D.bt.act&&D.bt.act[k])||[]; ok(k+' 조치기준 '+tb, L.some(id=>rowById[id]&&rowById[id].tb===tb), L.join(',')); }
 const badAct=Object.entries(D.bt.act||{}).filter(([k,L])=>!by[k]||L.some(id=>!rowById[id])); ok('조치기준 연결이 모두 실제 조문·별표 줄',!badAct.length,badAct.map(x=>x[0]).join(','));
 for(const [k,b] of FINE){ const e=by[k]; ok(k+' 과태료 금액 '+b, e&&(e.fn||[]).some(x=>x.b===b&&x.rows.length), e&&JSON.stringify(e.fn)); }
+// 2026-09-24: 별표 26개 추가(법제처 현행 원문) — 별표별 줄 수, 근거 조문이 실제 조문인지, 조문 화면 연결
+const BTEXP={"GR1": 9, "GR2": 9, "GD4": 20, "GD2": 16, "SD2": 35, "SD9": 22, "S2": 12, "SD3": 18, "SD5": 11, "SD4": 13, "SD6": 6, "SD20": 6, "SD21": 25, "SD26": 38, "SD13": 51, "S3": 30, "S21_2": 15, "S4": 29, "S6": 48, "S7": 53, "S10": 24, "S25": 23, "S24": 183, "R14": 11, "R15": 3, "R17": 9};
+const tabBy={}; D.bt.tabs.forEach(T=>tabBy[T.id]=T);
+for(const [id,n] of Object.entries(BTEXP)){ const T=tabBy[id]; const m=T?T.secs.reduce((a,x)=>a+x.rows.length,0):-1;
+  ok('별표 '+id+' 줄 '+n+'개', m===n, m); if(T) ok('별표 '+id+' 근거 조문 실재', T.arts.every(a=>by[a[0]+':'+a[1]]), JSON.stringify(T.arts)); }
+for(const [k,id] of [['GKR:제4조','GR1'],['GK:제26조','GR1'],['GK:제65조','GR2'],['SD:제16조','SD3'],['OSH:제17조','SD3'],['SR:제194조의2','S21_2'],['RULE:제598조','R14']])
+  ok(k+' → 별표 '+id, (D.bt.art[k]||[]).some(v=>v.t===id), JSON.stringify(D.bt.art[k]));
 console.log(fail?'실패 '+fail+'건':'전체 통과'); process.exit(fail?1:0);
