@@ -523,6 +523,21 @@ button.brand:active{opacity:.7}
 .row.subr{min-height:44px;padding:9px 38px 9px 30px;background:var(--fld)}
 .row.subr::before{content:'';position:absolute;left:16px;top:0;bottom:50%;width:8px;border-left:1.5px solid var(--line2);border-bottom:1.5px solid var(--line2);border-bottom-left-radius:4px}
 .row.subr .sl{font-size:.8125rem;font-weight:600;color:var(--ink3)}
+
+/* 2026-09-25: 접는 구획, 법령 칩 줄 고정, 법령집 조문·별표 수, 법령 [조문|별표] 탭 */
+.gl.fold{width:100%;min-height:44px;margin-bottom:2px;align-items:center;text-align:left;font-size:.8125rem;font-weight:700;color:var(--ink2)}
+.gl.fold::after{order:1}
+.gl.fold .fdd{order:2;flex:none;width:7px;height:7px;margin:0 8px 0 2px;border-right:1.8px solid var(--ink3);border-bottom:1.8px solid var(--ink3);transform:translateY(-2px) rotate(45deg);transition:transform .15s}
+.gl.fold[aria-expanded="true"] .fdd{transform:translateY(2px) rotate(-135deg)}
+.gl.fold[aria-expanded="false"]{color:var(--ink)}
+.gl.fold:focus-visible{outline:2px solid var(--pri);outline-offset:2px;border-radius:4px}
+.fbody>.gl.in:first-child{margin-top:4px}
+.gl.in{margin-top:18px}
+.fl{position:sticky;top:calc(var(--hdrh) + var(--sbh,64px));z-index:15;background:var(--bg);margin-top:4px;padding-top:4px;padding-bottom:8px}
+.brow .bm{text-align:right;line-height:1.35}
+.brow .bm small{display:block;margin-top:1px;font-size:inherit}
+.seg.bktab{margin-top:12px}
+@media (prefers-reduced-motion:reduce){.gl.fold .fdd{transition:none}}
 </style>
 </head>
 <body>
@@ -1317,6 +1332,12 @@ function bsearch(D,q,fld){
     return h+'<div class="andfb"><p>검색어별 결과</p><div class="chips">'+sq.toks.map(function(w){ var q2=sq.lawToks.concat([w]).join(' '), x=search(D,q2,'',lawOrder()), n=x.total+x.items.length+bsearch(D,q2).length;
       return '<button type="button" class="chip" data-q="'+esc(q2)+'"'+(n?'':' disabled')+'>'+esc(w)+'<small>'+n+'</small></button>'; }).join('')+'</div></div>';
   }
+  // ── 접는 구획(2026-09-25). 검색: 같은 검색어·분야·칩 동안만 기억 / 법령집(b:): 앱 실행 동안 기억 ──
+  var FOLD={k:null,o:{}}, FOLDB={};
+  function foldKey(k){ if(FOLD.k!==k){FOLD.k=k;FOLD.o={};} }
+  function foldSec(key,title,meta,body,def){ var S=key.charAt(0)==='b'?FOLDB:FOLD.o, op=(key in S)?S[key]:def;
+    return '<div class="fsec"><button type="button" class="gl fold" data-fold="'+key+'" aria-expanded="'+op+'">'+esc(title)+(meta?' <span>'+esc(meta)+'</span>':'')+'<i class="fdd" aria-hidden="true"></i></button><div class="fbody"'+(op?'':' hidden')+'>'+body+'</div></div>'; }
+  function setSbH(){ var sb=document.querySelector('#vFind .sbar'); if(sb&&sb.offsetHeight)document.documentElement.style.setProperty('--sbh',sb.offsetHeight+'px'); }
   function renderResults(){
     var ord=lawOrder(), bh=bsearch(D,st.q,st.field), nB=bh.length; if(st.law==='BT'&&!nB)st.law='';
     var isB=st.law==='BT', fl=fieldLaws(), r=search(D,st.q,isB?'':st.law,ord,fl); if(st.law&&!isB&&!r.byLaw[st.law]){st.law='';r=search(D,st.q,'',ord,fl);}
@@ -1326,26 +1347,39 @@ function bsearch(D,q,fld){
     if(ch.length>2)h+='<div class="chips fl">'+ch.map(function(c){return '<button type="button" class="chip" data-law="'+c[0]+'" aria-pressed="'+(st.law===c[0])+'">'+esc(c[1])+'<small>'+c[2]+'</small></button>';}).join('')+'</div>';
     if(isB){ h+='<h3 class="gl">별표 <span>'+(nB>80?nB+'건 중 위 80건':nB+'건')+'</span></h3><div class="list">'+bh.slice(0,80).map(rowBtHit).join('')+'</div>'; $('results').innerHTML=andWrap(((r.notes&&r.notes.length)?'<div class="card"><p class="why sm">'+r.notes.map(esc).join('<br>')+'</p></div>':'')+h,r,nB); return; }
     if(st.law){ var LN=(D.meta.laws[st.law]||{}).name; r.items=r.items.filter(function(it){return (it.refs||[]).some(function(x){return x.law===LN;});}); }   // 법령 칩: 그 법령 주요 의무만
-    var FNi=FIELD[st.field], othF=st.field==='osh'?'근로기준':'산업안전', ownI=r.items, othI=[];
-    if(FNi&&!st.law){ ownI=r.items.filter(function(it){return it.f===st.field;}); othI=r.items.filter(function(it){return it.f!==st.field;}); }
+    // 2026-09-25: 선택 분야(주요 의무 → 조문 → 별표)를 먼저, 다른 분야는 맨 아래 접힌 구획 하나로
+    var FNi=FIELD[st.field], split=!!(FNi&&fl&&!st.law), othF=st.field==='osh'?'근로기준':'산업안전';
+    var ownI=split?r.items.filter(function(it){return it.f===st.field;}):r.items, othI=split?r.items.filter(function(it){return it.f!==st.field;}):[];
     var itList=function(L){ return '<div class="list">'+L.map(function(it){return rowItem(it);}).join('')+'</div>'; };
-    if(ownI.length)h+='<h3 class="gl">'+esc(FNi&&!st.law?FNi.name+' 분야 주요 의무':'주요 의무')+' <span>'+ownI.length+'건</span></h3>'+itList(ownI);
-    if(othI.length)h+='<h3 class="gl">'+esc(othF+' 분야 주요 의무')+' <span>'+othI.length+'건</span></h3>'+itList(othI);
+    var cntS=function(n,shown){ return n>shown?n+'건 중 위 '+shown+'건':n+'건'; };
     var bs=(nB&&!st.law)?'<h3 class="gl">별표 <span>'+nB+'건</span></h3><div class="list">'+bh.slice(0,3).map(rowBtHit).join('')+'</div>'+(nB>3?'<button type="button" class="morebtn" data-law="BT">별표 '+nB+'건 모두 보기'+CHEV+'</button>':''):'';   // 별표는 3건까지, 나머지는 '별표' 칩으로
-    var artList=function(arts){ return (function(){   // 같은 결과에 모법 조문이 있으면 시행령·시행규칙은 그 줄 아래로 묶음(법전 순서)
-      var r={arts:arts}, inR={}, kids={}; r.arts.forEach(function(e){inR[e.l+':'+e.no]=1;});
-      var gk=function(e){ var pk=e.pa?e.pa.l+':'+e.pa.no:''; return (pk&&inR[pk])?pk:e.l+':'+e.no; }, done={};
-      r.arts.forEach(function(e){ var g=gk(e); if(g!==e.l+':'+e.no)(kids[g]=kids[g]||[]).push(e); });
-      return r.arts.map(function(e){ var g=gk(e); if(done[g])return ''; done[g]=1; var P=D.byKey[g];   // 묶음 자리 = 묶음 안에서 가장 앞 순위
-        return rowArt(P,{law:true,path:true,snip:snippet(P,st.q)})+(kids[g]?kids[g].map(function(x){return subRow(x);}).join(''):''); }).join(''); })(); };
-    if(r.arts.length){ var own=fl&&!st.law?r.arts.filter(function(e){return fl.indexOf(e.l)>=0;}):r.arts, oth=fl&&!st.law?r.arts.filter(function(e){return fl.indexOf(e.l)<0;}):[];
-      var inN=(fl&&!st.law)?r.inN:r.total, othN=r.total-inN, FN=FIELD[st.field], other=st.field==='osh'?'근로기준':'산업안전';
-      if(own.length)h+='<h3 class="gl">'+esc(FN&&!st.law?FN.name+' 분야 조문':'조문')+' <span>'+(inN>own.length?inN+'건 중 위 '+own.length+'건':inN+'건')+'</span></h3><div class="list">'+artList(own)+'</div>';
-      if(oth.length)h+='<h3 class="gl">'+esc(other+' 분야 조문')+' <span>'+(othN>oth.length?othN+'건 중 위 '+oth.length+'건':othN+'건')+'</span></h3><div class="list">'+artList(oth)+'</div>';
-      else if(othN>0&&own.length)h+='<p class="andq">다른 분야 조문 '+othN+'건은 위 법령 칩에서 볼 수 있습니다.</p>'; }
-    h+=bs;   // 2026-09-23: 두 분야 모두 주요 의무 → 조문 → 별표(법령 체계 순). 별표가 멀면 위 '별표' 칩으로
+    var artList=function(arts){   // 같은 결과에 모법 조문이 있으면 시행령·시행규칙은 그 줄 아래로 묶음(법전 순서)
+      var inR={}, kids={}, done={}; arts.forEach(function(e){inR[e.l+':'+e.no]=1;});
+      var gk=function(e){ var pk=e.pa?e.pa.l+':'+e.pa.no:''; return (pk&&inR[pk])?pk:e.l+':'+e.no; };
+      arts.forEach(function(e){ var g=gk(e); if(g!==e.l+':'+e.no)(kids[g]=kids[g]||[]).push(e); });
+      return arts.map(function(e){ var g=gk(e); if(done[g])return ''; done[g]=1; var P=D.byKey[g];
+        return rowArt(P,{law:true,path:true,snip:snippet(P,st.q)})+(kids[g]?kids[g].map(function(x){return subRow(x);}).join(''):''); }).join(''); };
+    var own=r.arts, oth=[], inN=r.total, othN=0;
+    if(split){ own=r.arts.filter(function(e){return fl.indexOf(e.l)>=0;}); oth=r.arts.filter(function(e){return fl.indexOf(e.l)<0;}); inN=r.inN; othN=r.total-inN; }
+    foldKey(st.q+'|'+st.field+'|'+st.law);
+    if(split){
+      if(ownI.length)h+=foldSec('oi',FNi.name+' 분야 주요 의무',ownI.length+'건',itList(ownI),true);
+      if(own.length)h+=foldSec('oa',FNi.name+' 분야 조문',cntS(inN,own.length),'<div class="list">'+artList(own)+'</div>',true);
+      h+=bs;
+      var ob='', parts=[];
+      if(othI.length){ ob+='<h3 class="gl in">주요 의무 <span>'+othI.length+'건</span></h3>'+itList(othI); parts.push('주요 의무 '+othI.length); }
+      if(oth.length)ob+='<h3 class="gl in">조문 <span>'+cntS(othN,oth.length)+'</span></h3><div class="list">'+artList(oth)+'</div>';
+      else if(othN>0)ob+='<p class="andq">조문 '+othN+'건은 위 법령 칩에서 볼 수 있습니다.</p>';
+      if(othN>0)parts.push('조문 '+othN);
+      if(ob)h+=foldSec('ox',othF+' 분야',parts.join(' · '),ob,!(ownI.length||own.length||nB));
+    }else{
+      if(ownI.length)h+='<h3 class="gl">주요 의무 <span>'+ownI.length+'건</span></h3>'+itList(ownI);
+      if(own.length)h+='<h3 class="gl">조문 <span>'+cntS(inN,own.length)+'</span></h3><div class="list">'+artList(own)+'</div>';
+      h+=bs;
+    }
     if(!r.items.length&&!r.arts.length&&!nB)h+='<div class="note empty">'+ICON+'<p><b>'+esc(st.q)+'</b>에 대한 검색 결과가 없습니다.</p><p>수록 법령: '+Object.keys(D.meta.laws).map(function(k){return esc(D.meta.laws[k].short);}).join(' · ')+' · 시행령·시행규칙·안전보건규칙 별표 일부</p></div>';
     $('results').innerHTML=andWrap(((r.notes&&r.notes.length)?'<div class="card"><p class="why sm">'+r.notes.map(esc).join('<br>')+'</p></div>':'')+h,r,nB);
+    setSbH();
   }
   function renderLcard(open){   // 근로기준: 산업안전과 같은 접는 방식. 접힌 상태는 안내(입력 전) 또는 인원·결과 한 줄(입력 후)
     var ready=pf.n!=null, small=ready&&pf.n<5, ps=[];
@@ -1442,15 +1476,21 @@ function bsearch(D,q,fld){
     var no=(/^(\S+ 제\d+호)/.exec(v)||[])[1]||'', d=/(\d{4}-\d\d-\d\d) (?:공포·)?시행/.exec(v);
     return no+(d?' · '+d[1]+' 시행':''); }
   var CNT={}; D.arts.forEach(function(e){CNT[e.l]=(CNT[e.l]||0)+1;});
-  function renderBookRoot(){
+  function btTabsOf(k){ return BT.tabs.filter(function(T){return T.law===k;}); }
+  function renderBookRoot(){   // 2026-09-25: 별표는 각 법령 줄에 수만 표시(법령 안 '별표' 탭), 다른 분야 법령은 접힌 구획
     var ord=lawOrder(), F=FIELD[st.field], nF=F?F.first.filter(function(k){return D.meta.laws[k];}).length:0;
-    var row=function(k,i,arr){var L=D.meta.laws[k], pv=(arr&&i>0)?D.meta.laws[arr[i-1]]:null;var sub=/ (시행령|시행규칙)$/.test(L.name)&&pv&&L.name.indexOf(pv.name.replace(/ (시행령|시행규칙)$/,''))===0;return '<button type="button" class="brow'+(sub?' sub':'')+'" data-bk="'+k+'"><span class="bn"><b>'+esc(L.name)+'</b><small>'+esc(lawTag(k))+'</small></span><span class="bm">조문 '+(CNT[k]||0)+'</span>'+CHEV+'</button>';};
+    var isSub=function(k,pk){ var L=D.meta.laws[k], pv=pk?D.meta.laws[pk]:null; return /\s(시행령|시행규칙)$/.test(L.name)&&!!pv&&L.name.indexOf(pv.name.replace(/\s(시행령|시행규칙)$/,''))===0; };
+    var row=function(k,sub){ var L=D.meta.laws[k], nb=btTabsOf(k).length;
+      return '<button type="button" class="brow'+(sub?' sub':'')+'" data-bk="'+k+'"><span class="bn"><b>'+esc(L.name)+'</b><small>'+esc(lawTag(k))+'</small></span><span class="bm">조문 '+(CNT[k]||0)+(nb?'<small>별표 '+nb+'</small>':'')+'</span>'+CHEV+'</button>'; };
+    var btOnly=function(k){ var ts=btTabsOf(k);   // 조문 없이 별표만 수록된 하위 법령
+      return '<button type="button" class="brow sub" data-btl="'+k+'"><span class="bn"><b>'+esc(BTL[k].name)+'</b><small>별표만 수록</small></span><span class="bm">별표 '+ts.length+'</span>'+CHEV+'</button>'; };
+    var list=function(arr){ var out='', mom=null;
+      var flush=function(){ if(mom)Object.keys(BTL).forEach(function(c){ if(c!==mom&&BTL[c].par===mom&&!D.meta.laws[c]&&btTabsOf(c).length)out+=btOnly(c); }); mom=null; };
+      arr.forEach(function(k,i){ var sub=i>0&&isSub(k,arr[i-1]); if(!sub){flush();mom=k;} out+=row(k,sub); });
+      flush(); return '<div class="list">'+out+'</div>'; };
     var A=nF?ord.slice(0,nF):ord, B=nF?ord.slice(nF):[];
-    var h='<h3 class="gl top">'+esc(F?F.name:'수록 법령')+'</h3><div class="list">'+A.map(row).join('')+'</div>';
-    var bt='<h3 class="gl">별표</h3><div class="list">'+btLaws().map(function(k){ var ts=BT.tabs.filter(function(T){return T.law===k;});
-      return '<button type="button" class="brow" data-btl="'+k+'"><span class="bn"><b>'+esc(BTL[k].name)+'</b><small>'+esc('별표 '+ts.map(function(T){return T.n;}).join('·'))+'</small></span><span class="bm">'+ts.length+'개</span>'+CHEV+'</button>'; }).join('')+'</div>';
-    h+=bt;   // 별표는 수록 법령 바로 아래(선택한 분야의 별표 법령 먼저)
-    if(B.length)h+='<h3 class="gl">그 밖의 법령</h3><div class="list">'+B.map(row).join('')+'</div>';
+    var h='<h3 class="gl top">'+esc(F?F.name:'수록 법령')+'</h3>'+list(A);
+    if(B.length)h+=foldSec('b:oth','그 밖의 법령',B.length+'개',list(B),false);
     $('book').innerHTML=h;
   }
 
@@ -1559,6 +1599,13 @@ function bsearch(D,q,fld){
     en.title=s.path.length?s.path[s.path.length-1]:L.short;
     h+='<div class="card dhead">'+(s.path.length?'<p class="dlaw">'+esc([L.name].concat(s.path.slice(0,-1)).join(' › '))+'</p><h2 class="dt">'+esc(s.path[s.path.length-1])+'</h2>'
       :'<h2 class="dt">'+esc(L.name)+'</h2><p class="bver">'+esc(lawTag(s.law))+'</p>')+'<p class="bver">조문 '+g.arts.length+'</p></div>';
+    var bts=s.path.length?[]:btTabsOf(s.law);   // 2026-09-25: 그 법령에 별표가 있으면 [조문 | 별표] 탭
+    if(bts.length){ var tb=s.tab==='bt';
+      h+='<div class="seg bktab" role="tablist"><button type="button" role="tab" data-bktab="art" aria-selected="'+!tb+'">조문 '+g.arts.length+'</button><button type="button" role="tab" data-bktab="bt" aria-selected="'+tb+'">별표 '+bts.length+'</button></div>';
+      if(tb){ en.segs=null;
+        h+='<div class="list mt">'+bts.map(function(T){ return '<button type="button" class="brow" data-bt="'+T.id+'"><span class="bn"><b>별표 '+esc(T.n)+' '+esc(T.t)+'</b><small>'+esc(btRel(T))+'</small></span>'+CHEV+'</button>'; }).join('')+'</div>'
+          +'<p class="andq">'+esc(fmtD(btDates(bts).join('·'))+' 내려받은 원문 기준 · 그 밖의 별표는 국가법령정보센터에서 확인')+'</p>';
+        en.el.innerHTML=h; return; } }
     if(g.segs.length>1&&g.arts.length>24&&g.segs.some(function(x){return x;})){   // 하위 목차로
       en.segs=g.segs;
       h+='<h3 class="gl">목차</h3><div class="list">'+g.segs.map(function(x,i){return '<button type="button" class="brow" data-bkg="'+i+'"><span class="bn"><b>'+esc(x||'그 밖의 조문')+'</b></span><span class="bm">조문 '+g.by[x].length+'</span>'+CHEV+'</button>';}).join('')+'</div>';
@@ -1579,7 +1626,7 @@ function bsearch(D,q,fld){
   function btDates(ts){ var ds=[]; ts.forEach(function(T){ var d=T.dl||BT.asof; if(ds.indexOf(d)<0)ds.push(d); }); return ds.sort(); }
   function btLaws(){ var ks=Object.keys(BTL).filter(function(k){return BT.tabs.some(function(T){return T.law===k;});}), f=function(k){return BTGRP[BTL[k].par]===st.field?0:1;};
     return ks.sort(function(x,y){return f(x)-f(y)||ks.indexOf(x)-ks.indexOf(y);}); }   // 선택한 분야의 별표 법령 먼저
-  function btlRowsFor(law){ var ks=Object.keys(BTL).filter(function(k){return BTL[k].par===law&&BT.tabs.some(function(T){return T.law===k;});}); if(!ks.length)return '';
+  function btlRowsFor(law){ var ks=Object.keys(BTL).filter(function(k){return BTL[k].par===law&&!D.meta.laws[k]&&BT.tabs.some(function(T){return T.law===k;});}); if(!ks.length)return '';
     return '<div class="list mt">'+ks.map(function(k){ var ts=BT.tabs.filter(function(T){return T.law===k;});
       return '<button type="button" class="brow" data-btl="'+k+'"><span class="bn"><b>'+esc(k===law?'별표':BTL[k].short+' 별표')+'</b><small>'+esc('별표 '+ts.map(function(T){return T.n;}).join('·'))+'</small></span><span class="bm">'+ts.length+'개</span>'+CHEV+'</button>'; }).join('')+'</div>'; }
   function alRows(r,T){ var L=(r.al||[]).map(function(x){ var e=D.byKey[x[0]+':'+x[1]]; return e?{e:e,n:x[2]||''}:null; }).filter(Boolean); if(!L.length)return '';   // 별표의 적용·적용 제외 법 규정 → 조문 바로가기
@@ -1857,6 +1904,13 @@ function bsearch(D,q,fld){
     else if(t.hasAttribute('data-iclose')){ closeISheet(); }
     else if(t.hasAttribute('data-otog')){ if(st.q.trim())st.condOpen=!st.condOpen; else st.oOpen=!st.oOpen; renderCond(); if(t.id==='ltog'&&!$('lbody').hidden&&!$('n3').value)$('n3').focus(); } });
   $('iq').addEventListener('input',renderIList);
+  document.addEventListener('click',function(ev){ var b=ev.target.closest('[data-fold],[data-bktab]'); if(!b)return;   // 2026-09-25
+    if(b.hasAttribute('data-bktab')){ var en=topOf(nav); if(en&&en.spec.type==='bk'){ en.spec.tab=b.getAttribute('data-bktab'); renderSub(en); } return; }
+    var k=b.getAttribute('data-fold'), op=b.getAttribute('aria-expanded')!=='true', bd=b.nextElementSibling;
+    b.setAttribute('aria-expanded',String(op)); if(bd)bd.hidden=!op; (k.charAt(0)==='b'?FOLDB:FOLD.o)[k]=op;
+    if(!op){ var lim=$('hdr').offsetHeight, sb=nav==='find'&&!topOf('find')?document.querySelector('#vFind .sbar'):null, fc=sb?document.querySelector('#results .fl'):null;
+      if(sb)lim+=sb.offsetHeight+(fc?fc.offsetHeight:0);
+      var top=b.getBoundingClientRect().top; if(top<lim)window.scrollTo(0,(window.pageYOffset||0)+top-lim-6); } });   // 접은 제목이 화면 위로 사라지지 않게
   var qt; $('q').addEventListener('input',function(){ clearTimeout(qt); var v=this.value; qt=setTimeout(function(){ st.q=v; if(!v.trim())st.law=''; renderFind(); rootVer.find=ver; if((window.pageYOffset||0)>0)window.scrollTo(0,0); },120); });   // 새 결과는 맨 위부터
   $('q').addEventListener('keydown',function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); addRecent(this.value); this.blur(); } });   // 검색 키를 누르면 자판을 내려 결과를 넓게
   $('qx').addEventListener('click',function(){ $('q').value=''; st.q=''; st.law=''; renderFind(); rootVer.find=ver; $('q').focus(); });
@@ -1868,7 +1922,7 @@ function bsearch(D,q,fld){
   $('gear').addEventListener('click',openSheet);
   $('hback').addEventListener('click',goBack);
   document.addEventListener('keydown',function(ev){ if(ev.key==='Escape'){ if(!$('csheet').hidden)closeCalc(); else if(!$('isheet').hidden)closeISheet(); else if(!$('sheet').hidden)closeSheet(); } });
-  window.addEventListener('resize',setHdrH);
+  window.addEventListener('resize',function(){ setHdrH(); setSbH(); });
   if(window.matchMedia){ var mq=window.matchMedia('(prefers-color-scheme: dark)'), onMq=function(){ if(ui.theme==='auto')applyUI(); }; if(mq.addEventListener)mq.addEventListener('change',onMq); else if(mq.addListener)mq.addListener(onMq); }
 
 
