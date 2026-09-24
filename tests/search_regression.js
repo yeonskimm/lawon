@@ -35,7 +35,7 @@ for(const [q,exp,n,first] of CASES){
 const bh=C.bsearch(D,'열사병','osh'); const okb=bh.some(x=>(x.tab&&x.tab.id==='ZD1')||(x.r&&x.r.tb==='ZD1'));
 console.log((okb?'PASS':'FAIL')+'  별표 검색 열사병 → 중처법 시행령 별표1 포함'); if(!okb)fail++;
 // 2026-09-24: 추가한 별표에서 현장 검색어로 찾히는지
-for(const [q,exp,f] of [['귀책사유','GR1','labor'],['해고예고 예외','GR1','labor'],['예초기','SD20','osh'],['휴게시설 바닥면적','S21_2','osh'],['암모니아 규정량','SD13','osh'],['혈액노출','R14','osh'],['건강관리카드 석면','S25','osh']]){
+for(const [q,exp,f] of [['귀책사유','GR1','labor'],['해고예고 예외','GR1','labor'],['예초기','SD20','osh'],['휴게시설 바닥면적','S21_2','osh'],['암모니아 규정량','SD13','osh'],['혈액노출','R14','osh'],['건강관리카드 석면','S25','osh'],['가중처분','GD7','labor'],['과태료 감경','SD35','osh'],['감경기준 50명','SD35','osh']]){
   const h=C.bsearch(D,q,f).slice(0,3), okq=h.some(x=>(x.tab&&x.tab.id===exp)||(x.r&&x.r.tb===exp));
   console.log((okq?'PASS':'FAIL')+'  별표 검색 '+q+' → '+exp); if(!okq)fail++; }
 console.log(fail?('실패 '+fail+'건'):'전체 통과'); process.exit(fail?1:0);

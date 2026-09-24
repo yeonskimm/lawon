@@ -28,6 +28,10 @@ const BTEXP={"GR1": 9, "GR2": 9, "GD4": 20, "GD2": 16, "SD2": 35, "SD9": 22, "S2
 const tabBy={}; D.bt.tabs.forEach(T=>tabBy[T.id]=T);
 for(const [id,n] of Object.entries(BTEXP)){ const T=tabBy[id]; const m=T?T.secs.reduce((a,x)=>a+x.rows.length,0):-1;
   ok('별표 '+id+' 줄 '+n+'개', m===n, m); if(T) ok('별표 '+id+' 근거 조문 실재', T.arts.every(a=>by[a[0]+':'+a[1]]), JSON.stringify(T.arts)); }
-for(const [k,id] of [['GKR:제4조','GR1'],['GK:제26조','GR1'],['GK:제65조','GR2'],['SD:제16조','SD3'],['OSH:제17조','SD3'],['SR:제194조의2','S21_2'],['RULE:제598조','R14']])
+// 2026-09-24: 과태료 부과기준 일반기준(10개) — 줄 수, 일부 수록 표시, 과태료 안내 키
+const FINEXP={"GD7": 3, "MDF": 5, "RD3": 3, "EDF": 4, "FD3": 2, "PD2": 3, "LDF": 2, "TD2": 4, "SD35": 12, "ZD4": 4};
+for(const [id,n] of Object.entries(FINEXP)){ const T=tabBy[id]; const m=T?T.secs.reduce((a,x)=>a+x.rows.length,0):-1;
+  ok('일반기준 별표 '+id+' 줄 '+n+'개', m===n, m); ok('일반기준 별표 '+id+' 일부 수록·과태료 키', !!(T&&T.part&&D.fineNote[T.fine]), T&&T.fine); }
+for(const [k,id] of [['GKR:제4조','GR1'],['GK:제26조','GR1'],['GK:제65조','GR2'],['SD:제16조','SD3'],['OSH:제17조','SD3'],['SR:제194조의2','S21_2'],['RULE:제598조','R14'],['GKD:제60조','GD7'],['GK:제116조','GD7'],['SD:제119조','SD35'],['OSH:제175조','SD35'],['MWD:제22조','MDF']])
   ok(k+' → 별표 '+id, (D.bt.art[k]||[]).some(v=>v.t===id), JSON.stringify(D.bt.art[k]));
 console.log(fail?'실패 '+fail+'건':'전체 통과'); process.exit(fail?1:0);

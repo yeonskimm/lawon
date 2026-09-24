@@ -75,7 +75,7 @@ with sync_playwright() as pw:
     d = {r[0]: r for r in rows}
     ok('별표 구획 없음', not any('별표' == x for x in p.evaluate("[...document.querySelectorAll('#book .gl')].map(x=>x.firstChild.textContent.trim())")))
     ok('안전보건규칙 줄: 조문 672 · 별표 18', '조문 672' in d['RULE'][2] and '별표 18' in d['RULE'][2], d.get('RULE'))
-    ok('산안법 시행령 줄: 별표 11', '별표 11' in d['SD'][2], d.get('SD'))
+    ok('산안법 시행령 줄: 별표 12', '별표 12' in d['SD'][2], d.get('SD'))
     ok('그 밖의 법령 접힘', p.evaluate("(()=>{const b=document.querySelector('#book [data-fold=\"b:oth\"]');return b&&b.getAttribute('aria-expanded')==='false'&&b.nextElementSibling.hidden;})()"))
     keys = [r[0] for r in rows]
     ok('기간제법 시행령(2026-09-24 조문 수록)이 기간제법 바로 아래 하위 줄', 'FTD' in keys and keys[keys.index('FTD') - 1] == 'FT' and d['FTD'][1], keys)
