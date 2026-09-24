@@ -78,7 +78,7 @@ with sync_playwright() as pw:
     ok('산안법 시행령 줄: 별표 1', '별표 1' in d['SD'][2], d.get('SD'))
     ok('그 밖의 법령 접힘', p.evaluate("(()=>{const b=document.querySelector('#book [data-fold=\"b:oth\"]');return b&&b.getAttribute('aria-expanded')==='false'&&b.nextElementSibling.hidden;})()"))
     keys = [r[0] for r in rows]
-    ok('기간제법 시행령(별표만)이 기간제법 바로 아래 하위 줄', 'btl:FTD' in keys and keys[keys.index('btl:FTD') - 1] == 'FT' and d['btl:FTD'][1], keys)
+    ok('기간제법 시행령(2026-09-24 조문 수록)이 기간제법 바로 아래 하위 줄', 'FTD' in keys and keys[keys.index('FTD') - 1] == 'FT' and d['FTD'][1], keys)
     shot(p, '6_book_osh')
     p.click('#book [data-fold="b:oth"]'); p.wait_for_timeout(200); shot(p, '7_book_oth_open')
     p.click('#tabbar [data-nav="find"]'); p.click('#tabbar [data-nav="book"]'); p.wait_for_timeout(200)
