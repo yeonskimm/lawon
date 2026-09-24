@@ -3,6 +3,8 @@
 # 수록 법령의 공포번호를 조회해 tools/law_versions.json(앱이 반영한 공포번호)과 비교한다.
 # - 발견만 하고 앱 데이터는 고치지 않는다(반영은 원문 확인 후 사람이 한다).
 # - 인증키: 환경변수 LAW_API_KEY (GitHub 저장소 Secrets). 표준 라이브러리만 사용.
+# - 2026-09-24: 법령집 표기용 tools/law_meta.json 갱신 추가. 법제처 현행 버전(이미 시행된 것 중 시행일이 가장 늦은 것)의
+#   공포번호가 기준표 known에 있을 때만 적는다(앱이 반영하지 않은 개정의 날짜는 표시하지 않음). 바뀐 경우에만 파일을 쓴다.
 import json, os, sys, time, datetime, urllib.parse, urllib.request
 import xml.etree.ElementTree as ET
 
@@ -60,6 +62,7 @@ def main():
         key = urllib.parse.unquote(key)
     base = json.load(open(os.path.join(HERE, 'law_versions.json'), encoding='utf-8'))
     new, miss, err, ok, reg = [], [], [], [], []
+    meta_new = {}   # code → 법령집 표기 정보
     if not key:
         err.append('인증키(LAW_API_KEY)가 등록되지 않았습니다. 저장소 Settings → Secrets and variables → Actions 확인')
     for L in (base['laws'] if key else []):
@@ -76,6 +79,12 @@ def main():
         if not mine:
             miss.append(L['name']); continue
         known = set(num(x) for x in L['known'])
+        cur = [r for r in mine if num(r.get('시행일자')) and num(r.get('시행일자')).zfill(8) <= TODAY]
+        if cur:
+            c = max(cur, key=lambda r: (num(r.get('시행일자')).zfill(8), num(r.get('공포일자')).zfill(8), int(num(r.get('공포번호')) or 0)))
+            if num(c.get('공포번호')) in known:
+                meta_new[L['code']] = {'kind': c.get('법령구분명', ''), 'no': num(c.get('공포번호')),
+                                       'prom': num(c.get('공포일자')).zfill(8), 'eff': num(c.get('시행일자')).zfill(8)}
         for r in mine:
             no = num(r.get('공포번호'))
             line = '%s %s 제%s호 · %s · 공포 %s · 시행 %s%s' % (
@@ -108,6 +117,20 @@ def main():
     body.append('\n---\n점검일 %s · 대조 %d건 · 이상 없음 %d건' % (TODAY, len(ok) + len(new), len(ok)))
     if ok:
         body.append('\n<details><summary>이상 없는 법령</summary>\n\n' + '\n'.join('- %s' % ln for _, ln in ok) + '\n</details>')
+    # 법령집 표기 정보: 조회에 성공한 법령만 갱신, 나머지는 이전 값 유지
+    mpath = os.path.join(HERE, 'law_meta.json')
+    try:
+        meta = json.load(open(mpath, encoding='utf-8'))
+    except Exception:
+        meta = {'updated': '', 'laws': {}}
+    old = meta.get('laws') or {}
+    diff = sorted(k for k, v in meta_new.items() if old.get(k) != v)
+    changed = bool(diff)
+    if changed:
+        laws = dict(old); laws.update(meta_new)
+        meta = {'updated': '%s-%s-%s' % (TODAY[:4], TODAY[4:6], TODAY[6:]), 'laws': dict(sorted(laws.items()))}
+        open(mpath, 'w', encoding='utf-8').write(json.dumps(meta, ensure_ascii=False, indent=1) + '\n')
+        body.append('\n법령집 표기(공포번호·시행일) 갱신: ' + ', '.join(diff))
     report = '\n'.join(body)
     print(title or '이상 없음'); print(report)
 
@@ -116,7 +139,7 @@ def main():
     out = os.environ.get('GITHUB_OUTPUT')
     if out:
         with open(out, 'a') as f:
-            f.write('alert=%s\nstatus=%s\n' % ('1' if title else '0', 'error' if err else 'ok'))
+            f.write('alert=%s\nstatus=%s\nmeta_changed=%s\n' % ('1' if title else '0', 'error' if err else 'ok', '1' if changed else '0'))
     summ = os.environ.get('GITHUB_STEP_SUMMARY')
     if summ:
         with open(summ, 'a', encoding='utf-8') as f:
