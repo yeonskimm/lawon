@@ -25,6 +25,8 @@ jobs:
         run: node tests/judge_headcount.js index.html
       - name: 현장 검색어 회귀
         run: node tests/search_regression.js index.html
+      - name: 분야 우선 검색 (선택 분야 먼저, 다른 분야 누락 없음)
+        run: node tests/field_priority.js index.html
       - name: 시행령·시행규칙 수록 (조문 수·모법 연결)
         run: node tests/sublaw_check.js index.html
       - name: 캐시 삭제 범위 (오늘의안전 저장본 보존)
