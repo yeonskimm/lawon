@@ -25,6 +25,8 @@ jobs:
         run: node tests/judge_headcount.js index.html
       - name: 현장 검색어 회귀
         run: node tests/search_regression.js index.html
+      - name: 캐시 삭제 범위 (오늘의안전 저장본 보존)
+        run: node tests/check_sw_scope.js service-worker.js
   deploy:
     needs: test
     runs-on: ubuntu-latest
