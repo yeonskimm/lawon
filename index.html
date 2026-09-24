@@ -775,7 +775,7 @@ function splitQuery(q){   // "산안법상 지게차, 헤드가드" → 검색�
   return {toks:toks,hint:hint,btl:btl,typ:typ,lawToks:lawToks};
 }
 function artLaws(sq){ var h=sq.hint, t=sq.typ; if(!t)return h; return h?h.filter(function(k){return t.arts.indexOf(k)>=0;}):t.arts.slice(); }   // 조문 법령 필터 = 법령 이름 ∩ 종류
-function search(D,q,law,first){
+function search(D,q,law,first,grp){   // grp: 선택한 분야의 법령 → 결과 앞에(다른 분야는 뒤로)
   var sq=splitQuery(q), toks=sq.toks, hint=artLaws(sq);
   if(!toks.length){ if(!hint)return {arts:[],items:[],total:0,byLaw:{}};   // 법령 이름만 넣으면 그 법의 조문을 번호 순으로
     var all=D.arts.filter(function(e){return hint.indexOf(e.l)>=0&&(!law||e.l===law);}).sort(function(a,b){return a.o-b.o||cmpNo(a.no,b.no);}), bl={};
@@ -805,13 +805,15 @@ function search(D,q,law,first){
     out.push({e:e,sc:sc});
   });
   var rk=function(e){var i=first?first.indexOf(e.l):-1;return i<0?e.o+100:i;};   // 점수가 같으면 주 업무 법령 먼저
-  out.sort(function(a,b){return b.sc-a.sc||rk(a.e)-rk(b.e)||cmpNo(a.e.no,b.e.no);});
+  var tier=function(e){return grp&&grp.indexOf(e.l)<0?1:0;};
+  out.sort(function(a,b){return tier(a.e)-tier(b.e)||b.sc-a.sc||rk(a.e)-rk(b.e)||cmpNo(a.e.no,b.e.no);});
   var items=D.items.filter(function(it){var h=norm(it.title+' '+it.basis);return groups.every(function(g){return g.some(function(t){return t&&h.indexOf(t)>=0;});});});
   var byLaw={}; out.forEach(function(r){byLaw[r.e.l]=(byLaw[r.e.l]||0)+1;}); if(law)out=out.filter(function(r){return r.e.l===law;});   // 법령별 건수는 거르기 전 전체 기준
-  return {arts:out.slice(0,80).map(function(r){return r.e;}),total:out.length,items:items,byLaw:byLaw,notes:notes};
+  var inN=grp?out.filter(function(r){return tier(r.e)===0;}).length:out.length;
+  return {arts:out.slice(0,80).map(function(r){return r.e;}),total:out.length,inN:inN,items:items,byLaw:byLaw,notes:notes};
 }
-function exAnswer(D,q,first){   // 검색 예시 줄의 '나오는 답': 실제 검색 1순위 조문과 그 첫 제재(데이터에서 계산)
-  var r=search(D,q,'',first), e=r.arts[0]; if(!e)return null;
+function exAnswer(D,q,first,grp){   // 검색 예시 줄의 '나오는 답': 실제 검색 1순위 조문과 그 첫 제재(데이터에서 계산)
+  var r=search(D,q,'',first,grp), e=r.arts[0]; if(!e)return null;
   var rs=ruleSanc(D,e), s=(e.s&&e.s.length)?e.s:(rs?rs.list:[]), z=s[0]||null;
   return {law:D.meta.laws[e.l].short,no:e.no,more:r.total-1,kind:z?z.kind:'',basis:z?z.basis.replace(/^(산업안전보건법|근로기준법) /,''):''};
 }
@@ -1279,11 +1281,12 @@ function bsearch(D,q,fld){
     labor:{name:'근로기준',home:'find',tab:'labor',ex:['휴게시간','가산수당','육아휴직'],quick:['주휴','임금체불','퇴직금','최저임금','해고예고','연차','근로계약서','취업규칙','괴롭힘','성희롱','출산휴가','기간제'],first:['GK','GKD','GKR','MW','RET','RETD','RETR','EQ','EQR','FT','DISP','LMC']},
     osh:{name:'산업안전',home:'find',tab:'osh',ex:['지게차','안전교육','추락'],quick:['안전교육','특별교육','추락','비계','사다리','끼임','크레인','밀폐공간','MSDS','위험성평가','측정','특수검진','도급'],first:['OSH','SD','SR','RULE','SAPA','SAPAD']}
   };
+  function fieldLaws(){ var F=FIELD[st.field]; return F?F.first.slice():null; }   // 선택한 분야의 법령(검색 우선)
   function lawOrder(){ var F=FIELD[st.field], all=Object.keys(D.meta.laws); if(!F)return all; return F.first.filter(function(k){return D.meta.laws[k];}).concat(all.filter(function(k){return F.first.indexOf(k)<0;})); }
   function recentList(){ try{return JSON.parse(localStorage.getItem('fieldlaw.recent')||'[]');}catch(e){return [];} }
   function addRecent(q){ q=(q||'').trim(); if(!q)return; var L=recentList().filter(function(x){return x!==q;}); L.unshift(q); try{localStorage.setItem('fieldlaw.recent',JSON.stringify(L.slice(0,8)));}catch(e){} }
   function exRow(w){   // 넣는 말과 나오는 답을 나란히 보여줘 사용법 설명을 대신함
-    var a=exAnswer(D,w,lawOrder()); if(!a)return ''; var bs=a.basis; if(a.law==='안전보건규칙'&&/^제/.test(bs))bs='산안법 '+bs;
+    var a=exAnswer(D,w,lawOrder(),fieldLaws()); if(!a)return ''; var bs=a.basis; if(a.law==='안전보건규칙'&&/^제/.test(bs))bs='산안법 '+bs;
     return '<button type="button" class="row" data-q="'+esc(w)+'"><span class="exq">'+ICON+esc(w)+'</span><span class="exa">'+esc(a.law+' '+a.no)+(a.more>0?'<small>외 '+a.more+'건</small>':'')+'</span>'
       +(a.kind?'<span class="r3"><span class="sc"><span class="tg '+(a.kind==='벌칙'?'p':'f')+'">'+esc(a.kind)+'</span><span class="bs">'+esc(bs)+'</span></span></span>':'')+CHEV+'</button>';
   }
@@ -1316,20 +1319,30 @@ function bsearch(D,q,fld){
   }
   function renderResults(){
     var ord=lawOrder(), bh=bsearch(D,st.q,st.field), nB=bh.length; if(st.law==='BT'&&!nB)st.law='';
-    var isB=st.law==='BT', r=search(D,st.q,isB?'':st.law,ord); if(st.law&&!isB&&!r.byLaw[st.law]){st.law='';r=search(D,st.q,'',ord);}
+    var isB=st.law==='BT', fl=fieldLaws(), r=search(D,st.q,isB?'':st.law,ord,fl); if(st.law&&!isB&&!r.byLaw[st.law]){st.law='';r=search(D,st.q,'',ord,fl);}
     var laws=ord.filter(function(k){return r.byLaw[k];}), allN=0; laws.forEach(function(k){allN+=r.byLaw[k];});   // 결과가 있는 법령만 거르기 칩으로
     var ch=[['','전체',allN+nB]].concat(laws.map(function(k){return [k,D.meta.laws[k].short,r.byLaw[k]];})); if(nB)ch.push(['BT','별표',nB]);
     var h='';
     if(ch.length>2)h+='<div class="chips fl">'+ch.map(function(c){return '<button type="button" class="chip" data-law="'+c[0]+'" aria-pressed="'+(st.law===c[0])+'">'+esc(c[1])+'<small>'+c[2]+'</small></button>';}).join('')+'</div>';
     if(isB){ h+='<h3 class="gl">별표 <span>'+(nB>80?nB+'건 중 위 80건':nB+'건')+'</span></h3><div class="list">'+bh.slice(0,80).map(rowBtHit).join('')+'</div>'; $('results').innerHTML=andWrap(((r.notes&&r.notes.length)?'<div class="card"><p class="why sm">'+r.notes.map(esc).join('<br>')+'</p></div>':'')+h,r,nB); return; }
-    if(r.items.length)h+='<h3 class="gl">주요 의무 <span>'+r.items.length+'건</span></h3><div class="list">'+r.items.map(function(it){return rowItem(it);}).join('')+'</div>';
+    if(st.law){ var LN=(D.meta.laws[st.law]||{}).name; r.items=r.items.filter(function(it){return (it.refs||[]).some(function(x){return x.law===LN;});}); }   // 법령 칩: 그 법령 주요 의무만
+    var FNi=FIELD[st.field], othF=st.field==='osh'?'근로기준':'산업안전', ownI=r.items, othI=[];
+    if(FNi&&!st.law){ ownI=r.items.filter(function(it){return it.f===st.field;}); othI=r.items.filter(function(it){return it.f!==st.field;}); }
+    var itList=function(L){ return '<div class="list">'+L.map(function(it){return rowItem(it);}).join('')+'</div>'; };
+    if(ownI.length)h+='<h3 class="gl">'+esc(FNi&&!st.law?FNi.name+' 분야 주요 의무':'주요 의무')+' <span>'+ownI.length+'건</span></h3>'+itList(ownI);
+    if(othI.length)h+='<h3 class="gl">'+esc(othF+' 분야 주요 의무')+' <span>'+othI.length+'건</span></h3>'+itList(othI);
     var bs=(nB&&!st.law)?'<h3 class="gl">별표 <span>'+nB+'건</span></h3><div class="list">'+bh.slice(0,3).map(rowBtHit).join('')+'</div>'+(nB>3?'<button type="button" class="morebtn" data-law="BT">별표 '+nB+'건 모두 보기'+CHEV+'</button>':''):'';   // 별표는 3건까지, 나머지는 '별표' 칩으로
-    if(r.arts.length)h+='<h3 class="gl">조문 <span>'+(r.total>r.arts.length?r.total+'건 중 위 '+r.arts.length+'건':r.total+'건')+'</span></h3><div class="list">'+(function(){   // 같은 결과에 모법 조문이 있으면 시행령·시행규칙은 그 줄 아래로 묶음(법전 순서)
-      var inR={}, kids={}; r.arts.forEach(function(e){inR[e.l+':'+e.no]=1;});
+    var artList=function(arts){ return (function(){   // 같은 결과에 모법 조문이 있으면 시행령·시행규칙은 그 줄 아래로 묶음(법전 순서)
+      var r={arts:arts}, inR={}, kids={}; r.arts.forEach(function(e){inR[e.l+':'+e.no]=1;});
       var gk=function(e){ var pk=e.pa?e.pa.l+':'+e.pa.no:''; return (pk&&inR[pk])?pk:e.l+':'+e.no; }, done={};
       r.arts.forEach(function(e){ var g=gk(e); if(g!==e.l+':'+e.no)(kids[g]=kids[g]||[]).push(e); });
       return r.arts.map(function(e){ var g=gk(e); if(done[g])return ''; done[g]=1; var P=D.byKey[g];   // 묶음 자리 = 묶음 안에서 가장 앞 순위
-        return rowArt(P,{law:true,path:true,snip:snippet(P,st.q)})+(kids[g]?kids[g].map(function(x){return subRow(x);}).join(''):''); }).join(''); })()+'</div>';
+        return rowArt(P,{law:true,path:true,snip:snippet(P,st.q)})+(kids[g]?kids[g].map(function(x){return subRow(x);}).join(''):''); }).join(''); })(); };
+    if(r.arts.length){ var own=fl&&!st.law?r.arts.filter(function(e){return fl.indexOf(e.l)>=0;}):r.arts, oth=fl&&!st.law?r.arts.filter(function(e){return fl.indexOf(e.l)<0;}):[];
+      var inN=(fl&&!st.law)?r.inN:r.total, othN=r.total-inN, FN=FIELD[st.field], other=st.field==='osh'?'근로기준':'산업안전';
+      if(own.length)h+='<h3 class="gl">'+esc(FN&&!st.law?FN.name+' 분야 조문':'조문')+' <span>'+(inN>own.length?inN+'건 중 위 '+own.length+'건':inN+'건')+'</span></h3><div class="list">'+artList(own)+'</div>';
+      if(oth.length)h+='<h3 class="gl">'+esc(other+' 분야 조문')+' <span>'+(othN>oth.length?othN+'건 중 위 '+oth.length+'건':othN+'건')+'</span></h3><div class="list">'+artList(oth)+'</div>';
+      else if(othN>0&&own.length)h+='<p class="andq">다른 분야 조문 '+othN+'건은 위 법령 칩에서 볼 수 있습니다.</p>'; }
     h+=bs;   // 2026-09-23: 두 분야 모두 주요 의무 → 조문 → 별표(법령 체계 순). 별표가 멀면 위 '별표' 칩으로
     if(!r.items.length&&!r.arts.length&&!nB)h+='<div class="note empty">'+ICON+'<p><b>'+esc(st.q)+'</b>에 대한 검색 결과가 없습니다.</p><p>수록 법령: '+Object.keys(D.meta.laws).map(function(k){return esc(D.meta.laws[k].short);}).join(' · ')+' · 시행령·시행규칙·안전보건규칙 별표 일부</p></div>';
     $('results').innerHTML=andWrap(((r.notes&&r.notes.length)?'<div class="card"><p class="why sm">'+r.notes.map(esc).join('<br>')+'</p></div>':'')+h,r,nB);
