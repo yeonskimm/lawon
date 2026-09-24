@@ -39,6 +39,8 @@ jobs:
         run: |
           mkdir _site
           rsync -a --exclude '.git' --exclude '.github' --exclude 'tests' --exclude '_site' ./ _site/
+      - name: 법령집 표기 넣기 (법제처 현행 공포번호·시행일, 실패해도 배포 계속)
+        run: python3 tools/inject_meta.py _site/index.html tools/law_meta.json
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
