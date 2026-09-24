@@ -1,10 +1,11 @@
 // 시행령·시행규칙 조문 수록 검사 — 사용: node tests/sublaw_check.js index.html
 // 조문 수가 원문(법제처 내려받은 판)과 같은지, 모법 연결이 실제 조문을 가리키는지, 대표 조문의 연결이 맞는지
-// 2026-09-24: 추가 법령(최임법·고평법·기간제법·파견법·근참법 시행령·시행규칙, 집무규정 2종, 노동감독관 직무집행법, 질서위반행위규제법·시행령),
+// 2026-09-24: 추가 법령(최임법·고평법·기간제법·파견법·근참법 시행령·시행규칙, 집무규정 2종, 노동감독관 직무집행법)
+// 2026-09-24: 질서위반행위규제법·시행령 삭제(과태료 징수 담당 소관, 감독 현장 검색 수요 낮음),
 //             감독 조치기준(집무규정 별표) 연결, 과태료 금액(시행령 별표) 표본
 const fs=require('fs'); const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const D=JSON.parse(html.match(/<script id="data" type="application\/json">([\s\S]*?)<\/script>/)[1].replace(/<\\\//g,'</'));
-const EXPECT={GKD:75,GKR:21,SD:125,SR:252,RETD:79,RETR:18,MWD:26,MWR:7,EQD:39,EQR:25,FTD:7,FTR:2,DISPD:10,DISPR:21,LMCD:11,ORDD:22,GAM:87,OAM:50,LIO:43,ORD:61,TU:105,TUD:56,TUR:28,LIC:12};   // 원문 조문 수(삭제 조문 제외)
+const EXPECT={GKD:75,GKR:21,SD:125,SR:252,RETD:79,RETR:18,MWD:26,MWR:7,EQD:39,EQR:25,FTD:7,FTR:2,DISPD:10,DISPR:21,LMCD:11,GAM:87,OAM:50,LIO:43,TU:105,TUD:56,TUR:28,LIC:12};   // 원문 조문 수(삭제 조문 제외)
 const LINK=[['GKD:제7조의2','GK:제11조'],['GKD:제30조','GK:제55조'],['GKD:제33조','GK:제60조'],['GKD:제27조의2','GK:제48조'],['GKR:제15조','GK:제93조'],['GKR:제6조','GK:제33조'],
   ['SD:제16조','OSH:제17조'],['SD:제52조','OSH:제62조'],['SR:제26조','OSH:제29조'],['SR:제67조','OSH:제54조'],['SR:제37조','OSH:제36조'],['SR:제194조의2','OSH:제128조의2'],['RETD:제3조','RET:제8조'],['RETD:제42조','RET:제48조'],['RETR:제2조','RET:제13조'],
   ['MWR:제3조','MW:제7조'],['MWD:제5조','MW:제6조'],['EQR:제14조의2','EQ:제19조'],['EQD:제12조','EQ:제19조'],['FTD:제2조','FT:제3조'],['DISPD:제2조','DISP:제5조'],['DISPR:제3조의2','DISP:제7조'],['LMCD:제2조','LMC:제4조'],['LMCD:제11조','LMC:제33조'],['TUD:제22조의2','TU:제42조의2'],['LIC:제3조','OSH:제140조'],['LIC:제7조','OSH:제140조']];

@@ -6,7 +6,7 @@ const raw=/<script id="data" type="application\/json">([\s\S]*?)<\/script>/.exec
 const core=html.slice(html.indexOf('/*CORE_START*/'),html.indexOf('/*CORE_END*/'));
 const C=vm.runInNewContext(core+'\n;({prepare,search,bsearch})',{});
 const D=C.prepare(JSON.parse(raw));
-const LAB=['GK','MW','MWD','MWR','RET','EQ','EQD','EQR','FT','FTD','FTR','DISP','DISPD','DISPR','LMC','LMCD','TU','TUD','TUR','GAM','LIO','ORD','ORDD'], OSH=['OSH','LIC','RULE','SAPA','SAPAD','OAM','LIO','ORD','ORDD'];
+const LAB=['GK','MW','MWD','MWR','RET','EQ','EQD','EQR','FT','FTD','FTR','DISP','DISPD','DISPR','LMC','LMCD','TU','TUD','TUR','GAM','LIO'], OSH=['OSH','LIC','RULE','SAPA','SAPAD','OAM','LIO'];
 // [검색어, 기대 조문, 상위 몇 위 안, 분야]
 const CASES=[
  ['주휴','GK:제55조',1,LAB],['휴게시간','GK:제54조',1,LAB],['임금체불','GK:제43조',2,LAB],['연차','GK:제60조',1,LAB],
@@ -22,7 +22,7 @@ const CASES=[
  ['위험성평가','OSH:제36조',1,OSH],['안전관리자','OSH:제17조',3,OSH],['보건관리자','OSH:제18조',3,OSH],
  ['중처법 경영책임자','SAPA:제4조',1,OSH],['경영책임자','SAPA:제4조',1,OSH],['안전보건관리체계','SAPAD:제4조',1,OSH],
  ['중대산업재해','SAPA:제2조',2,OSH],
- ['최저임금 시행령 임금의 환산','MWD:제5조',1,LAB],['파견법 시행령 금지업무','DISPD:제2조',1,LAB],['과태료 의견제출','ORDD:제3조',3,LAB],['신고사건 처리기간','GAM:제42조',3,LAB],['사용중지','OSH:제53조',3,OSH],['노동감독관 출석요구','LIO:제10조',2,LAB],['부당노동행위','TU:제81조',2,LAB],['단체협약 신고','TUD:제15조',4,LAB],['타임오프','TU:제24조',5,LAB],['취업제한','OSH:제140조',3,OSH],['중대재해','OSH:제54조',2,OSH],['직업성 질병','SAPAD:제2조',3,OSH],
+ ['최저임금 시행령 임금의 환산','MWD:제5조',1,LAB],['파견법 시행령 금지업무','DISPD:제2조',1,LAB],['신고사건 처리기간','GAM:제42조',3,LAB],['사용중지','OSH:제53조',3,OSH],['노동감독관 출석요구','LIO:제10조',2,LAB],['부당노동행위','TU:제81조',2,LAB],['단체협약 신고','TUD:제15조',4,LAB],['타임오프','TU:제24조',5,LAB],['취업제한','OSH:제140조',3,OSH],['중대재해','OSH:제54조',2,OSH],['직업성 질병','SAPAD:제2조',3,OSH],
 ];
 let fail=0;
 for(const [q,exp,n,first] of CASES){
