@@ -4,12 +4,12 @@
 //             감독 조치기준(집무규정 별표) 연결, 과태료 금액(시행령 별표) 표본
 const fs=require('fs'); const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const D=JSON.parse(html.match(/<script id="data" type="application\/json">([\s\S]*?)<\/script>/)[1].replace(/<\\\//g,'</'));
-const EXPECT={GKD:75,GKR:21,SD:125,SR:252,RETD:79,RETR:18,MWD:26,MWR:7,EQD:39,EQR:25,FTD:7,FTR:2,DISPD:10,DISPR:21,LMCD:11,ORDD:22,GAM:87,OAM:50,LIO:43,ORD:61};   // 원문 조문 수(삭제 조문 제외)
+const EXPECT={GKD:75,GKR:21,SD:125,SR:252,RETD:79,RETR:18,MWD:26,MWR:7,EQD:39,EQR:25,FTD:7,FTR:2,DISPD:10,DISPR:21,LMCD:11,ORDD:22,GAM:87,OAM:50,LIO:43,ORD:61,TU:105,TUD:56,TUR:28,LIC:12};   // 원문 조문 수(삭제 조문 제외)
 const LINK=[['GKD:제7조의2','GK:제11조'],['GKD:제30조','GK:제55조'],['GKD:제33조','GK:제60조'],['GKD:제27조의2','GK:제48조'],['GKR:제15조','GK:제93조'],['GKR:제6조','GK:제33조'],
   ['SD:제16조','OSH:제17조'],['SD:제52조','OSH:제62조'],['SR:제26조','OSH:제29조'],['SR:제67조','OSH:제54조'],['SR:제37조','OSH:제36조'],['SR:제194조의2','OSH:제128조의2'],['RETD:제3조','RET:제8조'],['RETD:제42조','RET:제48조'],['RETR:제2조','RET:제13조'],
-  ['MWR:제3조','MW:제7조'],['MWD:제5조','MW:제6조'],['EQR:제14조의2','EQ:제19조'],['EQD:제12조','EQ:제19조'],['FTD:제2조','FT:제3조'],['DISPD:제2조','DISP:제5조'],['DISPR:제3조의2','DISP:제7조'],['LMCD:제2조','LMC:제4조'],['LMCD:제11조','LMC:제33조']];
-const ACT=[['GK:제26조','GAM3'],['GK:제43조','GAM3'],['MW:제6조','GAM3'],['LMC:제4조','GAM4'],['OSH:제38조','OAM2'],['RULE:제4조','OAM2']];
-const FINE=[['FT:제17조','제24조제2항제2호'],['DISP:제6조의2','제46조제2항'],['MW:제11조','제31조제1항제1호'],['LMC:제18조','제33조제1항']];
+  ['MWR:제3조','MW:제7조'],['MWD:제5조','MW:제6조'],['EQR:제14조의2','EQ:제19조'],['EQD:제12조','EQ:제19조'],['FTD:제2조','FT:제3조'],['DISPD:제2조','DISP:제5조'],['DISPR:제3조의2','DISP:제7조'],['LMCD:제2조','LMC:제4조'],['LMCD:제11조','LMC:제33조'],['TUD:제22조의2','TU:제42조의2'],['LIC:제3조','OSH:제140조'],['LIC:제7조','OSH:제140조']];
+const ACT=[['GK:제26조','GAM3'],['GK:제43조','GAM3'],['MW:제6조','GAM3'],['LMC:제4조','GAM4'],['OSH:제38조','OAM2'],['RULE:제4조','OAM2'],['TU:제81조','GAM4'],['TU:제31조','GAM4']];
+const FINE=[['FT:제17조','제24조제2항제2호'],['DISP:제6조의2','제46조제2항'],['MW:제11조','제31조제1항제1호'],['LMC:제18조','제33조제1항'],['TU:제13조','제96조제2항'],['TU:제14조','제96조제1항제1호']];
 const by={}; D.arts.forEach(e=>by[e.l+':'+e.no]=e); let fail=0;
 const ok=(n,c,i)=>{console.log((c?'PASS ':'FAIL ')+n+(c?'':'  → '+i)); if(!c)fail++;};
 for(const [k,n] of Object.entries(EXPECT)){ const a=D.arts.filter(e=>e.l===k); ok(k+' 조문 '+n+'개',a.length===n,a.length);
