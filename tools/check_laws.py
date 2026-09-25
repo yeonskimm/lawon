@@ -5,6 +5,8 @@
 # - 인증키: 환경변수 LAW_API_KEY (GitHub 저장소 Secrets). 표준 라이브러리만 사용.
 # - 2026-09-24: 법령집 표기용 tools/law_meta.json 갱신 추가. 법제처 현행 버전(이미 시행된 것 중 시행일이 가장 늦은 것)의
 #   공포번호가 기준표 known에 있을 때만 적는다(앱이 반영하지 않은 개정의 날짜는 표시하지 않음). 바뀐 경우에만 파일을 쓴다.
+# - 2026-09-25: 기준표에 시행일(eff)이 있는 제정 법령은 시행일 전까지 '조회되지 않음' 알림에서 뺀다
+#   (예: 노동감독관 직무집행법 — 시행 전이라 법제처 현행 목록에 없어 매주 거짓 알림이 났음). 시행일부터는 평소처럼 대조.
 import json, os, sys, time, datetime, urllib.parse, urllib.request
 import xml.etree.ElementTree as ET
 
@@ -61,7 +63,7 @@ def main():
     if '%' in key:   # 'Encoding' 키를 넣은 경우 한 번 풀어서 사용(두 번 인코딩 방지)
         key = urllib.parse.unquote(key)
     base = json.load(open(os.path.join(HERE, 'law_versions.json'), encoding='utf-8'))
-    new, miss, err, ok, reg = [], [], [], [], []
+    new, miss, err, ok, reg, pend = [], [], [], [], [], []
     meta_new = {}   # code → 법령집 표기 정보
     if not key:
         err.append('인증키(LAW_API_KEY)가 등록되지 않았습니다. 저장소 Settings → Secrets and variables → Actions 확인')
@@ -77,6 +79,8 @@ def main():
             continue
         mine = [r for r in recs if nz(r.get('법령명한글')) == nz(L['name'])]
         if not mine:
+            if (num(L.get('eff', '')) or '0').zfill(8) > TODAY:   # 시행 전 제정 법령: 현행 목록에 아직 없음(정상)
+                pend.append(L); continue
             miss.append(L['name']); continue
         known = set(num(x) for x in L['known'])
         cur = [r for r in mine if num(r.get('시행일자')) and num(r.get('시행일자')).zfill(8) <= TODAY]
@@ -115,6 +119,8 @@ def main():
         if any('DEADLINE' in e for e in err):
             body.append('\n인증키 사용 기한이 끝났습니다. 공공데이터포털 마이페이지에서 활용기간 연장 신청.')
     body.append('\n---\n점검일 %s · 대조 %d건 · 이상 없음 %d건' % (TODAY, len(ok) + len(new), len(ok)))
+    if pend:
+        body.append('\n시행 전이라 조회 제외: ' + ', '.join('%s(%s 시행)' % (L['name'], ymd(L['eff'])) for L in pend))
     if ok:
         body.append('\n<details><summary>이상 없는 법령</summary>\n\n' + '\n'.join('- %s' % ln for _, ln in ok) + '\n</details>')
     # 법령집 표기 정보: 조회에 성공한 법령만 갱신, 나머지는 이전 값 유지
