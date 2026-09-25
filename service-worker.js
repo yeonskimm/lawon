@@ -3,12 +3,12 @@
 //   저장본을 띄운 뒤 받은 새 화면이 저장본과 다르면 열려 있는 화면에 알림 → 화면 쪽에서 자동 업데이트
 // - 아이콘·manifest: 저장본 우선, 뒤에서 새로 받아 둠
 // - 그 밖의 요청(업데이트 확인, 국가법령정보센터 등)은 건드리지 않음
-// index.html만 바꿀 때는 이 파일을 고칠 필요 없음. 이 파일·아이콘·manifest를 바꿀 때만 CACHE_NAME 숫자를 올림(lawon-v3 → lawon-v4)
+// index.html만 바꿀 때는 이 파일을 고칠 필요 없음. 이 파일·아이콘·manifest를 바꿀 때만 CACHE_NAME 숫자를 올림(lawon-v4 → lawon-v5)
 // 캐시 저장소는 주소(yeonskimm.github.io) 단위로 「오늘의안전」(onul-safety-)과 공유됨 → 삭제는 반드시 내 접두어(lawon-·옛 이름 beopon-)만
-const CACHE_NAME = 'lawon-v3';
+const CACHE_NAME = 'lawon-v4';
 const MY_CACHE = k => k.startsWith('lawon-') || k.startsWith('beopon-');
 const PAGE_KEY = './index.html';
-const ASSETS = ['./manifest.json', './icon-192.png', './icon-512.png'];
+const ASSETS = ['./manifest.json', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 const ASSET_PATHS = ASSETS.map(a => new URL(a, self.registration.scope).pathname);
 const TIMEOUT_MS = 3000;
 
