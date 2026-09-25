@@ -7,7 +7,7 @@
 #   공포번호가 기준표 known에 있을 때만 적는다(앱이 반영하지 않은 개정의 날짜는 표시하지 않음). 바뀐 경우에만 파일을 쓴다.
 # - 2026-09-25: 기준표에 시행일(eff)이 있는 제정 법령은 시행일 전까지 '조회되지 않음' 알림에서 뺀다
 #   (예: 노동감독관 직무집행법 — 시행 전이라 법제처 현행 목록에 없어 매주 거짓 알림이 났음). 시행일부터는 평소처럼 대조.
-import json, os, sys, time, datetime, urllib.parse, urllib.request
+import json, os, sys, time, datetime, urllib.error, urllib.parse, urllib.request
 import xml.etree.ElementTree as ET
 
 URL = 'https://apis.data.go.kr/1170000/law/lawSearchList.do'
@@ -30,11 +30,20 @@ def ymd(s):
     return '%s.%s.%s.' % (s[:4], int(s[4:6]), int(s[6:8])) if len(s) == 8 and s != '00000000' else '-'
 
 
-def fetch(key, name):
+def fetch(key, name, tries=3):
+    # 2026-09-25: 법제처 서버 접속이 가끔 한 번씩 끊김(SSL handshake timeout) → 10초·20초 쉬고 최대 3번까지 다시 시도
     q = urllib.parse.urlencode({'serviceKey': key, 'target': 'law', 'query': name, 'numOfRows': 50, 'pageNo': 1})
     req = urllib.request.Request(URL + '?' + q, headers={'User-Agent': 'lawon-law-check'})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return r.read()
+    for i in range(tries):
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return r.read()
+        except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as ex:
+            if isinstance(ex, urllib.error.HTTPError) and ex.code < 500:
+                raise   # 인증키·요청 오류는 다시 해도 같음
+            if i == tries - 1:
+                raise
+            time.sleep(10 * (i + 1))
 
 
 def parse(raw):
@@ -67,13 +76,19 @@ def main():
     meta_new = {}   # code → 법령집 표기 정보
     if not key:
         err.append('인증키(LAW_API_KEY)가 등록되지 않았습니다. 저장소 Settings → Secrets and variables → Actions 확인')
+    down = 0   # 연속 접속 실패 수
     for L in (base['laws'] if key else []):
         try:
             recs, e = parse(fetch(key, L['name']))
-        except Exception as ex:   # 네트워크·차단 등
+            down = 0
+        except Exception as ex:   # 네트워크·차단 등(3번 다시 시도한 뒤)
             recs, e = [], '%s: %s' % (type(ex).__name__, ex)
+            down += 1
         if e:
             err.append('%s — %s' % (L['name'], e))
+            if down >= 2:   # 연달아 두 법령이 접속 실패면 서버 장애로 보고 중단(작업 시간 10분 제한 안에 보고서를 남기기 위해)
+                err.append('법제처 서버 접속이 계속 실패해 나머지 법령 점검을 멈췄습니다. 잠시 뒤 Actions에서 다시 실행하세요.')
+                break
             if 'SERVICE_KEY' in e or 'DEADLINE' in e or 'ACCESS_DENIED' in e:
                 break   # 키 문제면 나머지도 같은 결과
             continue
