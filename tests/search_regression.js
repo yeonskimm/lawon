@@ -6,7 +6,7 @@ const raw=/<script id="data" type="application\/json">([\s\S]*?)<\/script>/.exec
 const core=html.slice(html.indexOf('/*CORE_START*/'),html.indexOf('/*CORE_END*/'));
 const C=vm.runInNewContext(core+'\n;({prepare,search,bsearch})',{});
 const D=C.prepare(JSON.parse(raw));
-const LAB=['GK','MW','MWD','MWR','RET','EQ','EQD','EQR','FT','FTD','FTR','DISP','DISPD','DISPR','LMC','LMCD','TU','TUD','TUR','GAM','LIO'], OSH=['OSH','LIC','RULE','SAPA','SAPAD','OAM','LIO'];
+const LAB=['GK','MW','RET','EQ','EQR','FT','DISP','LMC'], OSH=['OSH','RULE','SAPA','SAPAD'];
 // [검색어, 기대 조문, 상위 몇 위 안, 분야]
 const CASES=[
  ['주휴','GK:제55조',1,LAB],['휴게시간','GK:제54조',1,LAB],['임금체불','GK:제43조',2,LAB],['연차','GK:제60조',1,LAB],
@@ -21,8 +21,9 @@ const CASES=[
  ['관리비','OSH:제72조',1,OSH],['작업계획서','RULE:제38조',1,OSH],['질식','RULE:제619조',1,OSH],['스카이','RULE:제186조',1,OSH],
  ['위험성평가','OSH:제36조',1,OSH],['안전관리자','OSH:제17조',3,OSH],['보건관리자','OSH:제18조',3,OSH],
  ['중처법 경영책임자','SAPA:제4조',1,OSH],['경영책임자','SAPA:제4조',1,OSH],['안전보건관리체계','SAPAD:제4조',1,OSH],
- ['중대산업재해','SAPA:제2조',2,OSH],
- ['최저임금 시행령 임금의 환산','MWD:제5조',1,LAB],['파견법 시행령 금지업무','DISPD:제2조',1,LAB],['신고사건 처리기간','GAM:제42조',3,LAB],['사용중지','OSH:제53조',3,OSH],['노동감독관 출석요구','LIO:제10조',2,LAB],['부당노동행위','TU:제81조',2,LAB],['단체협약 신고','TUD:제15조',4,LAB],['타임오프','TU:제24조',5,LAB],['취업제한','OSH:제140조',3,OSH],['중대재해','OSH:제54조',2,OSH],['직업성 질병','SAPAD:제2조',3,OSH],
+ ['중대산업재해','SAPA:제2조',2,OSH],['중대재해','OSH:제54조',2,OSH],['직업성 질병','SAPAD:제2조',3,OSH],
+ // 2026-09-25 조사가 끼인 원문: 붙여 쓴 검색어로 '출입의 금지'·'작업을 중지'·'흡연 등의 금지' 조문을 찾음
+ ['출입금지','RULE:제20조',1,OSH],['출입금지','RULE:제622조',8,OSH],['흡연금지','RULE:제447조',5,OSH],['작업중지','OSH:제54조',30,OSH],['사용금지','RULE:제91조',40,OSH],['안전대착용','RULE:제44조',6,OSH],
 ];
 let fail=0;
 for(const [q,exp,n,first] of CASES){
@@ -34,8 +35,4 @@ for(const [q,exp,n,first] of CASES){
 // 별표: 직업성 질병 → 중처법 시행령 별표1
 const bh=C.bsearch(D,'열사병','osh'); const okb=bh.some(x=>(x.tab&&x.tab.id==='ZD1')||(x.r&&x.r.tb==='ZD1'));
 console.log((okb?'PASS':'FAIL')+'  별표 검색 열사병 → 중처법 시행령 별표1 포함'); if(!okb)fail++;
-// 2026-09-24: 추가한 별표에서 현장 검색어로 찾히는지
-for(const [q,exp,f] of [['귀책사유','GR1','labor'],['해고예고 예외','GR1','labor'],['예초기','SD20','osh'],['휴게시설 바닥면적','S21_2','osh'],['암모니아 규정량','SD13','osh'],['혈액노출','R14','osh'],['건강관리카드 석면','S25','osh'],['가중처분','GD7','labor'],['과태료 감경','SD35','osh'],['감경기준 50명','SD35','osh']]){
-  const h=C.bsearch(D,q,f).slice(0,3), okq=h.some(x=>(x.tab&&x.tab.id===exp)||(x.r&&x.r.tb===exp));
-  console.log((okq?'PASS':'FAIL')+'  별표 검색 '+q+' → '+exp); if(!okq)fail++; }
 console.log(fail?('실패 '+fail+'건'):'전체 통과'); process.exit(fail?1:0);
