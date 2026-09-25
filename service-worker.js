@@ -5,7 +5,7 @@
 // - 그 밖의 요청(업데이트 확인, 국가법령정보센터 등)은 건드리지 않음
 // index.html만 바꿀 때는 이 파일을 고칠 필요 없음. 이 파일·아이콘·manifest를 바꿀 때만 CACHE_NAME 숫자를 올림(lawon-v5 → lawon-v6)
 // 캐시 저장소는 주소(yeonskimm.github.io) 단위로 「오늘의안전」(onul-safety-)과 공유됨 → 삭제는 반드시 내 접두어(lawon-·옛 이름 beopon-)만
-const CACHE_NAME = 'lawon-v5';   // 2026-09-25 책자 아이콘(maskable 포함) 교체로 올림
+const CACHE_NAME = 'lawon-v6';   // 2026-09-25 아이콘 바탕 흰색으로 교체해 올림
 const MY_CACHE = k => k.startsWith('lawon-') || k.startsWith('beopon-');
 const PAGE_KEY = './index.html';
 const ASSETS = ['./manifest.json', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
