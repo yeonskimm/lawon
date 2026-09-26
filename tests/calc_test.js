@@ -1,4 +1,4 @@
-// 법ON 계산 도구 검사: 월급↔시급 환산·연차 발생일수
+// 법ON 계산 도구 검사: 월급↔시급 환산·최저임금 판정·주휴·가산 단가·지급액 대조·연차 발생일수
 // 기대값은 코드가 아니라 법령 산식으로 손계산(분수 계산으로 교차 확인)한 값
 //  - 월급 ↔ 시급: 월 기준시간(주 40시간 209시간, 고용노동부 고시 월 환산 기준)으로 나누고 곱함
 //  - 근로기준법 제60조①②④, 민법 제157조·제160조(기간 계산), 대법원 2021. 10. 14. 선고 2021다227100(1년 근로 다음 날 재직)
@@ -7,7 +7,7 @@ const fs=require('fs'),vm=require('vm');
 const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const a=html.indexOf('/*CALC_START*/'), b=html.indexOf('/*CALC_END*/');
 if(a<0||b<0){console.log('FAIL  CALC 표시를 찾지 못함');process.exit(1);}
-const C=vm.runInNewContext(html.slice(a,b)+'\n;({wgConv,wgHours,alCalc,MWT})',{});
+const C=vm.runInNewContext(html.slice(a,b)+'\n;({wgConv,wgHours,alCalc,MWT,hrNum,amtNum,wkCalc,mHrs,judgeM,unitTable,wgDue})',{});
 let fail=0,cnt=0;
 const chk=(name,got,exp)=>{cnt++; const ok=JSON.stringify(got)===JSON.stringify(exp); if(!ok)fail++; if(!ok||process.env.VERBOSE)console.log((ok?'PASS':'FAIL')+'  '+name+'  기대 '+JSON.stringify(exp)+' / 실제 '+JSON.stringify(got));};
 
@@ -73,6 +73,58 @@ r=L('2024-02-29','2024-03-01'); chk('윤일 입사 → 1년 되는 날 2025-02-2
 r=L('2020-12-31','2026-09-26'); chk('2020.12.31 입사 → 근속 5년, 17일(2025.12.31~2026.12.30)',[r.k,r.cur],[5,{days:17,from:'2025-12-31',to:'2026-12-30'}]);
 chk('기준일이 입사일보다 앞 → 오류',!!L('2025-05-01','2025-04-30').err,true);
 chk('없는 날짜 → 오류',!!L('2025-02-30','2025-04-30').err,true);
+
+// ── 최저임금·임금 단가 도구(2026. 9. 26. 개편) ──
+// 입력 해석: 쉼표 소수·'만' 단위는 오류(엉뚱한 숫자로 읽히는 사고 방지)
+chk('시간 7.5',C.hrNum('7.5'),7.5); chk('시간 7:30 → 7.5',C.hrNum('7:30'),7.5); chk('시간 6:40 → 6.6667',Math.round(C.hrNum('6:40')*1e4)/1e4,6.6667);
+chk('시간 7,5 → 오류',C.hrNum('7,5'),null); chk('시간 1,60 → 오류(1.6으로 읽지 않음)',C.hrNum('1,60'),null); chk('시간 7시간 → 오류',C.hrNum('7시간'),null); chk('시간 7:75 → 오류',C.hrNum('7:75'),null); chk('시간 빈칸',C.hrNum(' '),undefined);
+chk('금액 2,156,880',C.amtNum('2,156,880'),2156880); chk('금액 2156880원',C.amtNum('2156880원'),2156880); chk('금액 220만 → 오류',C.amtNum('220만'),null); chk('금액 2,15,6880 → 오류',C.amtNum('2,15,6880'),null); chk('금액 소수 → 오류',C.amtNum('2156880.5'),null);
+const W=o=>C.wkCalc(o), D7=a=>a.concat([null,null,null,null,null,null,null]).slice(0,7), r2=x=>Math.round(x*100)/100;
+// 근로형태 → 소정·주휴
+let w=W({mode:'w',wh:40}); chk('1주 40 → 소정 40, 주휴 8',[w.so,w.lo,w.hi],[40,8,8]);
+chk('1주 14 → 주휴 없음',W({mode:'w',wh:14}).hi,0); chk('1주 15 → 주휴 3',W({mode:'w',wh:15}).hi,3); chk('1주 20 → 주휴 4',W({mode:'w',wh:20}).hi,4);
+w=W({mode:'w',wh:45,five:true}); chk('5명 이상 45 → 소정 40, 연장 5, 주휴 8',[w.so,w.ext,w.hi],[40,5,8]);
+w=W({mode:'w',wh:45,five:false}); chk('5명 미만 45 → 소정 45(제50조 미적용), 주휴 8 한도',[w.so,w.ext,w.hi],[45,0,8]);
+w=W({mode:'d',days:D7([8,8,8,8,8])}); chk('요일 월~금 8 → 주휴 8 하나',[w.so,w.lo,w.hi,w.c.length],[40,8,8,1]);
+w=W({mode:'d',days:D7([7,7,7,7,7,5])}); chk('평일 7·토 5 → 정상근로일 7 ~ 40시간 비례 8',[w.so,w.lo,w.hi],[40,7,8]);
+w=W({mode:'d',days:D7([7,7,7,7,7,7])}); chk('5명 이상 월~토 7(42) → 소정 40, 연장 2, 주휴 6.67~7',[w.so,w.ext,r2(w.lo),w.hi],[40,2,6.67,7]);
+w=W({mode:'d',days:D7([7,7,7,7,7,7]),five:false}); chk('5명 미만 월~토 7 → 소정 42, 주휴 7',[w.so,w.ext,w.lo,w.hi],[42,0,7,7]);
+w=W({mode:'d',days:[6,null,6,null,6,null,null]}); chk('단시간 월수금 6 → 주휴 3.6(고용노동부 상담 예)',[w.so,w.lo,w.hi],[18,3.6,3.6]);
+w=W({mode:'d',days:[8,null,8,null,4,null,null]}); chk('단시간 8·8·4 → 주휴 4(정상근로일 후보 없음)',[w.so,w.lo,w.hi],[20,4,4]);
+w=W({mode:'d',days:D7([10,10,10,10])}); chk('5명 이상 1일 10×4 → 소정 32, 연장 8, 주휴 6.4',[w.so,w.ext,w.lo,w.hi],[32,8,6.4,6.4]);
+chk('요일 없음 → 오류',W({mode:'d',days:D7([])}).err,'nodays'); chk('요일 0시간 → 오류',W({mode:'d',days:D7([8,0])}).err,'day'); chk('1주 169 → 오류',W({mode:'w',wh:169}).err,'whbig');
+// 월 기준시간
+chk('40+8 → 208.57 → 209',[r2(C.mHrs(40,8).raw),C.mHrs(40,8).r],[208.57,209]); chk('20+4 → 104',C.mHrs(20,4).r,104);
+// 월급제 판정(네 값: 주휴 최소·최대 × 반올림·반올림 전)
+const J=(o,amt,mw)=>C.judgeM(W(o),amt,mw).vd;
+chk('2,156,880(고시 월 환산) → 이상',J({mode:'w',wh:40},2156880,10320),'ok');
+chk('2,156,879 → 209시간이면 미만, 208.57시간이면 이상 → 반올림 갈림',J({mode:'w',wh:40},2156879,10320),'sr');
+chk('2,153,000 → 반올림 갈림',J({mode:'w',wh:40},2153000,10320),'sr');
+chk('2,100,000 → 미만',J({mode:'w',wh:40},2100000,10320),'ng');
+chk('주 20 1,073,280(10,320×104) → 반올림 갈림',J({mode:'w',wh:20},1073280,10320),'sr');
+chk('평일 7·토 5, 2,120,000 → 주휴 산정 방식 갈림(204시간 10,392 / 209시간 10,143)',J({mode:'d',days:D7([7,7,7,7,7,5])},2120000,10320),'sh');
+chk('평일 7·토 5, 2,200,000 → 이상',J({mode:'d',days:D7([7,7,7,7,7,5])},2200000,10320),'ok');
+let j=C.judgeM(W({mode:'d',days:D7([7,7,7,7,7,5])}),2120000,10320); chk('갈림 시간급 10,143 ~ 10,392',[j.v.Hr,j.v.Lr],[10143,10392]);
+// 단가(원 미만 올림)
+let t=C.unitTable(W({mode:'w',wh:40}),11000,true); chk('11,000 → 주휴 88,000 / 16,500 / 22,000 / 5,500',[t.holLo,t.ot,t.hol8,t.night],[88000,16500,22000,5500]);
+t=C.unitTable(W({mode:'w',wh:40}),10350,true); chk('10,350 → 82,800 / 15,525 / 20,700 / 5,175',[t.holLo,t.ot,t.hol8,t.night],[82800,15525,20700,5175]);
+t=C.unitTable(W({mode:'w',wh:40}),10321,true); chk('10,321 → 15,481.5→15,482 / 5,160.5→5,161',[t.ot,t.night],[15482,5161]);
+chk('5명 미만 → 가산 없음',C.unitTable(W({mode:'w',wh:40}),11000,false).ot,null);
+// 시급제 지급액 대조
+const G=(o,x)=>C.wgDue(W(o),x);
+let g=G({mode:'w',wh:40},{rate:11000,mw:10320,hrs:160,nh:4,paid:1760000});
+chk('시급 11,000·160시간·주휴 4회·지급 1,760,000 → 지급해야 2,112,000, 미지급 352,000, 주휴 누락 감지',[g.work,g.holLo,g.dueLo,g.shLo,g.workOnly],[1760000,352000,2112000,352000,true]);
+g=G({mode:'w',wh:40},{rate:10350,mw:10320,hrs:160,nh:4,paid:1800000}); chk('10,350·160·4회·1,800,000 → 1,987,200, 미지급 187,200',[g.dueLo,g.shLo,g.workOnly],[1987200,187200,false]);
+g=G({mode:'w',wh:40},{rate:10350,mw:10320,hrs:160,nh:4,pd:1,ph:8,paid:1800000}); chk('공휴일 1일 8시간 추가 → 82,800 더해 2,070,000, 미지급 270,000',[g.pub,g.dueLo,g.shLo],[82800,2070000,270000]);
+g=G({mode:'w',wh:40},{rate:10350,mw:10320,hrs:160,nh:4,pd:2,ph:7,paid:1800000}); chk('공휴일 2일 7시간 → 144,900',g.pub,144900);
+g=G({mode:'w',wh:40},{rate:10000,mw:10320,hrs:160,nh:4,pd:2,ph:7,paid:1600000});
+chk('시급 10,000(미달)·공휴일 2일 7시간 → 최저임금 기준 2,125,920, 약정 기준 2,060,000',[g.base,g.dueLo,g.agLo,g.shLo],[10320,2125920,2060000,525920]);
+chk('  └ 약정 기준 미지급 460,000 + 최저임금 미달분 65,920',[g.agLo-1600000,g.dueLo-g.agLo],[460000,65920]);
+g=G({mode:'w',wh:40},{rate:11000,mw:10320,hrs:160,nh:5,paid:2200000}); chk('주휴 5회 완납 → 미지급 0',g.shLo,0);
+g=G({mode:'w',wh:20},{rate:11000,mw:10320,hrs:80,nh:4,paid:880000}); chk('단시간 주 20 → 주휴 1회 44,000 × 4',[g.T.holLo,g.holLo],[44000,176000]);
+g=G({mode:'w',wh:14},{rate:11000,mw:10320,hrs:56,nh:4,paid:616000}); chk('주 14 → 주휴 없음, 미지급 0',[g.holHi,g.shHi],[0,0]);
+g=G({mode:'d',days:D7([7,7,7,7,7,5])},{rate:11000,mw:10320,hrs:168,nh:4,paid:1848000}); chk('평일 7·토 5 → 주휴 1회 77,000~88,000, 4회 308,000~352,000',[g.T.holLo,g.T.holHi,g.holLo,g.holHi],[77000,88000,308000,352000]);
+g=G({mode:'d',days:D7([7,7,7,7,7,7])},{rate:11000,mw:10320,hrs:168,nh:4,paid:0}); chk('주휴 6.67시간 1회분 올림 73,334 × 4 = 293,336(1회분과 합계가 맞음)',[g.T.holLo,g.holLo],[73334,293336]);
 
 console.log((fail?'실패 '+fail+'건':'모두 통과')+' ('+cnt+'건)');
 process.exit(fail?1:0);
