@@ -8,7 +8,7 @@ socketserver.TCPServer.allow_reuse_address=True
 srv=socketserver.TCPServer(('127.0.0.1',0),functools.partial(Q,directory=os.getcwd())); PORT=srv.server_address[1]
 threading.Thread(target=srv.serve_forever,daemon=True).start()
 F,S0,NS,STEPS=sys.argv[1],int(sys.argv[2]),int(sys.argv[3]),int(sys.argv[4])
-CLICK="""(r)=>{ const sheet=['csheet','isheet','sheet'].map(id=>document.getElementById(id)).find(x=>!x.hidden);
+CLICK="""(r)=>{ const sheet=['csheet','wsheet','asheet','isheet','sheet'].map(id=>document.getElementById(id)).find(x=>!x.hidden);
   const root=sheet||document; const els=[...root.querySelectorAll('button,[data-art],[data-item]')].filter(el=>{ if(el.closest('[hidden]'))return false;
     if(el.matches('[data-install],[data-insthide],#updgo,a[target]'))return false; const b=el.getBoundingClientRect(); return b.width>0&&b.height>0; });
   if(!els.length)return ''; const el=els[Math.floor(r*els.length)]; const d=(el.id?'#'+el.id+' ':'')+[...el.attributes].filter(a=>a.name.startsWith('data-')).map(a=>a.name+'='+a.value).join(' ')+' '+(el.textContent||'').trim().slice(0,14);
