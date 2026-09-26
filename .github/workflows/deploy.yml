@@ -29,6 +29,10 @@ jobs:
         run: node tests/field_priority.js index.html
       - name: 시행령·시행규칙 수록 (조문 수·모법 연결)
         run: node tests/sublaw_check.js index.html
+      - name: 여러 단어 동시 검색 (쉼표·띄어쓰기 AND)
+        run: node tests/and_search_test.js index.html
+      - name: 법령 이름·조문 번호 검색, 별표 연결
+        run: node tests/search_lawname_test.js index.html
       - name: 캐시 삭제 범위 (오늘의안전 저장본 보존)
         run: node tests/check_sw_scope.js service-worker.js
   deploy:
