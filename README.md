@@ -71,6 +71,8 @@
 | `tests/search_regression.js` | 현장 검색어가 기대한 조문을 찾는지 |
 | `tests/field_priority.js` | 선택한 분야 법령이 먼저 나오고, 다른 분야 결과도 빠지지 않는지 |
 | `tests/sublaw_check.js` | 시행령·시행규칙 조문 수가 원문과 같은지, 법 조문 연결이 실제 조문을 가리키는지 |
+| `tests/and_search_test.js` | 여러 단어를 쉼표·띄어쓰기로 넣으면 모두 포함한 조문만 나오는지 |
+| `tests/search_lawname_test.js` | 법령 이름·조문 번호 검색(`산안법 125조` 등)과 별표 연결이 맞는지 |
 | `tests/check_sw_scope.js` | 앱 업데이트 시 같은 주소의 다른 앱 저장본을 지우지 않는지 |
 
 **법령 개정 주간 점검** — 매주 월요일 공공데이터포털 '법제처 국가법령정보 공유서비스'로 수록 법령의 공포번호를 조회해 앱 반영본과 비교하고, 달라지면 이 저장소에 이슈로 알립니다(`.github/workflows/law-check.yml`, `tools/check_laws.py`). 점검은 발견만 하고, 앱 데이터 반영은 원문을 확인한 뒤 사람이 합니다.
@@ -97,7 +99,7 @@ index.html            앱 화면·검색·판정 로직과 법령 데이터
 manifest.json         홈 화면 앱 설정
 service-worker.js     오프라인 사용·자동 업데이트
 icon-192.png, icon-512.png, icon-maskable-512.png   홈 화면 아이콘
-tests/                배포 전 자동 검사
+tests/                배포 전 자동 검사(.js) · 화면 검사(.py, 수동 실행)
 tools/                법령 개정 점검(check_laws.py, law_versions.json), 법령집 표기(law_meta.json, inject_meta.py)
 .github/workflows/    배포(deploy.yml)·개정 점검(law-check.yml)
 ```
