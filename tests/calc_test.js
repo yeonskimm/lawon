@@ -7,7 +7,7 @@ const fs=require('fs'),vm=require('vm');
 const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const a=html.indexOf('/*CALC_START*/'), b=html.indexOf('/*CALC_END*/');
 if(a<0||b<0){console.log('FAIL  CALC 표시를 찾지 못함');process.exit(1);}
-const C=vm.runInNewContext(html.slice(a,b)+'\n;({wgConv,alCalc,MWT})',{});
+const C=vm.runInNewContext(html.slice(a,b)+'\n;({wgConv,wgHours,alCalc,MWT})',{});
 let fail=0,cnt=0;
 const chk=(name,got,exp)=>{cnt++; const ok=JSON.stringify(got)===JSON.stringify(exp); if(!ok)fail++; if(!ok||process.env.VERBOSE)console.log((ok?'PASS':'FAIL')+'  '+name+'  기대 '+JSON.stringify(exp)+' / 실제 '+JSON.stringify(got));};
 
@@ -24,9 +24,24 @@ chk('9,620 × 209 = 2,010,580(2023 고시)',V('h2m',9620,209).out,2010580);
 chk('2,156,879 ÷ 209 → 10,319(원 미만 버림)',V('m2h',2156879,209).out,10319);
 chk('2,156,000 ÷ 209 → 10,315',V('m2h',2156000,209).out,10315);
 chk('2,100,000 ÷ 209 → 10,047',V('m2h',2100000,209).out,10047);
-chk('10,320 × 104.29 = 1,076,272.8 → 1,076,273(올림)',V('h2m',10320,104.29).out,1076273);
-chk('1,076,273 ÷ 104.29 → 10,320',V('m2h',1076273,104.29).out,10320);
-chk('딱 떨어지는 값은 올림하지 않음: 10,030 × 209 = 2,096,270',V('h2m',10030,209).out,2096270);
+const H=(wh,hh)=>C.wgHours(wh,hh==null?null:hh);
+// ── 1주 소정근로시간 → 주휴 → 월 기준시간(반올림) ──
+chk('주 40h → 주휴 8, 208.57 → 209',[H(40).hh,H(40).hrs],[8,209]);
+chk('주 20h → 주휴 4, 104.29 → 104',[H(20).hh,H(20).hrs],[4,104]);
+chk('주 30h → 주휴 6, 156.43 → 156',[H(30).hh,H(30).hrs],[6,156]);
+chk('주 35h → 주휴 7, 182.5 → 183(반올림)',[H(35).hh,H(35).hrs],[7,183]);
+chk('주 15h → 주휴 3, 78.21 → 78',[H(15).hh,H(15).hrs],[3,78]);
+chk('주 14h → 주휴 없음, 60.83 → 61',[H(14).hh,H(14).hrs],[0,61]);
+chk('주 44h → 주휴 최대 8, 225.95 → 226',[H(44).hh,H(44).hrs],[8,226]);
+chk('주휴 직접 0 → 173.81 → 174',[H(40,0).hh,H(40,0).hrs],[0,174]);
+chk('주 소정 없음 → 오류',!!H(0).err,true);
+chk('20h 104시간: 10,320 × 104 = 1,073,280',V('h2m',10320,104).out,1073280);
+chk('1,073,280 ÷ 104 = 10,320',V('m2h',1073280,104).out,10320);
+chk('소수 기준시간 곱은 원 미만 올림: 10,320 × 104.29 = 1,076,272.8 → 1,076,273',V('h2m',10320,104.29).out,1076273);
+// 반올림 전 시간(시행령 산식)으로 나눈 값 — 반올림 방향에 따라 최저임금을 사이에 두고 갈리는 예
+chk('주 20h 1,075,000 ÷ 104 = 10,336 / ÷ 104.2857 = 10,308',[V('m2h',1075000,H(20).hrs).out,V('m2h',1075000,H(20).raw).out],[10336,10308]);
+chk('주 40h 2,156,000 ÷ 209 = 10,315 / ÷ 208.5714 = 10,336.98 → 10,336(버림)',[V('m2h',2156000,H(40).hrs).out,V('m2h',2156000,H(40).raw).out],[10315,10336]);
+chk('주 40h 10,320 × 208.5714 = 2,152,457.1 → 2,152,458',V('h2m',10320,H(40).raw).out,2152458);
 chk('기준시간 없음 → 오류',!!V('m2h',2000000,0).err,true);
 chk('금액 없음 → 오류',!!V('h2m',0,209).err,true);
 
