@@ -753,7 +753,8 @@ button.brand:active{opacity:.7}
     <div class="seg" id="wdir"><button type="button" data-wd="m2h">월급 → 시급</button><button type="button" data-wd="h2m">시급 → 월급</button></div>
     <div class="cfl">
       <div class="lrow"><label for="wamt"><span id="wamtL">월급</span><small id="wamtS">연장·휴일·가산수당 등은 빼고</small></label><span class="lin lm"><input id="wamt" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 2,200,000"><em>원</em></span></div>
-      <div class="lrow"><label for="whrs">월 기준시간<small>주 40시간이면 209</small></label><span class="lin lh"><input id="whrs" type="text" inputmode="decimal" autocomplete="off" value="209"><em>시간</em></span></div>
+      <div class="lrow"><label for="wwh">1주 소정근로시간<small>연장근로 빼고</small></label><span class="lin lh"><input id="wwh" type="text" inputmode="decimal" autocomplete="off" value="40"><em>시간</em></span></div>
+      <div class="lrow"><label for="whh">주휴시간<small>비우면 자동 계산</small></label><span class="lin lh"><input id="whh" type="text" inputmode="decimal" autocomplete="off" placeholder="자동"><em>시간</em></span></div>
     </div>
     <div class="cres" id="wres" aria-live="polite"></div>
     <div class="frow"><button type="button" class="clr" id="wclr" hidden>지우기</button></div>
@@ -766,9 +767,9 @@ button.brand:active{opacity:.7}
       <p>넣을 것: 기본급, 소정근로시간 안의 야간근로 기본 임금(1배분), 매월 1회 이상 정기적으로 주는 상여금·현금 복리후생비(2024년부터 전액, 2023년은 월 환산액의 5%·1% 초과분만 — 아래 부칙)</p>
       <p>가산수당을 제대로 줬는지는 최저임금과 별개로 근로기준법 제56조로 확인. 포괄임금으로 내역이 나뉘지 않은 월급은 근로계약서·임금명세서로 내역부터 확인</p>
     </details>
-    <details class="about"><summary>월 기준시간</summary>
-      <p>주 40시간: 209시간(주휴 8시간 포함, 고용노동부 고시의 월 환산 기준)</p>
-      <p>다른 경우: (1주 소정근로시간 + 주휴시간) × 365 ÷ 7 ÷ 12(최임법 시행령 제5조①제3호). 주휴시간은 1주 소정근로시간 15시간 이상이면 소정근로시간 ÷ 40 × 8(최대 8), 15시간 미만은 없음(근로기준법 제18조③). 예: 주 20시간 → (20 + 4) × 365 ÷ 7 ÷ 12 = 104.29시간</p>
+    <details class="about"><summary>주휴시간과 월 기준시간</summary>
+      <p>주휴시간: 1주 소정근로시간 15시간 이상이면 소정근로시간 ÷ 40 × 8(최대 8시간), 15시간 미만이면 없음(근로기준법 제18조③·제55조, 임금근로시간과-646, 2021. 3. 22.). 주 6일 근무 등으로 1일 소정근로시간이 다르면 직접 입력</p>
+      <p>월 기준시간: (1주 소정근로시간 + 주휴시간) × 365 ÷ 7 ÷ 12(최임법 시행령 제5조①제3호)를 정수로 반올림. 주 40시간 → 208.57 → 209시간(고용노동부 고시 월 환산 기준), 주 20시간 → 104.29 → 104시간. 시행령에는 반올림 규정이 없어 반올림 전 시간으로 계산한 값도 함께 표시 — 두 값이 최저임금을 사이에 두고 갈리면 판정 근거를 따로 확인</p>
       <p>주휴는 1주 소정근로일 개근이 전제 — 개근 여부는 따로 확인</p>
     </details>
     <details class="about lawk" id="wnote"><summary>산입 범위 연도별 특례(부칙)</summary><div class="lawbox"></div></details>
@@ -1149,6 +1150,14 @@ function bsearch(D,q,fld){
 // 최저임금 연도표(시간급). 매년 8. 5. 고시 후 한 줄 추가. 2026년 고용노동부 고시 제2025-47호, 2027년 제2026-60호
 var MWT=[{y:2023,v:9620},{y:2024,v:9860},{y:2025,v:10030},{y:2026,v:10320},{y:2027,v:10700}];
 function mwOf(y){ for(var i=0;i<MWT.length;i++)if(MWT[i].y===y)return MWT[i].v; return null; }
+// 월 기준시간: 1주 소정근로시간 → 주휴(15시간 이상이면 소정÷40×8, 최대 8. 임금근로시간과-646, 2021. 3. 22.)
+// → (1주 소정 + 주휴) × 365 ÷ 7 ÷ 12(최임법 시행령 제5조①제3호) → 정수로 반올림(주 40시간 = 209시간, 고시 월 환산 기준)
+function mwAutoHol(wh){ return wh>=15?Math.min(wh/40*8,8):0; }
+function wgHours(wh,hh){
+  if(!(wh>0))return {err:'1주 소정근로시간을 넣어 주세요'}; if(wh>168)return {err:'1주 소정근로시간이 너무 큽니다'};
+  var auto=mwAutoHol(wh), h=(hh==null)?auto:hh; if(!(h>=0)||h>24)return {err:'주휴시간은 0~24시간'};
+  var raw=(wh+h)*365/7/12; return {wh:wh,hh:h,auto:auto,raw:raw,hrs:Math.round(raw+1e-9)};
+}
 // 월급 ↔ 시급 단순 환산. o: {dir 'm2h' 월급→시급 | 'h2m' 시급→월급, amt 금액, hrs 월 기준시간}
 // 판정은 하지 않음(최저임금과 비교는 사람이). 월급→시급은 원 미만 버림, 시급→월급은 원 미만 올림
 function wgConv(o){
@@ -2214,6 +2223,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   // ── 월급↔시급 환산·연차 발생일수(산식은 CALC 블록). 법령 조회·사업장 조건과 연동하지 않고, 입력값도 저장하지 않음 ──
   var wg={d:'m2h'};
   function won(x){ return Math.round(x).toLocaleString('ko-KR'); }
+  function fh(x){ var t=Math.round(x*100)/100; return String(t); }   // 시간 표시: 소수 둘째 자리 반올림(표시만, 계산은 원래 값)
   function lawBox(dt){ if(dt.getAttribute('data-done'))return; var h='';
     if(dt.id==='wnote')h='<p class="lbh">2024년부터 정기 상여금·현금 복리후생비 전액 산입</p><div class="law fm">'+fmtLaw(MW6NOTE)+'</div>';
     else dt.getAttribute('data-lawk').split(',').forEach(function(k){ var e=D.byKey[k]; if(!e)return;
@@ -2226,19 +2236,27 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   function wgPaint(){ var m=wg.d==='m2h';
     each('[data-wd]',function(x){ x.setAttribute('aria-pressed',String(x.getAttribute('data-wd')===wg.d)); });
     $('wamtL').textContent=m?'월급':'시급'; $('wamtS').hidden=!m; $('wamt').placeholder=m?'예: 2,200,000':'예: 10,320'; wgRun(); }
-  function wgRun(){ var m=wg.d==='m2h', amt=num($('wamt').value), hrs=num($('whrs').value), el=$('wres');
-    $('wclr').hidden=!($('wamt').value||$('whrs').value!=='209');
-    if(amt==null){ el.innerHTML='<p class="c0">'+(m?'월급을 넣으면 시급으로':'시급을 넣으면 월급으로')+' 바꿔 줍니다.</p>'; return; }
-    var r=wgConv({dir:wg.d,amt:amt,hrs:hrs}); if(r.err){ el.innerHTML='<p class="ce">'+esc(r.err)+'</p>'; return; }
+  function wgRun(){ var m=wg.d==='m2h', amt=num($('wamt').value), wh=num($('wwh').value), hv=$('whh').value.trim(), hh=hv===''?null:num(hv), el=$('wres');
+    $('wclr').hidden=!($('wamt').value||hv||$('wwh').value!=='40');
+    $('whh').placeholder=(wh!=null&&wh>0)?'자동 '+fmtN(mwAutoHol(wh)):'자동';
+    if(hv!==''&&hh==null){ el.innerHTML='<p class="ce">주휴시간을 숫자로 넣어 주세요.</p>'; return; }
+    var H=wgHours(wh,hh); if(H.err){ el.innerHTML='<p class="c0">'+esc(H.err)+'</p>'; return; }
+    var hl='<p class="cf">월 기준시간 ('+fmtN(H.wh)+' + 주휴 '+fmtN(H.hh)+') × 365 ÷ 7 ÷ 12 = '+fh(H.raw)+' → <b>'+H.hrs+'시간</b>(반올림)</p>';
+    if(amt==null){ el.innerHTML=hl+'<p class="c0">'+(m?'월급을 넣으면 시급으로':'시급을 넣으면 월급으로')+' 바꿔 줍니다.</p>'; return; }
+    var r=wgConv({dir:wg.d,amt:amt,hrs:H.hrs}); if(r.err){ el.innerHTML='<p class="ce">'+esc(r.err)+'</p>'; return; }
     var ty=+today.slice(0,4), ref=MWT.filter(function(x){ return x.y===ty||x.y===ty+1; }), h;
-    if(m){ h='<p class="cn"><b>'+won(r.out)+'</b>원<span class="cnu">시급</span></p><p class="cf">'+won(amt)+'원 ÷ '+fmtN(hrs)+'시간 = '+won(r.out)+'원(원 미만 버림)</p>';
+    if(m){ h='<p class="cn"><b>'+won(r.out)+'</b>원<span class="cnu">시급</span></p>'+hl+'<p class="cf">'+won(amt)+'원 ÷ '+H.hrs+'시간 = '+won(r.out)+'원(원 미만 버림)</p>';
+      if(Math.abs(H.raw-H.hrs)>1e-9)h+='<p class="cf">소수 기준('+fh(H.raw)+'시간)으로 나누면 '+won(wgConv({dir:'m2h',amt:amt,hrs:H.raw}).out)+'원</p>';   // 반올림 전 시간(시행령 산식)으로도 보여 줌 — 최저임금을 사이에 두고 갈리면 알아챌 수 있게
       h+=ref.map(function(x){ return '<p class="cw">'+x.y+'년 최저임금 '+won(x.v)+'원</p>'; }).join(''); }
-    else { h='<p class="cn"><b>'+won(r.out)+'</b>원<span class="cnu">월급</span></p><p class="cf">'+won(amt)+'원 × '+fmtN(hrs)+'시간 = '+won(r.out)+'원'+(Math.abs(r.v-r.out)>1e-6?'(원 미만 올림)':'')+'</p>';
-      h+=ref.map(function(x){ return '<p class="cw">'+x.y+'년 최저임금 '+won(x.v)+'원 × '+fmtN(hrs)+'시간 = '+won(Math.ceil(x.v*hrs-1e-6))+'원</p>'; }).join(''); }
+    else { h='<p class="cn"><b>'+won(r.out)+'</b>원<span class="cnu">월급</span></p>'+hl+'<p class="cf">'+won(amt)+'원 × '+H.hrs+'시간 = '+won(r.out)+'원</p>';
+      if(Math.abs(H.raw-H.hrs)>1e-9)h+='<p class="cf">소수 기준('+fh(H.raw)+'시간)으로 곱하면 '+won(wgConv({dir:'h2m',amt:amt,hrs:H.raw}).out)+'원(원 미만 올림)</p>';
+      h+=ref.map(function(x){ return '<p class="cw">'+x.y+'년 최저임금 '+won(x.v)+'원 × '+H.hrs+'시간 = '+won(x.v*H.hrs)+'원</p>'; }).join(''); }
+    if(hh==null&&H.wh<15)h+='<p class="cs">1주 소정근로시간 15시간 미만이라 주휴 없음(근로기준법 제18조③)</p>';
+    if(H.wh>40)h+='<p class="cs">5명 이상 사업장은 1주 소정근로시간 40시간 한도(근로기준법 제50조). 넘는 시간은 연장근로라 그 임금을 빼고 40시간으로 계산</p>';
     h+='<p class="cs">비교는 연도별 최저임금과 직접. 다른 연도는 아래 표</p>';
     el.innerHTML=h; }
-  function wgClear(){ $('wamt').value=''; $('whrs').value='209'; wgRun(); }
-  ['wamt','whrs'].forEach(function(id){ $(id).addEventListener('input',wgRun); });
+  function wgClear(){ $('wamt').value=''; $('wwh').value='40'; $('whh').value=''; wgRun(); }
+  ['wamt','wwh','whh'].forEach(function(id){ $(id).addEventListener('input',wgRun); });
   $('wamt').addEventListener('blur',function(){ var v=num(this.value); if(v!=null&&v===Math.floor(v))this.value=won(v); });   // 금액은 칸을 벗어나면 천 단위 쉼표
   $('wclr').addEventListener('click',wgClear);
 
