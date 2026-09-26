@@ -35,6 +35,8 @@ jobs:
         run: node tests/search_lawname_test.js index.html
       - name: 계산 도구 (최저임금 환산·연차 발생일수)
         run: node tests/calc_test.js index.html
+      - name: 개정 시행 자동 전환 (시행일 전후)·위험성평가 과태료
+        run: node tests/due_test.js index.html
       - name: 캐시 삭제 범위 (오늘의안전 저장본 보존)
         run: node tests/check_sw_scope.js service-worker.js
   deploy:
