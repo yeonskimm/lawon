@@ -1,0 +1,59 @@
+# 법ON: 테스트 통과해야 배포 (하나라도 실패하면 배포 중단, 기존 화면 유지)
+name: 테스트 후 배포
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 경계값 판정 (4→5명, 49→50명 등)
+        run: node tests/judge_boundary.js index.html
+      - name: 안전·보건관리자 인원 판정
+        run: node tests/judge_headcount.js index.html
+      - name: 현장 검색어 회귀
+        run: node tests/search_regression.js index.html
+      - name: 분야 우선 검색 (선택 분야 먼저, 다른 분야 누락 없음)
+        run: node tests/field_priority.js index.html
+      - name: 시행령·시행규칙 수록 (조문 수·모법 연결)
+        run: node tests/sublaw_check.js index.html
+      - name: 여러 단어 동시 검색 (쉼표·띄어쓰기 AND)
+        run: node tests/and_search_test.js index.html
+      - name: 법령 이름·조문 번호 검색, 별표 연결
+        run: node tests/search_lawname_test.js index.html
+      - name: 계산 도구 (최저임금 환산·연차 발생일수)
+        run: node tests/calc_test.js index.html
+      - name: 캐시 삭제 범위 (오늘의안전 저장본 보존)
+        run: node tests/check_sw_scope.js service-worker.js
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 배포 파일만 모으기 (tests·tools·.github 제외)
+        run: |
+          mkdir _site
+          rsync -a --exclude '.git' --exclude '.github' --exclude 'tests' --exclude 'tools' --exclude '_site' ./ _site/
+      - name: 법령집 표기 넣기 (법제처 현행 공포번호·시행일, 실패해도 배포 계속)
+        run: python3 tools/inject_meta.py _site/index.html tools/law_meta.json
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
