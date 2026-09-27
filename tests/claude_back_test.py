@@ -35,6 +35,7 @@ with sync_playwright() as pw:
         p=fresh(); p.click('[data-field="labor"]'); p.wait_for_timeout(400); p.fill('#q','휴게'); p.wait_for_timeout(700)
         p.locator('[data-art]').first.click(); p.wait_for_timeout(400)
         back(p); ok(name+' 조문→뒤로=법령 검색', where(p)=='vFind', where(p))
+        back(p); ok(name+' 검색 결과→뒤로=검색 첫 화면', where(p)=='vFind' and p.evaluate("document.getElementById('q').value")=='', where(p))
         back(p); ok(name+' 법령 검색→뒤로=분야 선택', where(p)=='vStart', where(p))
         back(p)
         if A:
@@ -86,6 +87,34 @@ with sync_playwright() as pw:
         p=fresh(); [p.click('#vStart .hero') for _ in range(5)]; p.wait_for_timeout(300)
         ok(name+' 관리자 창 열림', 'adm' in where(p), where(p)); back(p); ok(name+' 관리자 창→뒤로=닫힘', where(p)=='vStart', where(p))
         ok(name+' 관리자 닫은 뒤 화면 스크롤 복구', p.evaluate("document.body.style.overflow")=='' ); p.close()
+        # 11 검색 결과 = 한 화면: 뒤로 → 검색 첫 화면(최근 검색에 남음) → 분야 선택
+        if A:
+            rec="()=>[...document.querySelectorAll('#vFind button')].map(b=>b.textContent.trim()).includes('msds')"
+            qv="()=>document.getElementById('q').value"
+            p=fresh(); p.click('[data-field="osh"]'); p.wait_for_timeout(300); p.click('#q'); p.keyboard.type('msds'); p.wait_for_timeout(600)
+            back(p); ok(name+' 검색 결과→뒤로=검색 첫 화면', where(p)=='vFind' and p.evaluate(qv)=='', (where(p),p.evaluate(qv)))
+            ok(name+' 뒤로 뒤 최근 검색에 남음', p.evaluate(rec))
+            back(p); ok(name+' 이어서 뒤로=분야 선택', where(p)=='vStart', where(p)); p.close()
+            p=fresh(); p.click('[data-field="osh"]'); p.wait_for_timeout(300); p.click('#q'); p.keyboard.type('msds'); p.wait_for_timeout(600)
+            p.locator('[data-art]').first.click(); p.wait_for_timeout(400); back(p)
+            ok(name+' 조문→뒤로=검색 결과 유지', where(p)=='vFind' and p.evaluate(qv)=='msds', (where(p),p.evaluate(qv)))
+            back(p); ok(name+' 결과→뒤로=검색 첫 화면', where(p)=='vFind' and p.evaluate(qv)=='', (where(p),p.evaluate(qv)))
+            back(p); ok(name+' 이어서=분야 선택', where(p)=='vStart', where(p)); p.close()
+            # × 로 지운 뒤 다시 검색 → 뒤로 한 번에 검색 첫 화면(헛눌림 없음)
+            p=fresh(); p.click('[data-field="osh"]'); p.wait_for_timeout(300); p.click('#q'); p.keyboard.type('msds'); p.wait_for_timeout(500)
+            p.click('#qx'); p.wait_for_timeout(300); p.keyboard.type('비계'); p.wait_for_timeout(500)
+            back(p); ok(name+' 지우고 다시 검색→뒤로=검색 첫 화면', where(p)=='vFind' and p.evaluate(qv)=='', (where(p),p.evaluate(qv)))
+            back(p); ok(name+' 이어서=분야 선택(헛눌림 없음)', where(p)=='vStart', where(p)); p.close()
+            # 검색 중 법령집 탭 갔다가 돌아와서 뒤로
+            p=fresh(); p.click('[data-field="osh"]'); p.wait_for_timeout(300); p.click('#q'); p.keyboard.type('msds'); p.wait_for_timeout(500)
+            p.click('#tabbar [data-nav="book"]'); p.wait_for_timeout(400); back(p); ok(name+' 검색 중 법령집 탭→뒤로=분야 선택', where(p)=='vStart', where(p)); p.close()
+            p=fresh(); p.click('[data-field="osh"]'); p.wait_for_timeout(300); p.click('#q'); p.keyboard.type('msds'); p.wait_for_timeout(500)
+            p.click('#tabbar [data-nav="book"]'); p.wait_for_timeout(400); p.click('#tabbar [data-nav="find"]'); p.wait_for_timeout(400)
+            back(p); ok(name+' 법령집 갔다 검색으로 돌아와 뒤로=검색 첫 화면', where(p)=='vFind' and p.evaluate(qv)=='', (where(p),p.evaluate(qv)))
+            back(p); ok(name+' 이어서=분야 선택', where(p)=='vStart', where(p)); p.close()
+            # 자주 찾는 말 누르기 → 뒤로
+            p=fresh(); p.click('[data-field="labor"]'); p.wait_for_timeout(300); p.locator('#vFind [data-q]').first.click(); p.wait_for_timeout(500)
+            back(p); ok(name+' 자주 찾는 말→뒤로=검색 첫 화면', where(p)=='vFind' and p.evaluate(qv)=='', (where(p),p.evaluate(qv))); p.close()
         ctx.close()
     # 아이폰·아이패드: 방문기록을 쓰지 않음(스와이프 캡처 문제) — 앱 안 이동만 정상인지
     for name,ua in (('아이폰',IOS),('아이패드',IPAD)):
