@@ -2624,7 +2624,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   function kstDay(off){ var d=new Date(Date.now()+9*3600e3-off*86400e3); return d.toISOString().slice(0,10); }
   function admOpen(){ $('adm').hidden=false; document.body.style.overflow='hidden'; var k=''; try{ k=sessionStorage.getItem('lawon.adm')||''; }catch(e){} if(k)admLoad(k); else admLogin(''); }
   function admClose(){ $('adm').hidden=true; document.body.style.overflow=''; }
-  function admLogin(msg){ $('admBody').innerHTML='<div class="card"><p class="slb" style="margin-top:4px">비밀번호</p><input class="adm-in" id="admKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"><p class="adm-msg" id="admMsg">'+esc(msg||'')+'</p><button type="button" class="btn pri" id="admGo">확인</button></div>';
+  function admLogin(msg){ $('admBody').innerHTML='<div class="card"><p class="slb" style="margin-top:4px">비밀번호</p><input class="adm-in" id="admKey" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off" autocapitalize="off" spellcheck="false"><p class="adm-msg" id="admMsg">'+esc(msg||'')+'</p><button type="button" class="btn pri" id="admGo">확인</button></div>';
     var go=function(){ var v=$('admKey').value.trim(); if(v)admLoad(v); };
     $('admGo').onclick=go; $('admKey').onkeydown=function(ev){ if(ev.key==='Enter')go(); }; }
   function admLoad(k){ $('admBody').innerHTML='<div class="card"><p class="why sm">불러오는 중…</p></div>';
