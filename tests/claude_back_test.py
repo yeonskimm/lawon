@@ -1,4 +1,4 @@
-# 법ON 뒤로 버튼(안드로이드)·뒤로 스와이프(아이폰) 검사(2026-09-27) — 사용: python3 tests/claude_back_test.py [저장소 폴더]
+# 법ON 뒤로 버튼 검사(2026-09-27) — 안드로이드: 뒤로 버튼 단계별 / 아이폰·아이패드: 방문기록 안 씀 — 사용: python3 tests/claude_back_test.py [저장소 폴더]
 import os, sys, threading, functools, http.server, socketserver
 from playwright.sync_api import sync_playwright
 ROOT=sys.argv[1] if len(sys.argv)>1 else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -8,6 +8,7 @@ socketserver.TCPServer.allow_reuse_address=True
 srv=socketserver.TCPServer(('127.0.0.1',8767),functools.partial(Q,directory=ROOT))
 threading.Thread(target=srv.serve_forever,daemon=True).start()
 AND='Mozilla/5.0 (Linux; Android 14; SM-S921N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Mobile Safari/537.36'
+IPAD='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15'
 IOS='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1'
 fails=[]
 def ok(n,c,i=''):
@@ -25,7 +26,7 @@ def back(p):
     p.wait_for_timeout(500)
 with sync_playwright() as pw:
     b=pw.chromium.launch()
-    for name,ua in (('안드로이드',AND),('아이폰',IOS)):
+    for name,ua in (('안드로이드',AND),):
         ctx=b.new_context(user_agent=ua,viewport={'width':390,'height':800},has_touch=True,is_mobile=True)
         def fresh():
             p=ctx.new_page(); p.goto('about:blank'); p.goto('http://127.0.0.1:8767/index.html'); p.wait_for_timeout(1200); return p
@@ -86,5 +87,18 @@ with sync_playwright() as pw:
         ok(name+' 관리자 창 열림', 'adm' in where(p), where(p)); back(p); ok(name+' 관리자 창→뒤로=닫힘', where(p)=='vStart', where(p))
         ok(name+' 관리자 닫은 뒤 화면 스크롤 복구', p.evaluate("document.body.style.overflow")=='' ); p.close()
         ctx.close()
+    # 아이폰·아이패드: 방문기록을 쓰지 않음(스와이프 캡처 문제) — 앱 안 이동만 정상인지
+    for name,ua in (('아이폰',IOS),('아이패드',IPAD)):
+        ctx=b.new_context(user_agent=ua,viewport={'width':390,'height':800},has_touch=True,is_mobile=True)
+        ctx.add_init_script("Object.defineProperty(navigator,'maxTouchPoints',{get:()=>5})")   # 실제 아이패드 값(테스트 환경 기본은 1)
+        p=ctx.new_page(); p.goto('http://127.0.0.1:8767/index.html'); p.wait_for_timeout(1200); L0=p.evaluate('history.length')
+        p.click('#calcOpen'); p.wait_for_timeout(300); p.click('#csheet .shcard [data-cclose]'); p.wait_for_timeout(300)
+        p.click('[data-field="labor"]'); p.wait_for_timeout(300); p.click('#gear'); p.wait_for_timeout(300); p.keyboard.press('Escape'); p.wait_for_timeout(200)
+        p.fill('#q','휴게'); p.wait_for_timeout(700); p.locator('[data-art]').first.click(); p.wait_for_timeout(400)
+        ok(name+' 기록 안 늘어남', p.evaluate('history.length')==L0, (L0,p.evaluate('history.length')))
+        p.click('#hback'); p.wait_for_timeout(600); ok(name+' 앱 안 뒤로=법령 검색', where(p)=='vFind', where(p))
+        p.locator('#tabbar [data-home]').first.click(); p.wait_for_timeout(400); ok(name+' 홈 탭=분야 선택', where(p)=='vStart', where(p))
+        ok(name+' 기록 끝까지 그대로', p.evaluate('history.length')==L0)
+        p.close(); ctx.close()
     b.close()
 print('실패 %d건'%len(fails)); sys.exit(1 if fails else 0)
