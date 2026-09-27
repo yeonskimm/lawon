@@ -640,15 +640,21 @@ button.brand:active{opacity:.7}
 .admhi h2{margin:0;font-size:1.0625rem;font-weight:800}
 .admhi button{height:44px;padding:0 4px;font-size:1rem;font-weight:700;color:var(--hdrink)}
 .admin{max-width:640px;margin:0 auto;padding:4px var(--gut) 0}
-.adm-sum>div{padding:10px 2px;border-radius:8px}
-.adm-sum>div:first-child{background:var(--prbg);color:var(--prink)}
-.adm-sum>div:first-child b,.adm-sum>div:first-child span{color:inherit}
+.adm-sum{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.adm-col{padding:10px 12px;border-radius:8px;background:var(--fld)}
+.adm-col.on{background:var(--prbg);color:var(--prink)}
+.adm-col>p{margin:0 0 4px;font-size:.8125rem;font-weight:700;color:var(--ink3)}
+.adm-col.on>p{color:inherit}
+.adm-col>div{display:flex;align-items:baseline;gap:4px;min-height:34px}
+.adm-col span{flex:1;font-size:.875rem;color:var(--ink2);white-space:nowrap}
+.adm-col.on span{color:inherit}
+.adm-col b{font-size:1.5rem;font-weight:800;color:var(--pri);font-variant-numeric:tabular-nums}
+.adm-col.on b{color:inherit}
+.adm-col i{font-style:normal;font-size:.8125rem;color:var(--ink3)}
+.adm-col.on i{color:inherit}
 .adm-from{margin:10px 0 0;text-align:center;font-size:.8125rem;color:var(--ink3)}
 .adm-bars div.on{color:var(--ink);font-weight:700}
 .adm .card{margin-top:12px}
-.adm-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
-.adm-sum b{display:block;font-size:1.5rem;font-weight:800;color:var(--pri);font-variant-numeric:tabular-nums}
-.adm-sum span{font-size:.8125rem;color:var(--ink3)}
 .adm-bars{display:flex;align-items:flex-end;gap:4px;height:96px}
 .adm-bars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:.6875rem;color:var(--ink3);font-variant-numeric:tabular-nums}
 .adm-bars i{display:block;width:100%;min-height:2px;border-radius:3px 3px 0 0;background:var(--hl)}
@@ -2700,15 +2706,18 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     fetch(STATS_URL+'/admin',{method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'text/plain'},body:JSON.stringify({key:k})})
       .then(function(r){ if(r.status===403||r.status===429){ try{ sessionStorage.removeItem('lawon.adm'); }catch(e){} admLogin(r.status===429?'시도 횟수 초과 · 10분 뒤 다시 시도':'비밀번호가 맞지 않음'); return null; } return r.ok?r.json():Promise.reject(); })
       .then(function(d){ if(!d)return; try{ sessionStorage.setItem('lawon.adm',k); }catch(e){} admDraw(d); },function(){ admLogin('통계 서버에 연결하지 못함 · 인터넷 연결 확인'); }); }
-  function admDraw(d){   // d: {total, days:[{day,n,nw}]} — 날짜별 이용자(그날 앱을 연 서로 다른 기기 수), 신규(그날 처음 연 기기)
+  function admDraw(d){   // d: {total, vt(연인원), days:[{day,n,nw}]} — 날짜별 이용자(그날 앱을 연 서로 다른 기기 수), 신규(그날 처음 연 기기)
     var map={}; (d.days||[]).forEach(function(x){ map[x.day]=x; }); var L=[], i;
     for(i=0;i<30;i++){ var k=kstDay(i), x=map[k]||{}; L.push({day:k,n:x.n||0,nw:x.nw||0}); }
     var w7=L.slice(0,7).reverse(), mx=Math.max.apply(null,w7.map(function(x){return x.n;}).concat([1]));
-    var h='<div class="card"><div class="adm-sum"><div><b>'+L[0].n+'</b><span>오늘</span></div><div><b>'+L.slice(0,7).reduce(function(a,x){return a+x.nw;},0)+'</b><span>7일 신규</span></div><div><b>'+(d.total||0)+'</b><span>누적</span></div></div><p class="adm-from">'+fmtD(STATS_FROM)+'부터 집계</p></div>';
+    var cell=function(l,v,u){ return '<div><span>'+l+'</span><b>'+v+'</b><i>'+u+'</i></div>'; }, vt=(typeof d.vt==='number')?d.vt:'–';
+    var h='<div class="card"><div class="adm-sum"><div class="adm-col on"><p>오늘</p>'+cell('이용',L[0].n,'명')+cell('신규',L[0].nw,'명')+'</div>'
+      +'<div class="adm-col"><p>누적</p>'+cell('이용 기기',d.total||0,'대')+cell('연인원',vt,'명')+'</div></div>'
+      +'<p class="adm-from">'+fmtD(STATS_FROM)+'부터 집계 · 이용 기기 = 신규 누계'+(vt==='–'?' · 연인원은 워커 갱신 후 표시':'')+'</p></div>';
     h+='<h3 class="gl">최근 7일 이용자</h3><div class="card"><div class="adm-bars">'+w7.map(function(x,j){ return '<div'+(j===6?' class="on"':'')+'>'+x.n+'<i style="height:'+Math.round(x.n/mx*64)+'px"></i>'+x.day.slice(5).replace('-','.')+'</div>'; }).join('')+'</div></div>';
     var row=function(x,j){ return '<div class="adm-row"><span>'+x.day.slice(5).replace('-','. ')+'.'+(j===0?'<small>오늘</small>':'')+'</span><span>'+x.n+'명'+(x.nw?'<small>신규 '+x.nw+'</small>':'')+'</span></div>'; };
     h+='<h3 class="gl">날짜별 이용자</h3><div class="card">'+L.slice(0,7).map(row).join('')+'<details class="fut"><summary>30일 전체 보기</summary>'+L.slice(7).map(function(x,j){return row(x,j+7);}).join('')+'</details></div>';
-    h+='<p class="sn">이용자 = 그날 앱을 연 서로 다른 기기 수(하루 한 번 집계) · 신규 = 그날 처음 연 기기 · 앱을 지우거나 방문 기록을 지운 기기는 새 기기로 셈</p>';
+    h+='<p class="sn">이용자 = 그날 앱을 연 서로 다른 기기 수(하루 한 번 집계) · 신규 = 그날 처음 연 기기 · 연인원 = 날마다 이용자 합계 · 앱을 지우거나 방문 기록을 지운 기기는 새 기기로 셈</p>';
     $('admBody').innerHTML=h; }
   document.addEventListener('click',function(ev){ if(ev.target.closest&&ev.target.closest('[data-aclose]'))admClose(); });
   if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)){   // 아이폰: 두 손가락 확대 막기(viewport만으로 안 막히는 경우 대비)
