@@ -273,6 +273,19 @@ body.nobar .brand{visibility:hidden}
 .about{margin-top:20px;font-size:.8125rem;line-height:1.6;color:var(--ink2)}
 .about summary{min-height:44px;display:flex;align-items:center;font-size:.9375rem;font-weight:700;color:var(--ink);cursor:pointer}
 .about p{margin:6px 0}
+.asof{margin:0 2px;font-size:.875rem;line-height:1.6;color:var(--ink2);font-variant-numeric:tabular-nums}
+.about.verd{margin-top:4px}
+.about.verd summary{min-height:40px;font-size:.875rem;color:var(--pri);gap:6px;list-style:none}
+.about.verd summary::-webkit-details-marker{display:none}
+.about.verd summary::after{content:'';width:7px;height:7px;margin-bottom:3px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg)}
+.about.verd[open] summary::after{transform:rotate(-135deg);margin-bottom:-3px}
+.about .verh{margin:12px 0 4px;font-weight:700;color:var(--ink)}
+.about .vern{color:var(--ink3)}
+.verl{margin:0;padding:0;list-style:none}
+.verl li{padding:6px 0;border-bottom:1px solid var(--line)}
+.verl li:last-child{border-bottom:0}
+.verl li b{display:block;font-weight:700;color:var(--ink)}
+.verl li span{display:block;color:var(--ink3)}
 .foot{max-width:640px;margin:0 auto;padding:4px calc(var(--gut) + 4px) 26px;font-size:.8125rem;line-height:1.6;color:var(--ink3)}
 .foot p{margin:0}
 
@@ -619,8 +632,19 @@ button.brand:active{opacity:.7}
 .ptx .pl{display:inline-block;max-width:calc(100% - var(--dw));margin:0 var(--dw) 0 calc(-1 * var(--dw));font-size:.8125rem;line-height:1.55;color:var(--ink2);word-break:keep-all;vertical-align:top}
 .ptx .pl::before{content:'·';display:inline-block;width:var(--dw);text-align:center}
 /* 2026-09-26: 관리자 모드(이용자 통계) */
-.adm{position:fixed;inset:0;z-index:70;background:var(--bg);overflow-y:auto;overscroll-behavior:contain;padding:env(safe-area-inset-top) var(--gut) calc(24px + env(safe-area-inset-bottom))}
-.admin{max-width:640px;margin:0 auto}
+.adm{position:fixed;inset:0;z-index:70;background:var(--bg);overflow-y:auto;overscroll-behavior:contain;padding:0 0 calc(24px + env(safe-area-inset-bottom));--ag:#C9962B}
+:root[data-theme="dark"] .adm{--ag:#E3B455}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .adm{--ag:#E3B455}}
+.admh{position:sticky;top:0;z-index:1;background:var(--hdr);color:var(--hdrink);padding-top:env(safe-area-inset-top);border-bottom:3px solid var(--ag)}
+.admhi{max-width:640px;margin:0 auto;padding:0 var(--gut);min-height:var(--hdrh);display:flex;align-items:center;justify-content:space-between}
+.admhi h2{margin:0;font-size:1.0625rem;font-weight:800}
+.admhi button{height:44px;padding:0 4px;font-size:1rem;font-weight:700;color:var(--hdrink)}
+.admin{max-width:640px;margin:0 auto;padding:4px var(--gut) 0}
+.adm-sum>div{padding:10px 2px;border-radius:8px}
+.adm-sum>div:first-child{background:var(--prbg);color:var(--prink)}
+.adm-sum>div:first-child b,.adm-sum>div:first-child span{color:inherit}
+.adm-from{margin:10px 0 0;text-align:center;font-size:.8125rem;color:var(--ink3)}
+.adm-bars div.on{color:var(--ink);font-weight:700}
 .adm .card{margin-top:12px}
 .adm-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
 .adm-sum b{display:block;font-size:1.5rem;font-weight:800;color:var(--pri);font-variant-numeric:tabular-nums}
@@ -628,7 +652,7 @@ button.brand:active{opacity:.7}
 .adm-bars{display:flex;align-items:flex-end;gap:4px;height:96px}
 .adm-bars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-size:.6875rem;color:var(--ink3);font-variant-numeric:tabular-nums}
 .adm-bars i{display:block;width:100%;min-height:2px;border-radius:3px 3px 0 0;background:var(--hl)}
-.adm-bars div.on i{background:var(--pri)}
+.adm-bars div.on i{background:var(--ag)}
 .adm-row{display:flex;justify-content:space-between;align-items:center;min-height:40px;border-bottom:1px solid var(--line);font-size:.9375rem;font-variant-numeric:tabular-nums}
 .adm-row:last-child{border-bottom:0}
 .adm-row small{color:var(--ink3);font-size:.8125rem;margin-left:6px}
@@ -748,20 +772,23 @@ button.brand:active{opacity:.7}
     <div class="seg"><button type="button" data-field-set="labor">근로기준</button><button type="button" data-field-set="osh">산업안전</button></div>
     <p class="slb">앱 설치</p>
     <div id="instSheet"></div>
-    <p class="slb">이용자 수 집계</p>
-    <p class="sn">하루 한 번 이 기기에 만든 무작위 번호만 전송 · 검색어·입력한 조건은 전송하지 않음</p>
-    <details class="about"><summary>수록 법령과 기준</summary>
-      <p id="asof"></p>
-      <p id="ver"></p>
-      <p id="btver"></p>
-      <p>원문 대조 전: 별표 등을 2차 자료·구버전으로만 확인했거나 현행 원문 미확인.</p>
-      <p id="fver"></p>
+    <p class="slb">이용 통계</p>
+    <p class="sn">「법ON」은 회원가입 없이 이용하며, 이름·연락처 등을 받지 않습니다.</p>
+    <p class="sn">기기별 무작위 번호와 기기 종류(iOS/Android/PC)를 이용 현황 파악에 사용합니다. 검색어와 입력한 조건은 전송하지 않습니다.</p>
+    <p class="slb">수록 법령과 기준</p>
+    <p class="asof" id="asof"></p>
+    <details class="about verd"><summary>상세 보기</summary>
+      <p class="verh">수록 법령</p><ul class="verl" id="ver"></ul>
+      <p class="vern">미시행 개정은 개정 예정으로 표시</p>
+      <p class="verh">별표</p><ul class="verl" id="btver"></ul>
+      <p class="verh">과태료 금액</p><ul class="verl" id="fver"></ul>
+      <p class="vern">원문 대조 전: 별표 등을 2차 자료·구버전으로만 확인했거나 현행 원문 미확인.</p>
     </details>
   </div>
 </div>
 <div class="adm" id="adm" hidden role="dialog" aria-modal="true" aria-labelledby="admT">
+  <div class="admh"><div class="admhi"><h2 id="admT">관리자 · 이용자 통계</h2><button type="button" data-aclose="1">닫기</button></div></div>
   <div class="admin">
-    <div class="shh"><h2 id="admT">관리자 · 이용자 통계</h2><button type="button" data-aclose="1">닫기</button></div>
     <div id="admBody"></div>
   </div>
 </div>
@@ -1422,7 +1449,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     return out.join('');
   }
 
-  var UPDATED='2026-09-26';   // 최종 업데이트(앱을 고쳐 배포한 날). 법령 데이터 기준일(D.meta.asOf)과 따로 관리
+  var UPDATED='2026-09-27';   // 최종 업데이트(앱을 고쳐 배포한 날). 법령 데이터 기준일(D.meta.asOf)과 따로 관리
   function num(v){v=(v||'').replace(/[^0-9.]/g,'');if(v==='')return null;var f=parseFloat(v);return isNaN(f)?null:f;}
   function each(sel,fn){Array.prototype.forEach.call(document.querySelectorAll(sel),fn);}
 
@@ -2603,14 +2630,18 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     var o='<option value="">선택 안 함</option>'+gs.map(function(g){return '<optgroup label="'+esc(g)+'">'+by[g].map(function(i){return '<option value="'+i.id+'">'+esc(i.label)+'</option>';}).join('')+'</optgroup>';}).join('');
     $('ind').innerHTML=o; $('ind2').innerHTML=o; })();
   $('asof').textContent=fmtD('데이터 기준 '+D.meta.asOf+' · 최종 업데이트 '+UPDATED); $('fdt').textContent=fmtD('데이터 기준 '+D.meta.asOf+' · 최종 업데이트 '+UPDATED);
-  $('fver').textContent='과태료 금액: '+Object.keys(D.fineNote||{}).map(function(k){return D.fineNote[k];}).join(' / ');
-  $('btver').textContent='별표: '+Object.keys(BTL).filter(function(k){return BT.tabs.some(function(T){return T.law===k;});}).map(function(k){return BTL[k].name+' 별표 '+BT.tabs.filter(function(T){return T.law===k;}).map(function(T){return T.n;}).join('·');}).join(' / ')+' — 국가법령정보센터 원문('+fmtD(btDates(BT.tabs).join('·'))+' 내려받음)';
-  $('ver').textContent='수록 법령: '+Object.keys(D.meta.laws).map(function(k){return D.meta.laws[k].name+' — '+D.meta.laws[k].ver;}).join(' / ')+' · 미시행 개정은 개정 예정으로 표시';
+  (function(){   // 2026-09-27: 설정 '상세 보기' — 한 줄에 하나씩
+    var li=function(a,b){ return '<li><b>'+esc(a)+'</b>'+(b?'<span>'+esc(b)+'</span>':'')+'</li>'; };
+    $('ver').innerHTML=Object.keys(D.meta.laws).map(function(k){ return li(D.meta.laws[k].name,D.meta.laws[k].ver); }).join('');
+    $('btver').innerHTML=Object.keys(BTL).filter(function(k){return BT.tabs.some(function(T){return T.law===k;});}).map(function(k){ return li(BTL[k].name,('별표 '+BT.tabs.filter(function(T){return T.law===k;}).map(function(T){return T.n;}).join('·')).trim()); }).join('')
+      +'<li><span>국가법령정보센터 원문('+esc(btDates(BT.tabs).join('·'))+' 내려받음)</span></li>';
+    $('fver').innerHTML=Object.keys(D.fineNote||{}).map(function(k){ var t=D.fineNote[k], i=t.indexOf('. '); return i>0?li(t.slice(0,i),t.slice(i+2)):li(t,''); }).join('');
+  })();
   (function(){ var lim=new Date(); lim.setDate(lim.getDate()-60); var ls=lim.getFullYear()+'-'+('0'+(lim.getMonth()+1)).slice(-2)+'-'+('0'+lim.getDate()).slice(-2);
     var due=(D.meta.pending||[]).filter(function(d){return d<=today&&d>=ls;}); if(!due.length)return; $('due').hidden=false;   // 2026-09-26: 시행 후 60일 동안만 안내
     $('due').textContent=fmtD(due[due.length-1]+' 개정 시행 · 해당 조문은 개정 후 내용으로 표시하고 개정 전 조문·제재는 조문 화면 아래에 수록'); })();
   // 2026-09-26: 이용자 수 집계(Cloudflare Worker + D1, 저장소 tools/lawon-stats). 하루 한 번 무작위 번호만 보냄. 배포 주소에서만, 실패해도 앱 동작과 무관
-  var STATS_URL='https://lawon-stats.darksky166.workers.dev';
+  var STATS_URL='https://lawon-stats.darksky166.workers.dev', STATS_FROM='2026-09-26';   // 집계 개시일(관리자 화면 표시)
   (function(){ try{
     if(location.hostname!=='yeonskimm.github.io'||!window.fetch||localStorage.getItem('lawon.ping')===today)return;
     var u=localStorage.getItem('lawon.uid')||'';
@@ -2635,7 +2666,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     var map={}; (d.days||[]).forEach(function(x){ map[x.day]=x; }); var L=[], i;
     for(i=0;i<30;i++){ var k=kstDay(i), x=map[k]||{}; L.push({day:k,n:x.n||0,nw:x.nw||0}); }
     var w7=L.slice(0,7).reverse(), mx=Math.max.apply(null,w7.map(function(x){return x.n;}).concat([1]));
-    var h='<div class="card"><div class="adm-sum"><div><b>'+L[0].n+'</b><span>오늘</span></div><div><b>'+L.slice(0,7).reduce(function(a,x){return a+x.nw;},0)+'</b><span>7일 신규</span></div><div><b>'+(d.total||0)+'</b><span>누적</span></div></div></div>';
+    var h='<div class="card"><div class="adm-sum"><div><b>'+L[0].n+'</b><span>오늘</span></div><div><b>'+L.slice(0,7).reduce(function(a,x){return a+x.nw;},0)+'</b><span>7일 신규</span></div><div><b>'+(d.total||0)+'</b><span>누적</span></div></div><p class="adm-from">'+fmtD(STATS_FROM)+'부터 집계</p></div>';
     h+='<h3 class="gl">최근 7일 이용자</h3><div class="card"><div class="adm-bars">'+w7.map(function(x,j){ return '<div'+(j===6?' class="on"':'')+'>'+x.n+'<i style="height:'+Math.round(x.n/mx*64)+'px"></i>'+x.day.slice(5).replace('-','.')+'</div>'; }).join('')+'</div></div>';
     var row=function(x,j){ return '<div class="adm-row"><span>'+x.day.slice(5).replace('-','. ')+'.'+(j===0?'<small>오늘</small>':'')+'</span><span>'+x.n+'명'+(x.nw?'<small>신규 '+x.nw+'</small>':'')+'</span></div>'; };
     h+='<h3 class="gl">날짜별 이용자</h3><div class="card">'+L.slice(0,7).map(row).join('')+'<details class="fut"><summary>30일 전체 보기</summary>'+L.slice(7).map(function(x,j){return row(x,j+7);}).join('')+'</details></div>';
