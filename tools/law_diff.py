@@ -80,11 +80,16 @@ def nz(s):
 
 
 # ───────── 비교용 정규화 ─────────
-TAG = re.compile(r'<[^<>]*>|\[[^\[\]]*(?:개정|신설|삭제|이동|종전|시행일|본조|제목)[^\[\]]*\]')
+TAG = re.compile(r'<[^<>]*>|\[[^\[\]]*(?:개정|신설|삭제|이동|종전|시행일|본조|제목|위헌|헌법|원문 확인)[^\[\]]*\]')
+SUP = str.maketrans('⁰¹²³⁴⁵⁶⁷⁸⁹', '0123456789')
 
 
 def norm(s):
-    s = TAG.sub('', s or '')
+    s = s or ''
+    s = re.sub(r'\[시행일\s*:[^\]]*\]\s*제\d+조(?:의\d+)?', '', s)   # 법제처 머리 표시: [시행일 : 2021.1.26] 제16조
+    s = re.sub(r'\[시행일\][\s\S]*$', '', s)                        # 앱 조문 끝의 [시행일] 안내(부칙)
+    s = re.sub(r'\*\*제\d+(?:장|절|관|속)[^*]*\*\*', '', s)             # 앱 조문 끝에 붙은 장·절·속 제목
+    s = TAG.sub('', s).translate(SUP)
     for a, b in (('“', '"'), ('”', '"'), ('‘', "'"), ('’', "'"), ('ㆍ', '·'), ('∙', '·'), ('•', '·'), ('〈', '<'), ('〉', '>')):
         s = s.replace(a, b)
     return re.sub(r'\s+', '', s)
@@ -181,8 +186,23 @@ def law_versions(name):
     for x in listify((j.get('LawSearch') or {}).get('law')):
         if nz(x.get('법령명한글')) == nz(name) and x.get('현행연혁코드', '현행') == '현행':
             cur = {'mst': str(x.get('법령일련번호')), 'id': str(x.get('법령ID')),
-                   'pno': str(x.get('공포번호')), 'ef': str(x.get('시행일자'))}
+                   'pno': str(x.get('공포번호')), 'ef': str(x.get('시행일자')), 'via': 'law'}
             break
+    # 시행일 기준 현행(eflaw nw=3): 분리 시행·후속 개정이 있는 법령은 이쪽이 오늘 시행 중인 조문이다
+    try:
+        j = call('lawSearch.do', {'target': 'eflaw', 'query': name, 'display': 100, 'nw': 3})
+        rows = [x for x in listify((j.get('LawSearch') or {}).get('law'))
+                if x.get('현행연혁코드') == '현행' and (nz(x.get('법령명한글')) == nz(name) or (cur and str(x.get('법령ID')) == cur['id']))
+                and str(x.get('시행일자', '99999999')) <= TODAY]
+        DIAG.setdefault('versions', {})[name] = {
+            'law': cur and [cur['mst'], cur['pno'], cur['ef']],
+            'eflaw_cur': [[str(x.get('법령일련번호')), str(x.get('공포번호')), str(x.get('시행일자'))] for x in rows][:6]}
+        if rows:
+            x = max(rows, key=lambda r: (str(r.get('시행일자')), str(r.get('공포일자'))))
+            cur = {'mst': str(x.get('법령일련번호')), 'id': str(x.get('법령ID')),
+                   'pno': str(x.get('공포번호')), 'ef': str(x.get('시행일자')), 'via': 'eflaw'}
+    except ApiError as ex:
+        DIAG.setdefault('versions', {})[name] = {'eflaw_cur_error': str(ex)}
     pend = []
     try:
         j = call('lawSearch.do', {'target': 'eflaw', 'query': name, 'display': 100, 'nw': 2})
@@ -195,7 +215,7 @@ def law_versions(name):
             if nz(x.get('법령명한글')) != nz(name) and not (cur and str(x.get('법령ID')) == cur['id']):
                 continue
             key = (str(x.get('법령일련번호')), str(x.get('시행일자')))
-            if key in seen:
+            if key in seen or key[1] <= TODAY:
                 continue
             seen.add(key)
             pend.append({'mst': key[0], 'id': str(x.get('법령ID')), 'pno': str(x.get('공포번호')), 'ef': key[1]})
@@ -208,11 +228,11 @@ def law_versions(name):
 def fetch_slice(ver, today=False):
     if today:
         try:
-            j = call('lawService.do', {'target': 'eflaw', 'ID': ver['id'], 'efYd': TODAY})
+            j = call('lawService.do', {'target': 'eflaw', 'MST': ver['mst'], 'efYd': ver['ef']})
             parse_law(j)
-            DIAG.setdefault('today_path', 'eflaw ID+efYd')
+            DIAG.setdefault('today_path', {})[ver['mst']] = 'eflaw MST+efYd(%s, %s)' % (ver['ef'], ver.get('via'))
         except ApiError as ex:
-            DIAG['today_path'] = 'law MST 대체(%s)' % ex
+            DIAG.setdefault('today_path', {})[ver['mst']] = 'law MST 대체(%s)' % ex
             j = call('lawService.do', {'target': 'law', 'MST': ver['mst']})
     else:
         j = call('lawService.do', {'target': 'eflaw', 'MST': ver['mst'], 'efYd': ver['ef']})
@@ -468,7 +488,7 @@ def audit(code, meta, cur, app):
         else:
             diff += 1
             rows.append('<details><summary>%s(%s)</summary>\n\n- %s\n\n</details>' % (no, n['t'], wdiff(x, n['x'], ctx=6, limit=900)))
-    only_api = [k for k in cur['arts'] if k not in mine and not re.search(r'삭제', cur['arts'][k]['x'][:20])]
+    only_api = [k for k in cur['arts'] if k not in mine and cur['arts'][k]['x'].strip() and not re.search(r'삭제', cur['arts'][k]['x'][:20])]
     s = '### %s (%s)\n- 일치 %d · 다름 %d · 앱에만 %d · 법제처에만 %d\n' % (meta['name'], code, same, diff, len(only_app), len(only_api))
     if only_app:
         s += '- 앱에만: ' + ', '.join(only_app[:30]) + (' …' if len(only_app) > 30 else '') + '\n'
