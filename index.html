@@ -2264,7 +2264,8 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   // 기록은 늘 '지금 탭의 쌓인 깊이'만큼만 둠. 탭을 바꾸면 기록을 첫 화면까지 되감고 새 탭의 깊이만큼 다시 쌓음
   var ROOT={find:$('vFind'),site:$('vSite'),book:$('vBook')};
   var nav='start', stacks={find:[],site:[],book:[]}, fwd={find:[],site:[],book:[]}, rootY={find:0,site:0,book:0}, rootVer={find:-1,site:-1,book:-1}, ver=0, unwinding=false;
-  var HIST=true;   // 기록 API를 못 쓰는 환경(일부 미리보기 창 등)이면 기록 없이 앱 안에서만 이동
+  var HIST=!(/iPhone|iPad|iPod/.test(navigator.userAgent||'')||(/Macintosh/.test(navigator.userAgent||'')&&navigator.maxTouchPoints>1));   // 기록 API를 못 쓰는 환경(일부 미리보기 창 등)이면 기록 없이 앱 안에서만 이동
+  // 2026-09-27: 아이폰·아이패드는 기록을 쓰지 않음 — 스와이프 때 기록을 만든 순간의 캡처가 보여 엉뚱한 화면이 비침(오늘의안전과 같게). 이동은 아래 탭·'← 뒤로'로
   function hpush(d){ if(!HIST)return; try{history.pushState({fl:1,d:d},'');}catch(e){HIST=false;} }
   function hrep(d){ if(!HIST)return; try{history.replaceState({fl:1,d:d},'');}catch(e){HIST=false;} }
   // 2026-09-27 뒤로 버튼(안드로이드)·뒤로 스와이프(아이폰) = 앱 안 '← 뒤로'와 같게: 창 닫기 → 쌓인 화면 → 탭 첫 화면 → 분야 선택 → (안드로이드만) '한 번 더 누르면 종료'
