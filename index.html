@@ -1912,8 +1912,8 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     else { var gs=[],by={}; D.inds.forEach(function(i){ if(catOf(i.id)!==icat)return; if(!by[i.grp]){by[i.grp]=[];gs.push(i.grp);} by[i.grp].push(i); });
       h=gs.map(function(g){ return (gs.length>1?'<h3 class="gl">'+esc(g)+'</h3>':'')+'<div class="list">'+by[g].map(function(i){return irow(i);}).join('')+'</div>'; }).join(''); }
     $('ilist').innerHTML=h; }
-  function openISheet(cat,from){ icat=cat||''; ifrom=from||''; $('iq').value=''; renderIList(); $('isheet').hidden=false; $('isheet').querySelector('.shcard').scrollTop=0; }
-  function closeISheet(){ $('isheet').hidden=true; }
+  function openISheet(cat,from){ icat=cat||''; ifrom=from||''; $('iq').value=''; renderIList(); $('isheet').hidden=false; shOpen(); $('isheet').querySelector('.shcard').scrollTop=0; }
+  function closeISheet(){ $('isheet').hidden=true; shClose(); }
   function setInd(id){ setVal('ind',id); lastProf=profKey(); readProf(); save(); ver++; refresh();
     var site=nav==='site', f=pf.ind==='const'?$(site?'amt':'amt4'):$(site?'n':'n4'); if(f&&!f.value&&f.offsetParent)f.focus(); }
   function renderFind(){ var s=!!st.q.trim(); $('qBox').className='q'+(st.q?' has':''); $('results').hidden=!s; $('quick').hidden=s; renderCond(); if(s)renderResults(); else renderQuick(); }
@@ -2267,6 +2267,26 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   var HIST=true;   // 기록 API를 못 쓰는 환경(일부 미리보기 창 등)이면 기록 없이 앱 안에서만 이동
   function hpush(d){ if(!HIST)return; try{history.pushState({fl:1,d:d},'');}catch(e){HIST=false;} }
   function hrep(d){ if(!HIST)return; try{history.replaceState({fl:1,d:d},'');}catch(e){HIST=false;} }
+  // 2026-09-27 뒤로 버튼(안드로이드)·뒤로 스와이프(아이폰) = 앱 안 '← 뒤로'와 같게: 창 닫기 → 쌓인 화면 → 탭 첫 화면 → 분야 선택 → (안드로이드만) '한 번 더 누르면 종료'
+  // 기록: [맨 아래 b=분야 선택][g=종료 안내용, 안드로이드만][탭 첫 화면 d:0][d:1…][창 sh]
+  var ANDR=/Android/i.test(navigator.userAgent||''), guardOn=false, rootH=false, shH=false, shPend=false, shSkip=false;
+  var SHEETS=['sheet','isheet','csheet','wsheet','asheet','adm'];
+  function anySheet(){ return SHEETS.some(function(id){ var el=$(id); return !!el&&!el.hidden; }); }
+  function shOpen(){ if(!HIST||shH)return; if(shPend){ shPend=false; shH=true; return; }   // 창을 닫자마자 다른 창을 열면 기록 하나를 이어 씀
+    var s=history.state||{}, c={fl:1,sh:1}; if(typeof s.d==='number')c.d=s.d;
+    try{ history.pushState(c,''); shH=true; }catch(e){ HIST=false; } }
+  function shClose(){ if(!shH||anySheet())return; shH=false; shPend=true;   // 창 안 닫기 버튼으로 닫으면 창 기록을 되돌림
+    setTimeout(function(){ if(!shPend)return; shPend=false; shSkip=true; history.back(); },0); }
+  function shTake(){ var n=(shH||shPend)?1:0; shH=false; shPend=false; return n; }   // 다른 이동이 창 기록까지 한꺼번에 되감을 때
+  function closeSheets(){ shH=false; shPend=false; var a=document.activeElement;
+    SHEETS.forEach(function(id){ var el=$(id); if(!el)return; if(a&&el.contains(a)&&a.blur)a.blur(); el.hidden=true; }); document.body.style.overflow=''; }
+  function pushGuard(){ if(!ANDR||guardOn)return; try{ history.pushState({fl:1,g:1},''); guardOn=true; }catch(e){} }
+  function arm(){ if(!HIST||shH||shPend)return;   // 누르는 동작 안에서 기록을 채움(크롬은 누르지 않고 쌓인 기록을 뒤로 버튼이 건너뜀)
+    if(nav==='start'){ pushGuard(); return; }
+    if(!rootH){ pushGuard(); hpush(0); rootH=true; } }   // 자동 업데이트로 탭 화면에서 다시 열린 경우
+  document.addEventListener('click',arm,true);
+  function exitHint(){ var el=$('toast'); el.textContent='한 번 더 누르면 종료됩니다.'; el.hidden=false; clearTimeout(exitHint.t);
+    exitHint.t=setTimeout(function(){ el.hidden=true; if(nav==='start'&&!anySheet()&&!shPend)pushGuard(); },2000); }
   function topOf(t){var s=stacks[t];return s&&s.length?s[s.length-1]:null;}
   function renderRoot(t){ if(t==='find')renderFind(); else if(t==='site')renderSite(); else renderBookRoot(); rootVer[t]=ver; }
   function renderSub(en){ var s=en.spec; if(s.type==='art')renderArt(en); else if(s.type==='item')renderItem(en); else if(s.type==='bt')renderBt(en); else if(s.type==='br')renderBr(en); else if(s.type==='btl')renderBtl(en); else renderBk(en); en.ver=ver; }
@@ -2289,7 +2309,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   function push(spec){
     if(nav==='start')return; saveY();
     var en=makeEntry(spec); stacks[nav].push(en); fwd[nav]=[]; renderSub(en);
-    hpush(stacks[nav].length);
+    if(shPend){ shPend=false; hrep(stacks[nav].length); } else hpush(stacks[nav].length);
     paint(); window.scrollTo(0,0); en.el.classList.remove('enter'); void en.el.offsetWidth; en.el.classList.add('enter');
   }
   function popTo(d){ var s=stacks[nav]; while(s.length>d){ var en=s.pop(); en.el.parentNode.removeChild(en.el); fwd[nav].push(en.spec); } paint(); restoreY(); }
@@ -2298,16 +2318,23 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     setTimeout(function(){ if(popSeq===seq&&topOf(nav)===en0){ popTo(d0-1); hrep(d0-1); } },450); }   // 기록이 어긋나 뒤로 이동이 일어나지 않은 경우에만 직접 되돌림
   function rebuildHistory(){ if(!stacks[nav])return; for(var i=1;i<=stacks[nav].length;i++)hpush(i); }
   function goHome(){   // 첫 화면(분야 선택)으로. 입력한 사업장 조건은 그대로(지우기는 '조건 지우기')
-    if(nav==='start')return; closeSheet(); var d=stacks[nav].length;
+    if(nav==='start')return; var n=stacks[nav].length+(rootH?1:0)+shTake(); rootH=false; homeUI();
+    if(HIST&&n>0){ unwinding=true; try{history.go(-n);}catch(e){unwinding=false;HIST=false;} } }
+  function homeUI(){ closeSheets();
     Object.keys(stacks).forEach(function(k){ stacks[k].forEach(function(en){ if(en.el.parentNode)en.el.parentNode.removeChild(en.el); }); stacks[k]=[]; fwd[k]=[]; rootY[k]=0; });
     st.q=''; st.law=''; $('q').value=''; st.condOpen=false; rootVer.find=-1;
-    closeISheet(); nav='start'; paint(); window.scrollTo(0,0);
-    if(HIST&&d>0){ unwinding=true; try{history.go(-d);}catch(e){unwinding=false;HIST=false;} } }
+    nav='start'; paint(); window.scrollTo(0,0); }
   window.addEventListener('popstate',function(ev){
-    popSeq++;
+    popSeq++; var hs=ev.state||{};
     if(unwinding){ unwinding=false; rebuildHistory(); return; }
-    if(nav==='start')return;
-    var d=(ev.state&&ev.state.fl)?ev.state.d:0, s=stacks[nav];
+    if(shSkip){ shSkip=false; return; }
+    if(shH){ closeSheets(); return; }   // 창이 열려 있으면 창만 닫기
+    if(nav==='start'){
+      if(hs.g){ guardOn=true; return; }
+      if(hs.fl&&!hs.b){ try{history.back();}catch(e){} return; }   // 앞으로 가기·옛 기록은 건너뜀
+      if(guardOn){ guardOn=false; exitHint(); } return; }
+    if(!hs.fl||hs.b||hs.g){ rootH=false; homeUI(); return; }   // 탭 첫 화면에서 뒤로 → 분야 선택
+    var d=(typeof hs.d==='number')?hs.d:0, s=stacks[nav];
     if(d<s.length)popTo(d);
     else if(d>s.length){ var sp=fwd[nav].pop();
       if(sp&&d===s.length+1){ saveY(); var en=makeEntry(sp); s.push(en); renderSub(en); paint(); window.scrollTo(0,0); }
@@ -2315,11 +2342,11 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   });
   function clearStack(t){ if(!stacks[t]||t===nav)return; stacks[t].forEach(function(en){ if(en.el.parentNode)en.el.parentNode.removeChild(en.el); }); stacks[t]=[]; fwd[t]=[]; rootY[t]=0; }   // 다른 탭에 쌓인 화면 비우기(기록은 지금 탭 깊이만 두므로 다른 탭만)
   function switchTab(t){
-    if(nav==='start'||!ROOT[t])return;
-    if(t===nav){ var dd=stacks[nav].length; if(dd>0){ if(HIST)history.go(-dd); else popTo(0); } else window.scrollTo(0,0); return; }   // 지금 탭을 다시 누르면 그 탭 첫 화면(이미 첫 화면이면 맨 위)
+    if(nav==='start'||!ROOT[t])return; var sx=shTake(); if(sx)closeSheets();
+    if(t===nav){ var dd=stacks[nav].length; if(dd>0){ if(HIST)history.go(-(dd+sx)); else popTo(0); } else { if(HIST&&sx){ unwinding=true; history.go(-1); } window.scrollTo(0,0); } return; }   // 지금 탭을 다시 누르면 그 탭 첫 화면(이미 첫 화면이면 맨 위)
     saveY(); var a=stacks[nav].length; nav=t; fwd[t]=[]; paint(); restoreY();
     if(!HIST)return;
-    if(a>0){ unwinding=true; try{history.go(-a);}catch(e){unwinding=false;HIST=false;} } else rebuildHistory();
+    if(a+sx>0){ unwinding=true; try{history.go(-(a+sx));}catch(e){unwinding=false;HIST=false;} } else rebuildHistory();
   }
 
   // ── 사업장 조건 입력(사업장 탭과 찾기의 펼침 칸이 같은 값을 씀) ──
@@ -2336,14 +2363,14 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   // ── 주 업무, 설정 ──
   function updateFieldUI(){ var F=FIELD[st.field]; $('fieldsw').textContent=F?F.name:'분야'; }
   function setField(f){ if(!FIELD[f])return; var first=nav==='start', chg=st.field!==f; st.field=f; st.tab=FIELD[f].tab; if(chg)st.tick={n:null,amt:null}; save(); ver++; updateFieldUI(); syncSheet();
-    if(first){ nav=FIELD[f].home; hrep(0); paint(); window.scrollTo(0,0); return; }   // 첫 화면에서 고르면 법령 검색으로
+    if(first){ nav=FIELD[f].home; if(shPend){ shPend=false; hrep(0); } else hpush(0); rootH=true; paint(); window.scrollTo(0,0); return; }   // 첫 화면에서 고르면 법령 검색으로
     if(chg)Object.keys(rootY).forEach(function(k){rootY[k]=0;});   // 탭 첫 화면 내용이 바뀌므로 맨 위부터
     paint(); if(chg)window.scrollTo(0,0); }   // 2026-09-24: 보던 탭 그대로 두고 분야만 바꿈(법령집·적용 확인에서 바꾸면 법령 검색으로 넘어가던 문제)
   function syncSheet(){ each('[data-theme-set]',function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-theme-set')===ui.theme));});
     each('[data-fs-set]',function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-fs-set')===ui.fs));});
     each('[data-field-set]',function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-field-set')===st.field));}); }
-  function openSheet(){ syncSheet(); $('sheet').hidden=false; }
-  function closeSheet(){ $('sheet').hidden=true; }
+  function openSheet(){ syncSheet(); $('sheet').hidden=false; shOpen(); }
+  function closeSheet(){ $('sheet').hidden=true; shClose(); }
   function setQuery(w){ $('q').value=w; st.q=w; st.law=''; renderFind(); rootVer.find=ver; window.scrollTo(0,0); }
 
   // ── 이벤트 ──
@@ -2375,7 +2402,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     else if(has('data-tick')){ var tp=a('data-tick').split(':'); st.tick[tp[0]]=+tp[1]; refresh(); }
     else if(has('data-jump')){ var el=document.querySelector('#lists [data-sec="'+a('data-jump')+'"]'); if(el)window.scrollTo(0,el.getBoundingClientRect().top+(window.pageYOffset||0)-$('hdr').offsetHeight+1); }
     else if(has('data-field')){ setField(a('data-field')); }
-    else if(has('data-field-set')){ setField(a('data-field-set')); closeSheet(); }
+    else if(has('data-field-set')){ closeSheet(); setField(a('data-field-set')); }
     else if(has('data-theme-set')){ ui.theme=a('data-theme-set'); saveUI(); applyUI(); }
     else if(has('data-fs-set')){ ui.fs=a('data-fs-set'); saveUI(); applyUI(); }
     else if(has('data-close')){ closeSheet(); }
@@ -2423,8 +2450,8 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   function cInt(v){ v=String(v||'').replace(/[^0-9]/g,''); return v===''?null:parseInt(v,10); }
   function floor2(x){ return Math.floor(x*100+1e-9)/100; }
   function fmtN(x){ var t=floor2(x); return (t%1===0?String(t):t.toFixed(2).replace(/0$/,'')); }
-  function openCalc(){ closeSheet(); calcBase(calc.base); $('csheet').hidden=false; }
-  function closeCalc(){ $('csheet').hidden=true; }
+  function openCalc(){ closeSheet(); calcBase(calc.base); $('csheet').hidden=false; shOpen(); }
+  function closeCalc(){ $('csheet').hidden=true; shClose(); }
   function calcBase(b){ calc.base=b; each('[data-cbase]',function(x){ x.setAttribute('aria-pressed',String(x.getAttribute('data-cbase')===b)); });
     $('cbh').textContent=CBH[b]; var th=b==='x'; $('cshortRow').hidden=th; $('cstdRow').hidden=!th;
     if(!th)$('cshortL').textContent=b+'명 미만인 날'; if($('cdays').value.trim())fromDays(); else $('cshort').value=''; calcRun(); }
@@ -2469,8 +2496,8 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     dt.querySelector('.lawbox').innerHTML=h; dt.setAttribute('data-done','1'); }
   each('.lawk',function(dt){ dt.addEventListener('toggle',function(){ if(dt.open)lawBox(dt); }); });
   $('wtab').innerHTML='<table class="wtb"><thead><tr><th>연도</th><th>시급</th><th>월(209시간)</th></tr></thead><tbody>'+MWT.slice().reverse().map(function(x){ return '<tr><td>'+x.y+'</td><td>'+won(x.v)+'원</td><td>'+won(x.v*209)+'원</td></tr>'; }).join('')+'</tbody></table>';
-  function openWage(){ closeSheet(); wgPaint(); $('wsheet').hidden=false; $('wsheet').querySelector('.shcard').scrollTop=0; }
-  function closeWage(){ $('wsheet').hidden=true; }
+  function openWage(){ closeSheet(); wgPaint(); $('wsheet').hidden=false; shOpen(); $('wsheet').querySelector('.shcard').scrollTop=0; }
+  function closeWage(){ $('wsheet').hidden=true; shClose(); }
   var WDN=['월','화','수','목','금','토','일'];
   function wgDefY(){ var ty=+today.slice(0,4), c=MWT.filter(function(x){ return x.y<=ty; }); return c.length?c[c.length-1].y:MWT[0].y; }   // 올해(표에 없으면 표의 가장 가까운 과거 연도)
   function wgRg(a,b,u){ u=u||''; return a===b?won(a)+u:won(Math.min(a,b))+' ~ '+won(Math.max(a,b))+u; }
@@ -2596,8 +2623,8 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   ['wamt','wpd'].forEach(function(id){ $(id).addEventListener('blur',function(){ var v=amtNum(this.value); if(v>0)this.value=won(v); }); });   // 금액은 칸을 벗어나면 천 단위 쉼표
   $('wclr').addEventListener('click',wgClear);
 
-  function openLeave(){ closeSheet(); if(!$('aend').value)$('aend').value=today; alRun(); $('asheet').hidden=false; $('asheet').querySelector('.shcard').scrollTop=0; }
-  function closeLeave(){ $('asheet').hidden=true; }
+  function openLeave(){ closeSheet(); if(!$('aend').value)$('aend').value=today; alRun(); $('asheet').hidden=false; shOpen(); $('asheet').querySelector('.shcard').scrollTop=0; }
+  function closeLeave(){ $('asheet').hidden=true; shClose(); }
   function alRun(){ var s=$('ain').value, e=$('aend').value, el=$('ares');
     $('aclr').hidden=!s&&e===today;
     if(!s||!e){ el.innerHTML='<p class="c0">'+(!s?'입사일':'기준일')+'을 넣으면 계산합니다.</p>'; return; }
@@ -2653,8 +2680,8 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   (function(){ var n=0, t0=0, hero=document.querySelector('#vStart .hero'); if(!hero)return;
     hero.addEventListener('click',function(){ var now=Date.now(); if(now-t0>3000)n=0; if(!n)t0=now; n++; if(n>=5){ n=0; admOpen(); } }); })();
   function kstDay(off){ var d=new Date(Date.now()+9*3600e3-off*86400e3); return d.toISOString().slice(0,10); }
-  function admOpen(){ $('adm').hidden=false; document.body.style.overflow='hidden'; var k=''; try{ k=sessionStorage.getItem('lawon.adm')||''; }catch(e){} if(k)admLoad(k); else admLogin(''); }
-  function admClose(){ $('adm').hidden=true; document.body.style.overflow=''; }
+  function admOpen(){ $('adm').hidden=false; shOpen(); document.body.style.overflow='hidden'; var k=''; try{ k=sessionStorage.getItem('lawon.adm')||''; }catch(e){} if(k)admLoad(k); else admLogin(''); }
+  function admClose(){ $('adm').hidden=true; document.body.style.overflow=''; shClose(); }
   function admLogin(msg){ $('admBody').innerHTML='<div class="card"><p class="slb" style="margin-top:4px">비밀번호</p><input class="adm-in" id="admKey" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="off" autocapitalize="off" spellcheck="false"><p class="adm-msg" id="admMsg">'+esc(msg||'')+'</p><button type="button" class="btn pri" id="admGo">확인</button></div>';
     var go=function(){ var v=$('admKey').value.trim(); if(v)admLoad(v); };
     $('admGo').onclick=go; $('admKey').onkeydown=function(ev){ if(ev.key==='Enter')go(); }; }
@@ -2677,7 +2704,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     ['gesturestart','gesturechange'].forEach(function(t){ document.addEventListener(t,function(ev){ ev.preventDefault(); },{passive:false}); }); }
   loadUI(); applyUI(); $('q').value=''; load(); readProf(); lastProf=profKey(); updateFieldUI();
   try{ if('scrollRestoration' in history)history.scrollRestoration='manual'; }catch(e){}
-  hrep(0);
+  if(HIST){ try{ history.replaceState({fl:1,b:1},''); }catch(e){ HIST=false; } }   // 맨 아래 기록 = 분야 선택
   nav=(!FIELD[st.field]||st.nav==='start')?'start':(ROOT[st.nav]?st.nav:FIELD[st.field].home);
   paint();
   // ── 앱 설치: 안드로이드 Chrome·삼성 인터넷은 설치 창, 아이폰은 Safari 공유 → 홈 화면에 추가 ──
