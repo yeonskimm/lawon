@@ -37,23 +37,25 @@ export default {
       FAIL.delete(ip);
       const from = new Date(Date.now() + 9 * 3600e3 - 40 * 86400e3).toISOString().slice(0, 10);
       const q = (s, ...a) => env.DB.prepare(s).bind(...a).all().then(r => r.results);
-      const [t, v, nw] = await Promise.all([
+      const [t, vt, v, nw] = await Promise.all([
         q('SELECT count(*) n FROM users'),
+        q('SELECT count(*) n FROM visits'),   // 연인원(날마다 이용자 합계) — 2026-09-28 추가
         q('SELECT day, count(*) n FROM visits WHERE day >= ?1 GROUP BY day', from),
         q('SELECT first_day day, count(*) n FROM users WHERE first_day >= ?1 GROUP BY first_day', from)]);
       const m = {}; v.forEach(x => { m[x.day] = { day: x.day, n: x.n, nw: 0 }; }); nw.forEach(x => { (m[x.day] = m[x.day] || { day: x.day, n: 0, nw: 0 }).nw = x.n; });
-      return new Response(JSON.stringify({ total: t[0].n, days: Object.values(m) }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ total: t[0].n, vt: vt[0].n, days: Object.values(m) }), { headers: { ...cors, 'Content-Type': 'application/json' } });
     }
     if (url.pathname === '/stats') {
       if (!env.STATS_KEY || url.searchParams.get('key') !== env.STATS_KEY) return new Response('forbidden', { status: 403 });
       const q = s => env.DB.prepare(s).all().then(r => r.results);
-      const [t, d, v] = await Promise.all([
+      const [t, vt, d, v] = await Promise.all([
         q('SELECT count(*) n FROM users'),
+        q('SELECT count(*) n FROM visits'),
         q('SELECT device, count(*) n FROM users GROUP BY device'),
         q('SELECT day, count(*) n FROM visits GROUP BY day ORDER BY day DESC LIMIT 30')]);
       const row = a => a.map(x => `<tr><td>${x.day || x.device}</td><td>${x.n}</td></tr>`).join('');
       return new Response(`<meta charset="utf-8"><meta name="viewport" content="width=device-width">
-<h2>법ON 누적 이용자 ${t[0].n}명</h2><h3>기기별</h3><table>${row(d)}</table>
+<h2>법ON 누적 이용 기기 ${t[0].n}대 · 연인원 ${vt[0].n}명</h2><h3>기기별</h3><table>${row(d)}</table>
 <h3>날짜별 이용자(최근 30일)</h3><table>${row(v)}</table>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
     return new Response('not found', { status: 404 });
