@@ -2267,7 +2267,14 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   var HIST=!(/iPhone|iPad|iPod/.test(navigator.userAgent||'')||(/Macintosh/.test(navigator.userAgent||'')&&navigator.maxTouchPoints>1));   // 기록 API를 못 쓰는 환경(일부 미리보기 창 등)이면 기록 없이 앱 안에서만 이동
   // 2026-09-27: 아이폰·아이패드는 기록을 쓰지 않음 — 스와이프 때 기록을 만든 순간의 캡처가 보여 엉뚱한 화면이 비침(오늘의안전과 같게). 이동은 아래 탭·'← 뒤로'로
   function hpush(d){ if(!HIST)return; try{history.pushState({fl:1,d:d},'');}catch(e){HIST=false;} }
-  function hrep(d){ if(!HIST)return; try{history.replaceState({fl:1,d:d},'');}catch(e){HIST=false;} }
+  function hrep(d){ if(!HIST)return; var s={fl:1,d:d}; if(d===0&&qH&&nav==='find')s.q=1; try{history.replaceState(s,'');}catch(e){HIST=false;} }
+  // 2026-09-27 검색 결과 = 한 화면: 검색어를 치기 시작하면 기록 한 칸(q). 뒤로 → 검색 첫 화면(검색어는 최근 검색에 남김) → 분야 선택
+  var qH=false, qPend=false, qSkip=false;
+  function qSync(){ if(!HIST||nav!=='find'||topOf('find'))return; var has=!!st.q.trim();
+    if(has&&!qH){ if(qPend){ qPend=false; qH=true; try{history.replaceState({fl:1,d:0,q:1},'');}catch(e){} } else { try{history.pushState({fl:1,d:0,q:1},''); qH=true;}catch(e){} } }
+    else if(!has&&qH){ qH=false; qPend=true; setTimeout(function(){ if(!qPend)return; qPend=false; qSkip=true; history.back(); },0); } }   // ×·지우기로 비우면 결과 기록 되돌림
+  function qTake(){ var n=(qH||qPend)?1:0; qH=false; qPend=false; return n; }
+  function qBack(){ qH=false; clearTimeout(qt); addRecent(st.q); $('q').value=''; st.q=''; st.law=''; if(document.activeElement===$('q'))$('q').blur(); renderFind(); rootVer.find=ver; window.scrollTo(0,0); }
   // 2026-09-27 뒤로 버튼(안드로이드)·뒤로 스와이프(아이폰) = 앱 안 '← 뒤로'와 같게: 창 닫기 → 쌓인 화면 → 탭 첫 화면 → 분야 선택 → (안드로이드만) '한 번 더 누르면 종료'
   // 기록: [맨 아래 b=분야 선택][g=종료 안내용, 안드로이드만][탭 첫 화면 d:0][d:1…][창 sh]
   var ANDR=/Android/i.test(navigator.userAgent||''), guardOn=false, rootH=false, shH=false, shPend=false, shSkip=false;
@@ -2317,9 +2324,9 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   var popSeq=0;
   function goBack(){ var d0=stacks[nav]?stacks[nav].length:0; if(!d0)return; if(!HIST){ popTo(d0-1); return; } var seq=popSeq, en0=topOf(nav); history.back();
     setTimeout(function(){ if(popSeq===seq&&topOf(nav)===en0){ popTo(d0-1); hrep(d0-1); } },450); }   // 기록이 어긋나 뒤로 이동이 일어나지 않은 경우에만 직접 되돌림
-  function rebuildHistory(){ if(!stacks[nav])return; for(var i=1;i<=stacks[nav].length;i++)hpush(i); }
+  function rebuildHistory(){ if(!stacks[nav])return; if(nav==='find'&&st.q.trim()&&!qH){ try{history.pushState({fl:1,d:0,q:1},''); qH=true;}catch(e){} } for(var i=1;i<=stacks[nav].length;i++)hpush(i); }
   function goHome(){   // 첫 화면(분야 선택)으로. 입력한 사업장 조건은 그대로(지우기는 '조건 지우기')
-    if(nav==='start')return; var n=stacks[nav].length+(rootH?1:0)+shTake(); rootH=false; homeUI();
+    if(nav==='start')return; var n=stacks[nav].length+(rootH?1:0)+(nav==='find'?qTake():0)+shTake(); rootH=false; homeUI();
     if(HIST&&n>0){ unwinding=true; try{history.go(-n);}catch(e){unwinding=false;HIST=false;} } }
   function homeUI(){ closeSheets();
     Object.keys(stacks).forEach(function(k){ stacks[k].forEach(function(en){ if(en.el.parentNode)en.el.parentNode.removeChild(en.el); }); stacks[k]=[]; fwd[k]=[]; rootY[k]=0; });
@@ -2329,12 +2336,14 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     popSeq++; var hs=ev.state||{};
     if(unwinding){ unwinding=false; rebuildHistory(); return; }
     if(shSkip){ shSkip=false; return; }
+    if(qSkip){ qSkip=false; return; }
     if(shH){ closeSheets(); return; }   // 창이 열려 있으면 창만 닫기
     if(nav==='start'){
       if(hs.g){ guardOn=true; return; }
       if(hs.fl&&!hs.b){ try{history.back();}catch(e){} return; }   // 앞으로 가기·옛 기록은 건너뜀
       if(guardOn){ guardOn=false; exitHint(); } return; }
     if(!hs.fl||hs.b||hs.g){ rootH=false; homeUI(); return; }   // 탭 첫 화면에서 뒤로 → 분야 선택
+    if(nav==='find'&&qH&&!hs.q&&!stacks.find.length){ qBack(); return; }   // 검색 결과에서 뒤로
     var d=(typeof hs.d==='number')?hs.d:0, s=stacks[nav];
     if(d<s.length)popTo(d);
     else if(d>s.length){ var sp=fwd[nav].pop();
@@ -2345,7 +2354,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   function switchTab(t){
     if(nav==='start'||!ROOT[t])return; var sx=shTake(); if(sx)closeSheets();
     if(t===nav){ var dd=stacks[nav].length; if(dd>0){ if(HIST)history.go(-(dd+sx)); else popTo(0); } else { if(HIST&&sx){ unwinding=true; history.go(-1); } window.scrollTo(0,0); } return; }   // 지금 탭을 다시 누르면 그 탭 첫 화면(이미 첫 화면이면 맨 위)
-    saveY(); var a=stacks[nav].length; nav=t; fwd[t]=[]; paint(); restoreY();
+    saveY(); var a=stacks[nav].length+(nav==='find'?qTake():0); nav=t; fwd[t]=[]; paint(); restoreY();
     if(!HIST)return;
     if(a+sx>0){ unwinding=true; try{history.go(-(a+sx));}catch(e){unwinding=false;HIST=false;} } else rebuildHistory();
   }
@@ -2372,7 +2381,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     each('[data-field-set]',function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-field-set')===st.field));}); }
   function openSheet(){ syncSheet(); $('sheet').hidden=false; shOpen(); }
   function closeSheet(){ $('sheet').hidden=true; shClose(); }
-  function setQuery(w){ $('q').value=w; st.q=w; st.law=''; renderFind(); rootVer.find=ver; window.scrollTo(0,0); }
+  function setQuery(w){ $('q').value=w; st.q=w; st.law=''; qSync(); renderFind(); rootVer.find=ver; window.scrollTo(0,0); }
 
   // ── 이벤트 ──
   document.addEventListener('click',function(ev){
@@ -2428,9 +2437,9 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     if(!op){ var lim=$('hdr').offsetHeight, sb=nav==='find'&&!topOf('find')?document.querySelector('#vFind .sbar'):null, fc=sb?document.querySelector('#results .fl'):null;
       if(sb)lim+=sb.offsetHeight+(fc?fc.offsetHeight:0);
       var top=b.getBoundingClientRect().top; if(top<lim)window.scrollTo(0,(window.pageYOffset||0)+top-lim-6); } });   // 접은 제목이 화면 위로 사라지지 않게
-  var qt; $('q').addEventListener('input',function(){ clearTimeout(qt); var v=this.value; qt=setTimeout(function(){ st.q=v; if(!v.trim())st.law=''; renderFind(); rootVer.find=ver; if((window.pageYOffset||0)>0)window.scrollTo(0,0); },120); });   // 새 결과는 맨 위부터
+  var qt; $('q').addEventListener('input',function(){ clearTimeout(qt); var v=this.value; qt=setTimeout(function(){ st.q=v; if(!v.trim())st.law=''; qSync(); renderFind(); rootVer.find=ver; if((window.pageYOffset||0)>0)window.scrollTo(0,0); },120); });   // 새 결과는 맨 위부터
   $('q').addEventListener('keydown',function(ev){ if(ev.key==='Enter'){ ev.preventDefault(); addRecent(this.value); this.blur(); } });   // 검색 키를 누르면 자판을 내려 결과를 넓게
-  $('qx').addEventListener('click',function(){ $('q').value=''; st.q=''; st.law=''; renderFind(); rootVer.find=ver; $('q').focus(); });
+  $('qx').addEventListener('click',function(){ clearTimeout(qt); $('q').value=''; st.q=''; st.law=''; qSync(); renderFind(); rootVer.find=ver; $('q').focus(); });
   $('condl').addEventListener('click',function(){ st.condOpen=!st.condOpen; renderCond(); if(st.condOpen)$('n2').focus(); });
   each('[data-f]',function(x){ x.addEventListener('input',onProf); x.addEventListener('change',onProf); });
   $('tabL').addEventListener('click',function(){ st.tab='labor'; st.tick={n:null,amt:null}; save(); refresh(); });
