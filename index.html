@@ -400,7 +400,9 @@ button.brand:active{opacity:.7}
 #obody .lact [data-clearprof]{margin-left:auto}
 .otog{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;text-align:left;color:var(--ink)}
 .otog .ot{flex:1;min-width:0}
-.otog .ot .g{display:block;font-size:.875rem;line-height:1.5;font-weight:600;color:var(--pri)}
+.otog .ot .g{display:block;font-size:.8125rem;line-height:1.5;font-weight:600;letter-spacing:-.02em;color:var(--pri)}
+html:not([data-fs="l"]) .otog .ot{container-type:inline-size}
+html:not([data-fs="l"]) .otog .ot .g{font-size:clamp(11.5px,5cqi,.8125rem)}   /* 2026-09-28: 안내 문구 두 줄 고정(줄을 <br>로 나누고 칸 폭에 맞춰 글자 크기 조정, 보통 글자만) */
 .otog .ot b{display:block;font-size:.9375rem;font-weight:800}
 .otog .ot small{display:block;margin-top:1px;font-size:.8125rem;color:var(--ink2)}
 .otog .oe{flex:none;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:8px;background:var(--hl);color:var(--pri);font-size:.8125rem;font-weight:700}
@@ -1860,7 +1862,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
       D.arts.forEach(function(e){ if(e.l==='GK'&&((e.s&&e.s.length)||e.fut))add(judgeArt(e,pf)); });
       ps=[['적용',c.apply],['추가 확인',c.cond],['적용 제외',c.nx],['대상 아님',c.nt],['시행 전',c.future]].filter(function(x){return x[1];}); }
     $('lt').innerHTML=ready?'<b>'+esc('상시 '+pf.n+'명 · '+(small?'5명 미만 사업장':'5명 이상 사업장'))+'</b><small>'+ps.slice(0,2).map(function(v){return v[0]+' '+v[1];}).join(' · ')+'</small>'
-      :'<span class="g">상시근로자 수를 입력하면 법 적용 여부를 함께 확인할 수 있습니다.</span>';
+      :'<span class="g">상시근로자 수를 입력하면<br>검색&nbsp;결과에 법&nbsp;적용&nbsp;여부가&nbsp;표시됩니다.</span>';
     $('le').textContent=open?'접기':(ready?'바꾸기':'입력');
     $('ltog').setAttribute('aria-expanded',String(open)); $('lbody').hidden=!open; if(!open)return;
     $('lsum').innerHTML=!ready?'<p class="lsz">근로기준법 시행령 제7조의2(제2항 포함)로 판단한 규모를 입력하세요.</p>'
@@ -1894,7 +1896,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     var cur=pf.id||'', cat=catOf(cur), x=indOf(cur), C=cat==='const', ready=!!cur&&pf.n!=null&&(!C||pf.amt!=null), any=!!(cur||pf.n!=null);
     var ps=ready?oCount():[];
     $('ot').innerHTML=ready?'<b>'+esc((x.short||indLab(x))+' · 상시 '+pf.n+'명'+(C?' · '+pf.amt+'억원':''))+'</b><small>주요 의무 '+ps.slice(0,2).map(function(v){return v[0]+' '+v[1];}).join(' · ')+(pf.n<5?' · 5명 미만 일부 적용 제외':'')+'</small>'
-      :'<span class="g">업종과 상시근로자 수를 입력하면 법 적용 여부를 함께 확인할 수 있습니다.</span>';
+      :'<span class="g">업종과 상시근로자 수를 입력하면<br>검색&nbsp;결과에 법&nbsp;적용&nbsp;여부가&nbsp;표시됩니다.</span>';
     $('oe').textContent=open?'접기':(any?'바꾸기':'입력');
     $('otog').setAttribute('aria-expanded',String(open)); $('obody').hidden=!open; if(!open)return;
     var h='<div class="ichips'+(cur?' has':'')+'">'+ICAT.map(function(c){return '<button type="button" class="ichip" data-icat="'+c[0]+'" aria-pressed="'+(cat===c[0])+'">'+c[1]+'</button>';}).join('')+'</div>';
