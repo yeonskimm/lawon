@@ -40,4 +40,19 @@ for(const [q,exp,n,first] of CASES){
 // 별표: 직업성 질병 → 중처법 시행령 별표1
 const bh=C.bsearch(D,'열사병','osh'); const okb=bh.some(x=>(x.tab&&x.tab.id==='ZD1')||(x.r&&x.r.tb==='ZD1'));
 console.log((okb?'PASS':'FAIL')+'  별표 검색 열사병 → 중처법 시행령 별표1 포함'); if(!okb)fail++;
+// 2026-09-28 주요 의무: 근거 조문 제목·고정조문 연결, 키워드, 법령 이름만 검색 [검색어, 포함할 id, 포함하면 안 되는 id]
+const ICASES=[
+ ['안전교육',['o_edu','o_edu3','o_for'],[]],['작업내용 변경',['o_edu','o_edu3'],[]],['산안위',['o_comm'],[]],
+ ['중처법',['o_sapa'],[]],['중대산업재해',['o_sapa'],[]],['경영책임자',['o_sapa'],[]],['불법파견',['l_disp'],[]],
+ ['금품청산',['l_ret'],[]],['무기계약',['l_ft4'],[]],['배치전',['o_hc'],[]],
+ // 본문에만 스친 조문으로는 붙이지 않음
+ ['주휴',[],['l_ft17']],['감시단속',[],['o_38']],['통상임금',[],['l_ft4']],['유산',[],['l_cl']],['산재미보고',['o_57'],['o_disc']],['한파',[],['o_38']],
+];
+for(const [q,inc,exc] of ICASES){
+  const r=C.search(D,q,'',OSH), ids=r.items.map(i=>i.id);
+  const ok=inc.every(x=>ids.includes(x))&&!exc.some(x=>ids.includes(x));
+  if(!ok)fail++; console.log((ok?'PASS':'FAIL')+'  주요 의무 '+q.padEnd(10)+' → '+ids.join(', '));
+}
+const rl=C.search(D,'산안법','',OSH); const okl=rl.lawOnly===1&&rl.items.length>5;
+console.log((okl?'PASS':'FAIL')+'  법령 이름만(산안법) → 주요 의무 '+rl.items.length+'건(화면에서 접힘)'); if(!okl)fail++;
 console.log(fail?('실패 '+fail+'건'):'전체 통과'); process.exit(fail?1:0);
