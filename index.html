@@ -76,6 +76,7 @@ a{color:var(--pri);-webkit-tap-highlight-color:transparent}
 .r1 .ttl{font-weight:600}
 .r1 .ttl.b{font-weight:700}
 .r2{display:block;margin-top:2px;font-size:.8125rem;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r2.pth{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-height:1.4}
 .snip{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px;font-size:.875rem;line-height:1.5;color:var(--ink2)}
 mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 .r3{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:7px}
@@ -1665,14 +1666,20 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     return t; }
 
   // ── 목록 한 줄 ──
+  var PDUP=null; function pathDup(){ if(PDUP)return PDUP; PDUP={}; var seen={}; D.arts.forEach(function(e){ var p=e.p||[]; if(p.length<2)return; var k=e.l+'|'+p[p.length-1], par=p.slice(0,-1).join('|'); if(seen[k]!==undefined&&seen[k]!==par)PDUP[e.l]=1; else seen[k]=par; }); return PDUP; }
+  function pathShort(e){   // 2026-09-28: 목록용 경로 — 절 이름이 겹치는 법령만 장까지(편 제외, 안전보건규칙 장 이름 끝 반복 문구 제외)
+    if(!pathDup()[e.l])return [e.p[e.p.length-1]];
+    return e.p.filter(function(x){return !/^제\d+편/.test(x);}).map(function(x){
+      return (e.l==='RULE'&&/^제\d+장 /.test(x))?x.replace(/(에 의한|으로 인한|로 인한|에서의) (건강장해의? 예방|위험 ?방지|위험 ?예방)$/,'').replace(/ 시의 위험방지$/,''):x; });
+  }
   function rowArt(e,o){ o=o||{};
     var j=judgeArt(e,pf), rs=ruleSanc(D,e), sanc=e.s||(rs?rs.list:[]), pd=pend(e);
     if(!e.s&&!rs&&e.pa&&e.pa.s)sanc=e.pa.s.map(function(z){return {kind:z.kind,basis:fullBasis(z.basis,e.pa.l)};});   // 시행령·시행규칙 줄: 근거 법 조문의 제재를 법 이름과 함께
     var head=(rs&&!e.s)?sanc.slice(0,1):sanc, rest=sanc.length-head.length;   // 규칙 조문은 사업주 제재(첫 항목)만, 나머지는 상세에서
     var h='<button type="button" class="row'+(j.st==='na'?' isna':'')+'" data-art="'+e.l+':'+esc(e.no)+'">';
     h+='<span class="r1 ac"><span class="no">'+esc(e.no)+'</span> <span class="ttl">'+esc(e.t||'(제목 없음)')+'</span></span>';
-    var sub=[]; if(o.law)sub.push(D.meta.laws[e.l].short); if(o.path&&e.p&&e.p.length)sub.push(e.p[e.p.length-1]);
-    if(sub.length)h+='<span class="r2">'+esc(sub.join(' › '))+'</span>';
+    var sub=[]; if(o.law)sub.push(D.meta.laws[e.l].short); if(o.path&&e.p&&e.p.length)sub=sub.concat(pathShort(e));
+    if(sub.length)h+='<span class="r2'+(o.path?' pth':'')+'">'+esc(sub.join(' › '))+'</span>';
     if(o.snip)h+='<span class="snip">'+o.snip+'</span>';
     var r3=((!sanc.length&&isPen(e))?'':sancLine(head,D.meta.laws[e.l].short))+(rest>0?'<span class="more">외 '+rest+'건</span>':'')+labels(j,pd,o.grouped);
     if(r3)h+='<span class="r3">'+r3+'</span>';
@@ -1832,7 +1839,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
       var gk=function(e){ var pk=e.pa?e.pa.l+':'+e.pa.no:''; return (pk&&inR[pk])?pk:e.l+':'+e.no; };
       arts.forEach(function(e){ var g=gk(e); if(g!==e.l+':'+e.no)(kids[g]=kids[g]||[]).push(e); });
       return arts.map(function(e){ var g=gk(e); if(done[g])return ''; done[g]=1; var P=D.byKey[g];
-        return rowArt(P,{law:true,path:true,snip:snippet(P,st.q)})+(kids[g]?kids[g].map(function(x){return subRow(x);}).join(''):''); }).join(''); };
+        return rowArt(P,{law:!(st.law&&P.l===st.law),path:true,snip:snippet(P,st.q)})+(kids[g]?kids[g].map(function(x){return subRow(x);}).join(''):''); }).join(''); };
     var own=r.arts, oth=[], inN=r.total, othN=0;
     if(split){ own=r.arts.filter(function(e){return fl.indexOf(e.l)>=0;}); oth=r.arts.filter(function(e){return fl.indexOf(e.l)<0;}); inN=r.inN; othN=r.total-inN; }
     foldKey(st.q+'|'+st.field+'|'+st.law);
@@ -1935,6 +1942,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   function renderFind(){ var s=!!st.q.trim(); $('qBox').className='q'+(st.q?' has':''); $('results').hidden=!s; $('quick').hidden=s; renderCond(); if(s)renderResults(); else renderQuick(); }
 
   // ── 법령집: 법령 → 편·장·절 → 조문 ──
+  function artRange(a){ var n=a.map(function(e){return e.no;}).sort(cmpNo); return n.length>1?n[0]+' ~ '+n[n.length-1]:(n[0]||''); }   // 2026-09-28
   function bookGroups(k,path){
     var arts=D.arts.filter(function(e){ if(e.l!==k)return false; for(var i=0;i<path.length;i++){ if((e.p||[])[i]!==path[i])return false; } return true; });
     var d=path.length, segs=[], by={};
@@ -2101,7 +2109,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
         en.el.innerHTML=h; return; } }
     if(g.segs.length>1&&g.arts.length>24&&g.segs.some(function(x){return x;})){   // 하위 목차로
       en.segs=g.segs;
-      h+='<h3 class="gl">목차</h3><div class="list">'+g.segs.map(function(x,i){return '<button type="button" class="brow" data-bkg="'+i+'"><span class="bn"><b>'+esc(x||'그 밖의 조문')+'</b></span><span class="bm">조문 '+g.by[x].length+'</span>'+CHEV+'</button>';}).join('')+'</div>';
+      h+='<h3 class="gl">목차</h3><div class="list">'+g.segs.map(function(x,i){return '<button type="button" class="brow" data-bkg="'+i+'"><span class="bn"><b>'+esc(x||'그 밖의 조문')+'</b><small>'+esc(artRange(g.by[x]))+'</small></span>'+CHEV+'</button>';}).join('')+'</div>';
     }else{   // 조문 목록: 남은 경로를 소제목으로
       en.segs=null;
       var subs=[],sb={}; g.arts.slice().sort(function(a,c){return cmpNo(a.no,c.no);}).forEach(function(e){var k=(e.p||[]).slice(g.d).join(' › ');if(!sb[k]){sb[k]=[];subs.push(k);}sb[k].push(e);});
