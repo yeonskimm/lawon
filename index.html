@@ -1327,6 +1327,31 @@ function bsearch(D,q,fld){
   out.sort(function(a,b){ return b.sc-a.sc||fr(a)-fr(b); });   // 안정 정렬: 점수가 같으면 별표·묶음 먼저, 줄은 위 순서
   return out;
 }
+// ── 인용 법령(2026-09-29): 조문 본문의 「법령명」 제N조(조문 번호가 있는 인용만)를 뽑아 목록으로. '같은 법·같은 영·같은 규칙'은 앞 인용을 이어받음
+// 옛 이름: 법령 원문이 개정되지 않고 남은 표기 → 현행 법령으로 연결(조문 내용 대응 확인, 2026-09-29 법제처 조회)
+var XREF_ALIAS={'고령자고용촉진법':'고용상 연령차별금지 및 고령자고용촉진에 관한 법률','외국인 근로자 고용 등에 관한 법률':'외국인근로자의 고용 등에 관한 법률',
+  '사법경찰관리의 직무를 행할 자와 그 직무범위에 관한 법률':'사법경찰관리의 직무를 수행할 자와 그 직무범위에 관한 법률',
+  '특별사법경찰관리 수사준칙':'특별사법경찰관리에 대한 검사의 수사지휘 및 특별사법경찰관리의 수사준칙에 관한 규칙'};
+// 연결 제외: 폐지·분법으로 현행 조문과 대응이 불확실하거나(법제처 조회 안 됨) 법령이 아닌 것(서식·별표 이름)
+var XREF_SKIP=['항공법','해사안전법','이동통신단말장치 유통구조 개선에 관한 법률','부동산가격공시 및 감정평가에 관한 법률','참고인등 비용지급에 관한 규정',
+  '전화 등 사실확인서','처벌불원 의사표시 유의사항 고지사실 확인서','신고사건 심사 의결서','집단 노동관계법령 위반사항 조치기준'];
+function xnk(s){return String(s||'').replace(/[\s·ㆍ]/g,'');}
+function xrefs(D,e){
+  if(!D._xl){ D._xl={}; Object.keys(D.meta.laws).forEach(function(k){ D._xl[xnk(D.meta.laws[k].name)]=k; }); D._xs={}; XREF_SKIP.forEach(function(n){D._xs[xnk(n)]=1;}); }
+  var s=(e&&e.x)||'', re=/「([^」]{2,60})」\s*(제\d+조(?:의\d+)?)?|같은\s*(법\s*시행령|법\s*시행규칙|법|영|규칙)(?=\s|제|$)\s*(제\d+조(?:의\d+)?)?/g, m, cur=null, out=[], seen={};
+  var own=e.l+':'+e.no, skip={}; skip[own]=1; if(e.pa)skip[e.pa.l+':'+e.pa.no]=1; (e.rel||[]).forEach(function(k){skip[k]=1;});
+  while((m=re.exec(s))){ var name, no;
+    if(m[1]!=null){ name=m[1].trim(); no=m[2]; }
+    else{ if(!cur)continue; var w=m[3].replace(/\s/g,''), base=cur.replace(/\s*시행(령|규칙)$/,'');
+      name=w==='법'?base:w==='법시행령'?base+' 시행령':w==='법시행규칙'?base+' 시행규칙':w==='영'?(/(시행령|규정)$/.test(cur)?cur:base+' 시행령'):(/규칙$/.test(cur)?cur:base+' 시행규칙');
+      no=m[4]; }
+    cur=name;
+    if(!no||D._xs[xnk(name)])continue;
+    var t=XREF_ALIAS[name]||name, code=D._xl[xnk(t)], key=code?code+':'+no:'';
+    if(key&&skip[key])continue;
+    var id=xnk(t)+':'+no; if(seen[id])continue; seen[id]=1;
+    out.push({n:t,no:no,k:(key&&D.byKey[key])?key:''}); }   // 앱 수록 법령인데 조문이 없으면(삭제 조문 등) 법제처로
+  return out; }
 /*CORE_END*/
 /*CALC_START*/
 // ── 계산 도구 산식(임금 환산·연차 발생일수). 화면과 떼어 tests/calc_test.js에서 법령 기준 기대값으로 검사 ──
@@ -2032,6 +2057,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     else if(sanc.length||!isPen(e))h+=sancSections(sanc,rs&&!e.s?function(z){   // 2026-09-26: 안전보건규칙 조문의 과태료 금액은 근거 법 조문(제40조·제77조 등)의 부과기준에서
       var nos=(z.qual||'').match(/제\d+조(?:의\d+)?/g)||[], b=normB(z.basis); for(var i=0;i<nos.length;i++){ var a=D.byKey['OSH:'+nos[i]]; if(a&&(a.fn||[]).some(function(x){return normB(x.b)===b;}))return a; } return e; }:function(){return e;},e.l,e.no);   // 벌칙·과태료 조문 자신은 이 칸을 두지 않음
     h+=actCard(e);   // 위반 시 감독 조치기준(집무규정 별표)
+    h+=xrefCard(e);   // 본문이 인용한 다른 법령 조문(접힘)
     h+='<div class="acts"><a class="btn pri" href="'+(L.adm?admUrl(L.url):lawUrl(L.url,e.no))+'" target="_blank" rel="noopener">국가법령정보센터 원문 보기</a></div>';
     var jr=(pf.n==null&&e.l==='RULE')?judgeArt(e,{n:5,ind:'',amt:null}):j;   // 안전보건규칙은 규모와 무관하므로 인원이 없어도 판단 문구를 보여줌
     if(!e.nj||e.fut)h+='<h3 class="gl">'+(e.nj?'시행일':'적용 판단')+'</h3>'+whyCard(jr,(pf.n==null&&!e.fut&&e.l!=='RULE')?'상시근로자 수를 입력하면 규모 기준을 판정합니다.':'',e.lnk?e.lnk.id:'');
@@ -2258,6 +2284,11 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     var b=function(x,lb,cls){return x?'<button type="button" class="'+cls+'" data-brswap="'+x.id+'"><small>'+lb+'</small><span>'+esc((btLab(x)?btLab(x)+' ':'')+x.t)+'</span></button>':'<span></span>';};
     h+='<div class="pn">'+b(pv,'이전','pp')+b(nx,'다음','nx')+'</div>';
     en.el.innerHTML=h; }
+  // 조문 상세 → 본문이 인용한 다른 법령 조문(기본은 접음). 앱 수록 법령은 앱 조문으로, 그 밖은 국가법령정보센터로 — 2026-09-29
+  function xrefCard(e){ var L=xrefs(D,e); if(!L.length)return '';
+    var body='<div class="list">'+L.map(function(r){ if(r.k)return rowArt(D.byKey[r.k],{law:true});
+      return '<a class="row" href="'+lawUrl(r.n,r.no)+'" target="_blank" rel="noopener"><span class="r1"><span class="ttl">'+esc(r.n)+'</span> <span class="no">'+esc(r.no)+'</span></span><span class="r2">국가법령정보센터에서 열기</span>'+CHEV+'</a>'; }).join('')+'</div>';
+    return foldSec('xr:'+e.l+':'+e.no,'인용 법령',L.length+'건',body,false); }
   // 조문 상세 → 그 조문이 가리키는 별표
   function actCard(e){ var L=(BT&&BT.act&&BT.act[e.l+':'+e.no])||[]; if(!L.length)return ''; var by={}, ord=[];
     L.forEach(function(id){ var r=BT.byId[id]; if(!r)return; if(!by[r.tb]){by[r.tb]=[];ord.push(r.tb);} if(by[r.tb].indexOf(r)<0)by[r.tb].push(r); });
