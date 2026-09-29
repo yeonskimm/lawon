@@ -41,6 +41,8 @@ jobs:
         run: node tests/xref_test.js index.html
       - name: 캐시 삭제 범위 (오늘의안전 저장본 보존)
         run: node tests/check_sw_scope.js service-worker.js
+      - name: 배포 정보 자리 (관리자 화면 커밋 번호·최종 업데이트)
+        run: python3 tools/stamp_build.py --check index.html
   deploy:
     needs: test
     runs-on: ubuntu-latest
@@ -49,12 +51,20 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 앱 파일 마지막 변경일을 커밋 기록에서 구하려고 전체 기록을 받음
       - name: 배포 파일만 모으기 (tests·tools·.github 제외)
         run: |
           mkdir _site
           rsync -a --exclude '.git' --exclude '.github' --exclude 'tests' --exclude 'tools' --exclude '_site' ./ _site/
       - name: 법령집 표기 넣기 (법제처 현행 공포번호·시행일, 실패해도 배포 계속)
         run: python3 tools/inject_meta.py _site/index.html tools/law_meta.json
+      - name: 앱 반영 정보 넣기 (앱 파일을 마지막으로 바꾼 커밋 번호·시각 — README 등만 바뀌면 그대로)
+        run: |
+          F="index.html service-worker.js manifest.json icon-192.png icon-512.png icon-maskable-512.png"
+          APP_SHA=$(git log -1 --format=%H -- $F)
+          APP_AT=$(TZ=Asia/Seoul git log -1 --date=format-local:%Y-%m-%dT%H:%M --format=%cd -- $F)
+          python3 tools/stamp_build.py _site/index.html "$APP_SHA" "$APP_AT"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
