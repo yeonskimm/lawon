@@ -185,6 +185,10 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 .law{margin:0;white-space:pre-wrap;font-size:1rem;line-height:1.75}
 .law.clip{max-height:12.25em;overflow:hidden;position:relative}
 .law.clip:after{content:"";position:absolute;left:0;right:0;bottom:0;height:3.2em;background:linear-gradient(to bottom,transparent,var(--card))}
+.btn.xrb{gap:8px;min-height:46px;margin-top:10px;font-size:.9375rem}
+.xrb svg{width:19px;height:19px;flex:none;color:var(--pri)}
+.xrn{min-width:24px;padding:1px 8px;border-radius:999px;background:var(--hl);color:var(--pri);font-size:.8125rem;font-weight:800;font-variant-numeric:tabular-nums}
+.xhint{margin:0 2px 10px;font-size:.8125rem;line-height:1.5;color:var(--ink2)}
 .fullbtn{display:block;width:100%;height:44px;margin-top:10px;border-radius:6px;border:1px solid var(--line2);font-size:.9375rem;font-weight:600;color:var(--ink);text-align:center}
 .via{margin:0 0 10px;font-size:.875rem;color:var(--ink2)}
 .via b{color:var(--ink)}
@@ -801,6 +805,14 @@ html:not([data-fs="l"]) .otog .ot .g{font-size:clamp(11.5px,5cqi,.8125rem)}   /*
     <div id="admBody"></div>
   </div>
 </div>
+<div class="sheet" id="xsheet" hidden role="dialog" aria-modal="true" aria-labelledby="xsheetT">
+  <div class="shbg" data-xclose="1"></div>
+  <div class="shcard">
+    <div class="shh"><h2 id="xsheetT">인용 조문</h2><button type="button" data-xclose="1">닫기</button></div>
+    <p class="xhint" id="xhint"></p>
+    <div class="list" id="xlist"></div>
+  </div>
+</div>
 <div class="sheet" id="isheet" hidden role="dialog" aria-modal="true" aria-labelledby="isheetT">
   <div class="shbg" data-iclose="1"></div>
   <div class="shcard">
@@ -1327,7 +1339,7 @@ function bsearch(D,q,fld){
   out.sort(function(a,b){ return b.sc-a.sc||fr(a)-fr(b); });   // 안정 정렬: 점수가 같으면 별표·묶음 먼저, 줄은 위 순서
   return out;
 }
-// ── 인용 법령(2026-09-29): 조문 본문의 「법령명」 제N조(조문 번호가 있는 인용만)를 뽑아 목록으로. '같은 법·같은 영·같은 규칙'은 앞 인용을 이어받음
+// ── 인용 조문(2026-09-29): 조문 본문의 「법령명」 제N조(조문 번호가 있는 인용만)를 뽑아 목록으로. '같은 법·같은 영·같은 규칙'은 앞 인용을 이어받음
 // 옛 이름: 법령 원문이 개정되지 않고 남은 표기 → 현행 법령으로 연결(조문 내용 대응 확인, 2026-09-29 법제처 조회)
 var XREF_ALIAS={'고령자고용촉진법':'고용상 연령차별금지 및 고령자고용촉진에 관한 법률','외국인 근로자 고용 등에 관한 법률':'외국인근로자의 고용 등에 관한 법률',
   '사법경찰관리의 직무를 행할 자와 그 직무범위에 관한 법률':'사법경찰관리의 직무를 수행할 자와 그 직무범위에 관한 법률',
@@ -2049,6 +2061,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     h+='</div>';
     var long=e.x.length>360||e.x.split('\n').length>8, full=!!en.full;   // 긴 조문은 몇 줄만 보이고 펼치기(벌칙·과태료가 너무 아래로 밀리지 않게)
     h+='<h3 class="gl">조문</h3><div class="card"><div class="law fm'+(long&&!full?' clip':'')+'">'+fmtLaw(e.x)+'</div>'+(long?'<button type="button" class="fullbtn" data-full="1" aria-expanded="'+full+'">'+(full?'조문 접기':'조문 전문 보기')+'</button>':'')+'</div>';
+    h+=xrefBtn(e);   // 본문이 인용한 다른 법령 조문 → 버튼(누르면 아래 창 목록). 인용이 없으면 버튼 없음
     h+=artNote(e);   // 조문만으로 오해할 수 있는 부칙 특례(최임법 제6조)
     h+=subLawCards(e);   // 법 → 시행령 → 시행규칙 (근거 법 조문 / 하위 규정)
     h+=artBt(e);   // 조문이 '별표 N'으로 넘기는 내용(대상 작업·물질 목록 등)
@@ -2057,7 +2070,6 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     else if(sanc.length||!isPen(e))h+=sancSections(sanc,rs&&!e.s?function(z){   // 2026-09-26: 안전보건규칙 조문의 과태료 금액은 근거 법 조문(제40조·제77조 등)의 부과기준에서
       var nos=(z.qual||'').match(/제\d+조(?:의\d+)?/g)||[], b=normB(z.basis); for(var i=0;i<nos.length;i++){ var a=D.byKey['OSH:'+nos[i]]; if(a&&(a.fn||[]).some(function(x){return normB(x.b)===b;}))return a; } return e; }:function(){return e;},e.l,e.no);   // 벌칙·과태료 조문 자신은 이 칸을 두지 않음
     h+=actCard(e);   // 위반 시 감독 조치기준(집무규정 별표)
-    h+=xrefCard(e);   // 본문이 인용한 다른 법령 조문(접힘)
     h+='<div class="acts"><a class="btn pri" href="'+(L.adm?admUrl(L.url):lawUrl(L.url,e.no))+'" target="_blank" rel="noopener">국가법령정보센터 원문 보기</a></div>';
     var jr=(pf.n==null&&e.l==='RULE')?judgeArt(e,{n:5,ind:'',amt:null}):j;   // 안전보건규칙은 규모와 무관하므로 인원이 없어도 판단 문구를 보여줌
     if(!e.nj||e.fut)h+='<h3 class="gl">'+(e.nj?'시행일':'적용 판단')+'</h3>'+whyCard(jr,(pf.n==null&&!e.fut&&e.l!=='RULE')?'상시근로자 수를 입력하면 규모 기준을 판정합니다.':'',e.lnk?e.lnk.id:'');
@@ -2284,11 +2296,17 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     var b=function(x,lb,cls){return x?'<button type="button" class="'+cls+'" data-brswap="'+x.id+'"><small>'+lb+'</small><span>'+esc((btLab(x)?btLab(x)+' ':'')+x.t)+'</span></button>':'<span></span>';};
     h+='<div class="pn">'+b(pv,'이전','pp')+b(nx,'다음','nx')+'</div>';
     en.el.innerHTML=h; }
-  // 조문 상세 → 본문이 인용한 다른 법령 조문(기본은 접음). 앱 수록 법령은 앱 조문으로, 그 밖은 국가법령정보센터로 — 2026-09-29
-  function xrefCard(e){ var L=xrefs(D,e); if(!L.length)return '';
-    var body='<div class="list">'+L.map(function(r){ if(r.k)return rowArt(D.byKey[r.k],{law:true});
-      return '<a class="row" href="'+lawUrl(r.n,r.no)+'" target="_blank" rel="noopener"><span class="r1"><span class="ttl">'+esc(r.n)+'</span> <span class="no">'+esc(r.no)+'</span></span><span class="r2">국가법령정보센터에서 열기</span>'+CHEV+'</a>'; }).join('')+'</div>';
-    return foldSec('xr:'+e.l+':'+e.no,'인용 법령',L.length+'건',body,false); }
+  // 인용 조문(2026-09-29): 조문 카드 아래 버튼 → 아래 창(xsheet) 목록. 앱 수록 법령은 앱 조문으로, 그 밖은 국가법령정보센터로
+  var XBOOK='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5a1.5 1.5 0 0 1 1.5 1.5z"/></svg>';
+  function xrefBtn(e){ var L=xrefs(D,e); if(!L.length)return '';
+    return '<button type="button" class="btn sec xrb" data-xr="'+e.l+':'+esc(e.no)+'">'+XBOOK+'인용 조문<span class="xrn">'+L.length+'</span></button>'; }
+  function openXSheet(k){ var e=D.byKey[k]; if(!e)return; var L=xrefs(D,e), inApp=L.some(function(r){return r.k;}), out=L.some(function(r){return !r.k;});
+    $('xsheetT').textContent='인용 조문 '+L.length+'건';
+    $('xhint').textContent=(inApp&&out)?'앱에 수록된 법령은 앱에서, 그 밖의 법령은 국가법령정보센터에서 열립니다.':(inApp?'앱에 수록된 조문으로 이동합니다.':'국가법령정보센터 해당 조문이 열립니다.');
+    $('xlist').innerHTML=L.map(function(r){ if(r.k)return rowArt(D.byKey[r.k],{law:true});
+      return '<a class="row" href="'+lawUrl(r.n,r.no)+'" target="_blank" rel="noopener"><span class="r1"><span class="ttl">'+esc(r.n)+'</span> <span class="no">'+esc(r.no)+'</span></span><span class="r2">국가법령정보센터에서 열기</span>'+CHEV+'</a>'; }).join('');
+    $('xsheet').hidden=false; shOpen(); $('xsheet').querySelector('.shcard').scrollTop=0; }
+  function closeXSheet(){ $('xsheet').hidden=true; shClose(); }
   // 조문 상세 → 그 조문이 가리키는 별표
   function actCard(e){ var L=(BT&&BT.act&&BT.act[e.l+':'+e.no])||[]; if(!L.length)return ''; var by={}, ord=[];
     L.forEach(function(id){ var r=BT.byId[id]; if(!r)return; if(!by[r.tb]){by[r.tb]=[];ord.push(r.tb);} if(by[r.tb].indexOf(r)<0)by[r.tb].push(r); });
@@ -2333,7 +2351,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   // 2026-09-27 뒤로 버튼(안드로이드)·뒤로 스와이프(아이폰) = 앱 안 '← 뒤로'와 같게: 창 닫기 → 쌓인 화면 → 탭 첫 화면 → 분야 선택 → (안드로이드만) '한 번 더 누르면 종료'
   // 기록: [맨 아래 b=분야 선택][g=종료 안내용, 안드로이드만][탭 첫 화면 d:0][d:1…][창 sh]
   var ANDR=/Android/i.test(navigator.userAgent||''), guardOn=false, rootH=false, shH=false, shPend=false, shSkip=false;
-  var SHEETS=['sheet','isheet','csheet','wsheet','asheet','adm'];
+  var SHEETS=['sheet','isheet','csheet','wsheet','asheet','adm','xsheet'];
   function anySheet(){ return SHEETS.some(function(id){ var el=$(id); return !!el&&!el.hidden; }); }
   function shOpen(){ if(!HIST||shH)return; if(shPend){ shPend=false; shH=true; return; }   // 창을 닫자마자 다른 창을 열면 기록 하나를 이어 씀
     var s=history.state||{}, c={fl:1,sh:1}; if(typeof s.d==='number')c.d=s.d;
@@ -2485,6 +2503,9 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     else if(t.hasAttribute('data-iclose')){ closeISheet(); }
     else if(t.hasAttribute('data-otog')){ if(st.q.trim())st.condOpen=!st.condOpen; else st.oOpen=!st.oOpen; renderCond(); if(t.id==='ltog'&&!$('lbody').hidden&&!$('n3').value)$('n3').focus(); } });
   $('iq').addEventListener('input',renderIList);
+  document.addEventListener('click',function(ev){ var t=ev.target.closest('[data-xr],[data-xclose]'); if(!t)return;   // 인용 조문 창(2026-09-29)
+    if(t.hasAttribute('data-xr'))openXSheet(t.getAttribute('data-xr')); else closeXSheet(); });
+  $('xsheet').addEventListener('click',function(ev){ if(ev.target.closest('[data-art]'))closeXSheet(); },true);   // 창 안 앱 조문 줄: 창을 먼저 닫고(기록은 push가 이어 씀) 조문 화면으로
   document.addEventListener('click',function(ev){ var b=ev.target.closest('[data-fold],[data-bktab]'); if(!b)return;   // 2026-09-25
     if(b.hasAttribute('data-bktab')){ var en=topOf(nav); if(en&&en.spec.type==='bk'){ en.spec.tab=b.getAttribute('data-bktab'); renderSub(en); } return; }
     var k=b.getAttribute('data-fold'), op=b.getAttribute('aria-expanded')!=='true', bd=b.nextElementSibling;
@@ -2502,7 +2523,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
   $('fieldsw').addEventListener('click',function(){ setField(st.field==='labor'?'osh':'labor'); });
   $('gear').addEventListener('click',openSheet);
   $('hback').addEventListener('click',goBack);
-  document.addEventListener('keydown',function(ev){ if(ev.key==='Escape'){ if(!$('csheet').hidden)closeCalc(); else if(!$('wsheet').hidden)closeWage(); else if(!$('asheet').hidden)closeLeave(); else if(!$('isheet').hidden)closeISheet(); else if(!$('sheet').hidden)closeSheet(); } });
+  document.addEventListener('keydown',function(ev){ if(ev.key==='Escape'){ if(!$('csheet').hidden)closeCalc(); else if(!$('wsheet').hidden)closeWage(); else if(!$('asheet').hidden)closeLeave(); else if(!$('isheet').hidden)closeISheet(); else if(!$('xsheet').hidden)closeXSheet(); else if(!$('sheet').hidden)closeSheet(); } });
   window.addEventListener('resize',function(){ setHdrH(); setSbH(); });
   if(window.matchMedia){ var mq=window.matchMedia('(prefers-color-scheme: dark)'), onMq=function(){ if(ui.theme==='auto')applyUI(); }; if(mq.addEventListener)mq.addEventListener('change',onMq); else if(mq.addListener)mq.addListener(onMq); }
 
