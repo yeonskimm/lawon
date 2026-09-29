@@ -16,7 +16,7 @@ def ok(n,c,i=''):
     if not c: fails.append(n)
 def where(p):
     if not p.url.startswith('http://127'): return 'LEFT'
-    return p.evaluate("""()=>{const o=['sheet','isheet','csheet','wsheet','asheet','adm'].filter(i=>!document.getElementById(i).hidden);
+    return p.evaluate("""()=>{const o=['sheet','isheet','csheet','wsheet','asheet','adm','xsheet'].filter(i=>!document.getElementById(i).hidden);
      let v='sub'; for(const id of ['vStart','vFind','vSite','vBook']){ if(!document.getElementById(id).hidden) v=id; }
      return v+(o.length?'+'+o.join(','):'');}""")
 def toast(p): return '' if not p.url.startswith('http://127') else p.evaluate("()=>{const t=document.getElementById('toast');return t.hidden?'':t.textContent}")
