@@ -185,9 +185,8 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 .law{margin:0;white-space:pre-wrap;font-size:1rem;line-height:1.75}
 .law.clip{max-height:12.25em;overflow:hidden;position:relative}
 .law.clip:after{content:"";position:absolute;left:0;right:0;bottom:0;height:3.2em;background:linear-gradient(to bottom,transparent,var(--card))}
-.btn.xrb{gap:8px;min-height:46px;margin-top:10px;font-size:.9375rem}
-.xrb svg{width:19px;height:19px;flex:none;color:var(--pri)}
-.xrn{min-width:24px;padding:1px 8px;border-radius:999px;background:var(--hl);color:var(--pri);font-size:.8125rem;font-weight:800;font-variant-numeric:tabular-nums}
+.gl .xrl{order:2;flex:none;display:inline-flex;align-items:center;gap:3px;min-height:44px;margin:-14px -4px -14px 0;padding:0 4px;font-size:.8125rem;font-weight:600;color:var(--pri);font-variant-numeric:tabular-nums}
+.gl .xrc{width:6px;height:6px;margin-left:2px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(-45deg)}
 .xhint{margin:0 2px 10px;font-size:.8125rem;line-height:1.5;color:var(--ink2)}
 .fullbtn{display:block;width:100%;height:44px;margin-top:10px;border-radius:6px;border:1px solid var(--line2);font-size:.9375rem;font-weight:600;color:var(--ink);text-align:center}
 .via{margin:0 0 10px;font-size:.875rem;color:var(--ink2)}
@@ -2060,8 +2059,7 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     var lb=labels(j,pd,false); if(lb)h+='<div class="dmeta">'+lb+'</div>';
     h+='</div>';
     var long=e.x.length>360||e.x.split('\n').length>8, full=!!en.full;   // 긴 조문은 몇 줄만 보이고 펼치기(벌칙·과태료가 너무 아래로 밀리지 않게)
-    h+='<h3 class="gl">조문</h3><div class="card"><div class="law fm'+(long&&!full?' clip':'')+'">'+fmtLaw(e.x)+'</div>'+(long?'<button type="button" class="fullbtn" data-full="1" aria-expanded="'+full+'">'+(full?'조문 접기':'조문 전문 보기')+'</button>':'')+'</div>';
-    h+=xrefBtn(e);   // 본문이 인용한 다른 법령 조문 → 버튼(누르면 아래 창 목록). 인용이 없으면 버튼 없음
+    h+='<h3 class="gl">조문'+xrefLink(e)+'</h3><div class="card"><div class="law fm'+(long&&!full?' clip':'')+'">'+fmtLaw(e.x)+'</div>'+(long?'<button type="button" class="fullbtn" data-full="1" aria-expanded="'+full+'">'+(full?'조문 접기':'조문 전문 보기')+'</button>':'')+'</div>';
     h+=artNote(e);   // 조문만으로 오해할 수 있는 부칙 특례(최임법 제6조)
     h+=subLawCards(e);   // 법 → 시행령 → 시행규칙 (근거 법 조문 / 하위 규정)
     h+=artBt(e);   // 조문이 '별표 N'으로 넘기는 내용(대상 작업·물질 목록 등)
@@ -2296,10 +2294,9 @@ function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Ma
     var b=function(x,lb,cls){return x?'<button type="button" class="'+cls+'" data-brswap="'+x.id+'"><small>'+lb+'</small><span>'+esc((btLab(x)?btLab(x)+' ':'')+x.t)+'</span></button>':'<span></span>';};
     h+='<div class="pn">'+b(pv,'이전','pp')+b(nx,'다음','nx')+'</div>';
     en.el.innerHTML=h; }
-  // 인용 조문(2026-09-29): 조문 카드 아래 버튼 → 아래 창(xsheet) 목록. 앱 수록 법령은 앱 조문으로, 그 밖은 국가법령정보센터로
-  var XBOOK='<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5a1.5 1.5 0 0 1 1.5 1.5z"/></svg>';
-  function xrefBtn(e){ var L=xrefs(D,e); if(!L.length)return '';
-    return '<button type="button" class="btn sec xrb" data-xr="'+e.l+':'+esc(e.no)+'">'+XBOOK+'인용 조문<span class="xrn">'+L.length+'</span></button>'; }
+  // 인용 조문(2026-09-29): '조문' 제목 줄 오른쪽 링크 → 아래 창(xsheet) 목록. 앱 수록 법령은 앱 조문으로, 그 밖은 국가법령정보센터로
+  function xrefLink(e){ var L=xrefs(D,e); if(!L.length)return '';   // 2026-09-29: 큰 버튼이 너무 눈에 띈다는 의견 → '조문' 제목 줄 오른쪽 보조 링크
+    return '<button type="button" class="xrl" data-xr="'+e.l+':'+esc(e.no)+'" aria-label="인용 조문 '+L.length+'건 보기">인용 조문 '+L.length+'<i class="xrc" aria-hidden="true"></i></button>'; }
   function openXSheet(k){ var e=D.byKey[k]; if(!e)return; var L=xrefs(D,e), inApp=L.some(function(r){return r.k;}), out=L.some(function(r){return !r.k;});
     $('xsheetT').textContent='인용 조문 '+L.length+'건';
     $('xhint').textContent=(inApp&&out)?'앱에 수록된 법령은 앱에서, 그 밖의 법령은 국가법령정보센터에서 열립니다.':(inApp?'앱에 수록된 조문으로 이동합니다.':'국가법령정보센터 해당 조문이 열립니다.');
