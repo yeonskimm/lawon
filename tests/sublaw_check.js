@@ -5,12 +5,12 @@
 //             감독 조치기준(집무규정 별표) 연결, 과태료 금액(시행령 별표) 표본
 const fs=require('fs'); const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const D=JSON.parse(html.match(/<script id="data" type="application\/json">([\s\S]*?)<\/script>/)[1].replace(/<\\\//g,'</'));
-const EXPECT={GKD:75,GKR:21,SD:125,SR:252,RETD:79,RETR:18,MWD:26,MWR:7,EQD:39,EQR:25,FTD:7,FTR:2,DISPD:10,DISPR:21,LMCD:11,GAM:87,OAM:50,LIO:43,TU:105,TUD:56,TUR:28,LIC:12};   // 원문 조문 수(삭제 조문 제외)
+const EXPECT={GKD:75,GKR:21,SD:125,SR:252,RETD:79,RETR:18,MWD:26,MWR:7,EQD:39,EQR:25,FTD:7,FTR:2,DISPD:10,DISPR:21,LMCD:11,GAM:87,OAM:50,LIO:43,TU:105,TUD:56,TUR:28,LIC:12,FW:45,FWD:37};   // 2026-09-30 외국인고용법(제22조의3 시행 예정 포함)·시행령   // 원문 조문 수(삭제 조문 제외)
 const LINK=[['GKD:제7조의2','GK:제11조'],['GKD:제30조','GK:제55조'],['GKD:제33조','GK:제60조'],['GKD:제27조의2','GK:제48조'],['GKR:제15조','GK:제93조'],['GKR:제6조','GK:제33조'],
   ['SD:제16조','OSH:제17조'],['SD:제52조','OSH:제62조'],['SR:제26조','OSH:제29조'],['SR:제67조','OSH:제54조'],['SR:제37조','OSH:제36조'],['SR:제194조의2','OSH:제128조의2'],['RETD:제3조','RET:제8조'],['RETD:제42조','RET:제48조'],['RETR:제2조','RET:제13조'],
-  ['MWR:제3조','MW:제7조'],['MWD:제5조','MW:제6조'],['EQR:제14조의2','EQ:제19조'],['EQD:제12조','EQ:제19조'],['FTD:제2조','FT:제3조'],['DISPD:제2조','DISP:제5조'],['DISPR:제3조의2','DISP:제7조'],['LMCD:제2조','LMC:제4조'],['LMCD:제11조','LMC:제33조'],['TUD:제22조의2','TU:제42조의2'],['LIC:제3조','OSH:제140조'],['LIC:제7조','OSH:제140조']];
+  ['MWR:제3조','MW:제7조'],['MWD:제5조','MW:제6조'],['EQR:제14조의2','EQ:제19조'],['EQD:제12조','EQ:제19조'],['FTD:제2조','FT:제3조'],['DISPD:제2조','DISP:제5조'],['DISPR:제3조의2','DISP:제7조'],['LMCD:제2조','LMC:제4조'],['LMCD:제11조','LMC:제33조'],['TUD:제22조의2','TU:제42조의2'],['LIC:제3조','OSH:제140조'],['LIC:제7조','OSH:제140조'],['FWD:제23조','FW:제17조'],['FWD:제21조','FW:제13조'],['FWD:제32조','FW:제32조']];
 const ACT=[['GK:제26조','GAM3'],['GK:제43조','GAM3'],['MW:제6조','GAM3'],['LMC:제4조','GAM4'],['OSH:제38조','OAM2'],['RULE:제4조','OAM2'],['TU:제81조','GAM4'],['TU:제31조','GAM4']];
-const FINE=[['FT:제17조','제24조제2항제2호'],['DISP:제6조의2','제46조제2항'],['MW:제11조','제31조제1항제1호'],['LMC:제18조','제33조제1항'],['TU:제13조','제96조제2항'],['TU:제14조','제96조제1항제1호']];
+const FINE=[['FT:제17조','제24조제2항제2호'],['DISP:제6조의2','제46조제2항'],['MW:제11조','제31조제1항제1호'],['LMC:제18조','제33조제1항'],['TU:제13조','제96조제2항'],['TU:제14조','제96조제1항제1호'],['FW:제9조','제32조제1항제1호'],['FW:제15조','제32조제1항제6호'],['FW:제26조','제32조제1항제9호']];
 const by={}; D.arts.forEach(e=>by[e.l+':'+e.no]=e); let fail=0;
 const ok=(n,c,i)=>{console.log((c?'PASS ':'FAIL ')+n+(c?'':'  → '+i)); if(!c)fail++;};
 for(const [k,n] of Object.entries(EXPECT)){ const a=D.arts.filter(e=>e.l===k); ok(k+' 조문 '+n+'개',a.length===n,a.length);
@@ -29,9 +29,9 @@ const tabBy={}; D.bt.tabs.forEach(T=>tabBy[T.id]=T);
 for(const [id,n] of Object.entries(BTEXP)){ const T=tabBy[id]; const m=T?T.secs.reduce((a,x)=>a+x.rows.length,0):-1;
   ok('별표 '+id+' 줄 '+n+'개', m===n, m); if(T) ok('별표 '+id+' 근거 조문 실재', T.arts.every(a=>by[a[0]+':'+a[1]]), JSON.stringify(T.arts)); }
 // 2026-09-24: 과태료 부과기준 일반기준(10개) — 줄 수, 일부 수록 표시, 과태료 안내 키
-const FINEXP={"GD7": 3, "MDF": 5, "RD3": 3, "EDF": 4, "FD3": 2, "PD2": 3, "LDF": 2, "TD2": 4, "SD35": 12, "ZD4": 4};
+const FINEXP={"GD7": 3, "MDF": 5, "RD3": 3, "EDF": 4, "FD3": 2, "PD2": 3, "LDF": 2, "TD2": 4, "SD35": 12, "ZD4": 4, "WDF": 3};
 for(const [id,n] of Object.entries(FINEXP)){ const T=tabBy[id]; const m=T?T.secs.reduce((a,x)=>a+x.rows.length,0):-1;
   ok('일반기준 별표 '+id+' 줄 '+n+'개', m===n, m); ok('일반기준 별표 '+id+' 일부 수록·과태료 키', !!(T&&T.part&&D.fineNote[T.fine]), T&&T.fine); }
-for(const [k,id] of [['GKR:제4조','GR1'],['GK:제26조','GR1'],['GK:제65조','GR2'],['SD:제16조','SD3'],['OSH:제17조','SD3'],['SR:제194조의2','S21_2'],['RULE:제598조','R14'],['GKD:제60조','GD7'],['GK:제116조','GD7'],['SD:제119조','SD35'],['OSH:제175조','SD35'],['MWD:제22조','MDF']])
+for(const [k,id] of [['GKR:제4조','GR1'],['GK:제26조','GR1'],['GK:제65조','GR2'],['SD:제16조','SD3'],['OSH:제17조','SD3'],['SR:제194조의2','S21_2'],['RULE:제598조','R14'],['GKD:제60조','GD7'],['GK:제116조','GD7'],['SD:제119조','SD35'],['OSH:제175조','SD35'],['MWD:제22조','MDF'],['FW:제32조','WDF']])
   ok(k+' → 별표 '+id, (D.bt.art[k]||[]).some(v=>v.t===id), JSON.stringify(D.bt.art[k]));
 console.log(fail?'실패 '+fail+'건':'전체 통과'); process.exit(fail?1:0);
