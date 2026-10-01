@@ -1,4 +1,4 @@
-// 법ON 계산 도구 검사: 월급↔시급 환산·최저임금 판정·주휴·가산 단가·지급액 대조·연차 발생일수
+// 법ON 계산 도구 검사: 월급↔시급 환산·최저임금 판정·주휴·가산 단가·지급액 대조·연차 발생일수·상시근로자 수
 // 기대값은 코드가 아니라 법령 산식으로 손계산(분수 계산으로 교차 확인)한 값
 //  - 월급 ↔ 시급: 월 기준시간(주 40시간 209시간, 고용노동부 고시 월 환산 기준)으로 나누고 곱함
 //  - 근로기준법 제60조①②④, 민법 제157조·제160조(기간 계산), 대법원 2021. 10. 14. 선고 2021다227100(1년 근로 다음 날 재직)
@@ -7,7 +7,7 @@ const fs=require('fs'),vm=require('vm');
 const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const a=html.indexOf('/*CALC_START*/'), b=html.indexOf('/*CALC_END*/');
 if(a<0||b<0){console.log('FAIL  CALC 표시를 찾지 못함');process.exit(1);}
-const C=vm.runInNewContext(html.slice(a,b)+'\n;({wgConv,wgHours,alCalc,MWT,hrNum,amtNum,wkCalc,mHrs,judgeM,unitTable,wgDue,sevCalc})',{});
+const C=vm.runInNewContext(html.slice(a,b)+'\n;({wgConv,wgHours,alCalc,MWT,hrNum,amtNum,wkCalc,mHrs,judgeM,unitTable,wgDue,sevCalc,hcJudge})',{});
 let fail=0,cnt=0;
 const chk=(name,got,exp)=>{cnt++; const ok=JSON.stringify(got)===JSON.stringify(exp); if(!ok)fail++; if(!ok||process.env.VERBOSE)console.log((ok?'PASS':'FAIL')+'  '+name+'  기대 '+JSON.stringify(exp)+' / 실제 '+JSON.stringify(got));};
 
@@ -164,6 +164,31 @@ r=S({hire:'2023-01-01',last:'2026-09-30',wk:40,ss:'2020-01-01',se:'2022-12-31'})
 r=S({hire:'2023-01-01',last:'2026-09-30',wk:12}); chk('퇴직 전 4주 평균 12시간 → 대상 아님',[r.h15,!!r.no],[false,true]);
 chk('주 15시간 미만 기간 끝날이 시작일보다 앞 → 오류',S({hire:'2023-01-01',last:'2026-09-30',wk:40,ss:'2024-05-01',se:'2024-04-01'}).err,'주 15시간 미만 기간 끝날이 시작일보다 앞입니다');
 
+
+// ── 상시 사용 근로자 수(근로기준법 시행령 제7조의2 제1항·제2항) ──
+// 판정: 평균 = 연인원 ÷ 가동일수(반올림·버림 전 값), 미달 일수 × 2 < 가동일수 이면 '2분의 1 미만'
+const HJ=(man,dn,sh,base)=>{const r=C.hcJudge({man,dn,sh,base}); return [r.err||'',r.res,r.rule,r.warn||''];};
+chk('149/30일/미달 14일 → 평균 4.966…명 미만·미달 2분의 1 미만 → 제2항제1호 5명 이상',HJ(149,30,14,5),['',true,'1','']);
+chk('149/30일/미달 15일 → 미달 2분의 1(이상) → 5명 미만',HJ(149,30,15,5),['',false,'avg','']);
+chk('150/30일/미달 15일 → 평균 5명이지만 제2항제2호로 5명 이상 아님',HJ(150,30,15,5),['',false,'2','']);
+chk('150/30일/미달 14일 → 5명 이상',HJ(150,30,14,5),['',true,'avg','']);
+chk('미달 31일 > 가동 30일 → 입력 오류',HJ(150,30,31,5)[0],'sh>dn');
+chk('가동일수 0 → 계산 안 함',HJ(150,0,0,5)[0],'need');
+chk('연인원 없음 → 계산 안 함',HJ(null,30,0,5)[0],'need');
+chk('홀수 가동일 31일 중 미달 15일 → 2분의 1 미만(평균 미만이어도 이상)',HJ(150,31,15,5),['',true,'1','']);
+chk('홀수 가동일 31일 중 미달 16일 → 2분의 1 이상(평균 이상이어도 아님)',HJ(160,31,16,5),['',false,'2','']);
+chk('평균은 버림 전 실제 값: 4.995명(999/200) → 평균 미만',C.hcJudge({man:999,dn:200,sh:null,base:5}).over,false);
+chk('미달 일수 미입력 → 평균만(5명 이상)',C.hcJudge({man:150,dn:30,sh:null,base:5}).over,true);
+chk('소수 연인원 149.5/30 → 평균 미만',C.hcJudge({man:149.5,dn:30,sh:null,base:5}).over,false);
+chk('10명 기준 299/30일/미달 14일 → 제2항제1호 10명 이상',HJ(299,30,14,10),['',true,'1','']);
+chk('10명 기준 300/30일/미달 15일 → 제2항제2호 10명 이상 아님',HJ(300,30,15,10),['',false,'2','']);
+chk('다른 인원(기준 없음) → 평균만',C.hcJudge({man:132,dn:22,sh:null,base:null}).avg,6);
+// 입력 모순: 가동일마다 1명 이상이면 연인원 ≥ (가동−미달)×기준 + 미달, 미달=가동이면 연인원 ≤ 가동×(기준−1)
+chk('30일·미달 0일·연인원 100 → 최소 150명(경고). 판정은 제2항제1호로 5명 이상이 나오므로 경고가 필요',(r=>[r.warn,r.lim,r.rule])(C.hcJudge({man:100,dn:30,sh:0,base:5})),['lo',150,'1']);
+chk('30일·미달 14일·연인원 93 → 최소 94명(경고)',(r=>[r.warn,r.lim])(C.hcJudge({man:93,dn:30,sh:14,base:5})),['lo',94]);
+chk('30일·미달 14일·연인원 94 → 경고 없음',C.hcJudge({man:94,dn:30,sh:14,base:5}).warn,undefined);
+chk('30일 모두 미달·연인원 121 → 최대 120명(경고)',(r=>[r.warn,r.lim])(C.hcJudge({man:121,dn:30,sh:30,base:5})),['hi',120]);
+chk('30일 모두 미달·연인원 120 → 경고 없음',C.hcJudge({man:120,dn:30,sh:30,base:5}).warn,undefined);
 
 console.log((fail?'실패 '+fail+'건':'모두 통과')+' ('+cnt+'건)');
 process.exit(fail?1:0);
