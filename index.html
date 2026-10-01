@@ -912,7 +912,7 @@ a.mrow{color:inherit;text-decoration:none}
     </div>
     <div class="cres" id="cres" aria-live="polite"></div>
     <div class="frow"><button type="button" class="clr" id="cclr" hidden>지우기</button></div>
-    <details class="about"><summary>연인원 포함 대상</summary>
+    <details class="about"><summary>연인원 포함 대상(근로기준법)</summary>
       <p>포함: 통상 근로자, 기간제·단시간 근로자 등 고용형태와 관계없이 그 사업장에서 근로하는 모든 근로자(제4항제1호)</p>
       <p>동거하는 친족: 다른 근로자가 1명이라도 있으면 포함(제4항제2호)</p>
       <p>제외: 파견근로자(제4항)</p>
@@ -2735,7 +2735,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   var calc={base:'5'};
   var CBH={'5':'근기법 제11조, 산안법 시행령 별표 1 제6호, 중처법 제3조 등 5명 기준을 판단할 때. 기준 미달 일수는 5명 미만인 날(제2항). 연차휴가는 아래 「산정기간과 연차휴가」 참고',
     '10':'취업규칙 작성·신고(법 제93조) 대상인지 판단할 때만. 기준 미달 일수는 10명 미만인 날(제2항). 다른 10명 기준은 다른 인원에서 계산',
-    'x':'미달 일수 판정(제2항)은 5명·10명에만 있으므로, 다른 인원 기준은 연인원 ÷ 가동일수 평균만 계산합니다. 연인원에 넣는 근로자 범위는 법령마다 다릅니다(예: 산안법 시행령 제16조제3항 안전관리자·제96조의2 휴게시설 기준은 관계수급인 근로자 포함)'};
+    'x':'다른 인원 기준은 연인원 ÷ 가동일수 평균만 계산합니다. 연인원에 넣는 근로자 범위는 법령마다 다르니 해당 법령을 확인하세요(예: 산안법 시행령 제16조제3항 안전관리자·제96조의2 휴게시설 기준은 관계수급인 근로자 포함)'};
   function cInt(v){ v=String(v||'').replace(/[^0-9]/g,''); return v===''?null:parseInt(v,10); }
   function floor2(x){ return Math.floor(x*100+1e-9)/100; }
   function fmtN(x){ var t=floor2(x); return (t%1===0?String(t):t.toFixed(2).replace(/0$/,'')); }
