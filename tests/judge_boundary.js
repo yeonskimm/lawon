@@ -27,6 +27,11 @@ art('GK:제60조',4,'na','근기법 제60조 연차');             art('GK:제60
 art('GK:제76조의2',4,'na','근기법 제76조의2 괴롭힘');     art('GK:제76조의2',5,'apply','근기법 제76조의2 괴롭힘');
 art('GK:제93조',9,'na','근기법 제93조 취업규칙');         art('GK:제93조',10,'apply','근기법 제93조 취업규칙');
 art('FT:제4조',4,'na','기간제법 제4조');                  art('FT:제4조',5,'apply','기간제법 제4조');
+// 인원 기준이 있는 조문: '적용' 문구에 그 기준을 표시(규모 요건 없음·5명 기준으로 나오지 않게)
+chk('근참법 제4조 30명 문구',C.judgeArt(AR('LMC:제4조'),P('',30)).why,'상시 30명 이상');
+chk('근기법 제93조 10명 문구',C.judgeArt(AR('GK:제93조'),P('',10)).why,'상시 10명 이상');
+chk('중처법 제4조 5명 문구',C.judgeArt(AR('SAPA:제4조'),P('',5)).why,'상시 5명 이상');
+chk('근기법 제56조 5명 문구(5명 기준 조문은 그대로)',C.judgeArt(AR('GK:제56조'),P('',5)).why,'상시 5명 이상 사업장 기준 적용');
 item('l_ft4','',4,5,'기간제 2년 초과 사용 제한');
 item('l_lmc','',29,30,'노사협의회');
 
@@ -47,6 +52,16 @@ chk('안전보건관리담당자 49명 → 적용',C.judgeItem(IT('o_charge'),P(
 chk('안전보건관리담당자 50명 → 비적용',C.judgeItem(IT('o_charge'),P('mfgHeavy',50),TODAY).st,'na');
 item('o_board','',499,500,'이사회 보고');
 item('o_disc','',499,500,'안전보건 현황 공시');
+// 현황 공시(산안법 제10조의2제1항, 시행령 제12조의2제1항): 건설업은 인원이 아닌 연간 건설공사 금액(개별 공사금액 아님), 공공기관·지방공사·지방공단은 인원 무관
+chk('현황 공시 건설업 100명 → 추가 확인',C.judgeItem(IT('o_disc'),P('const',100),TODAY).st,'cond');
+chk('현황 공시 건설업 600명 → 추가 확인(인원 기준 아님)',C.judgeItem(IT('o_disc'),P('const',600),TODAY).st,'cond');
+chk('현황 공시 건설업 600명·공사금액 2,000억 → 추가 확인(개별 공사금액으로 판정 안 함)',C.judgeItem(IT('o_disc'),P('const',600,2000),TODAY).st,'cond');
+chk('현황 공시 건설업 인원 미입력 → 추가 확인',C.judgeItem(IT('o_disc'),P('const',null),TODAY).st,'cond');
+{ const w=C.judgeItem(IT('o_disc'),P('mfgHeavy',499),TODAY).why; chk('현황 공시 제조 499명 문구: 공공기관·지방공사·지방공단 예외 표시, 건설업 단서 없음',/공공기관·지방공사·지방공단/.test(w)&&!/건설업/.test(w),true); }
+{ const w=C.judgeItem(IT('o_disc'),P('',499),TODAY).why; chk('현황 공시 업종 미선택 499명 문구: 기관 예외·건설업 금액 단서 모두 표시',/공공기관/.test(w)&&/1천200억원/.test(w),true); }
+{ const j=C.judgeItem(IT('o_disc'),P('',600),TODAY); chk('현황 공시 업종 미선택 600명 → 적용(건설업 단서 표시)',j.st==='apply'&&/1천200억원/.test(j.why),true); }
+chk('현황 공시 조문(법 제10조의2) 건설업 600명 → 추가 확인',C.judgeArt(AR('OSH:제10조의2'),P('const',600)).st,'cond');
+chk('이사회 보고 건설업 600명 → 적용(시행령 제13조는 500명 이상 회사 포함)',C.judgeItem(IT('o_board'),P('const',600),TODAY).st,'apply');
 chk('안전관리자(금융) 1,000명 → 비적용',C.judgeItem(IT('o_safe'),P('fin',1000),TODAY).st,'na');
 
 // ── 산업안전 분야: 건설 공사금액 기준 ──
