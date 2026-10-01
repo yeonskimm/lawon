@@ -909,7 +909,7 @@ a.mrow{color:inherit;text-decoration:none}
     <div class="cfl">
       <div class="lrow"><label for="cman">연인원</label><span class="lin"><input id="cman" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 132"><em>명</em></span></div>
       <div class="lrow"><label for="cdn">가동일수</label><span class="lin"><input id="cdn" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 22"><em>일</em></span></div>
-      <div class="lrow" id="cshortRow"><label for="cshort"><span id="cshortL">5명 미만인 날</span><small>기준 미달 일수</small></label><span class="lin"><input id="cshort" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 3"><em>일</em></span></div>
+      <div class="lrow" id="cshortRow"><label for="cshort"><span id="cshortL">5명 미만인 날</span><small>가동일 중 미달 일수</small></label><span class="lin"><input id="cshort" type="text" inputmode="numeric" autocomplete="off" placeholder="예: 3"><em>일</em></span></div>
     </div>
     <div class="cres" id="cres" aria-live="polite"></div>
     <div class="frow"><button type="button" class="clr" id="cclr" hidden>지우기</button></div>
@@ -1652,6 +1652,26 @@ function sevCalc(o){
   r.sev=Math.floor(r.use*30*days/365+1e-6);   // 원 미만 버림(부동소수 오차만 보정)
   r.idle=r.use*0.7; r.idleCap=r.ord>0&&r.idle>r.ord; if(r.idleCap)r.idle=r.ord;   // 휴업수당: 평균임금 70%, 통상임금을 넘으면 통상임금 가능(근로기준법 제46조① 단서)
   if(o.paid!=null)r.gap=r.sev-o.paid;
+  return r;
+}
+// 상시 사용 근로자 수(근로기준법 시행령 제7조의2). o: {man 연인원, dn 가동일수, sh 기준 미달 일수(없으면 null), base 기준 인원(null이면 평균만)}
+// 판정은 버림·반올림 전 실제 평균으로 함. rule: 'avg' 평균대로, '1' 제2항제1호(평균 미만이어도 이상으로 봄), '2' 제2항제2호(평균 이상이어도 이상으로 보지 않음)
+// warn: 가동일마다 1명 이상 일했다고 보면 연인원과 미달 일수가 맞지 않음(lo 최소 연인원, hi 최대 연인원) — 판정은 하되 입력값 재확인 안내
+function hcJudge(o){
+  var man=o.man, dn=o.dn, sh=o.sh, base=o.base;
+  if(man==null||!(man>0)||!(dn>0))return {err:'need'};
+  var r={avg:man/dn};
+  if(base==null)return r;
+  r.over=r.avg>=base;
+  if(sh==null)return r;
+  if(sh>dn){ r.err='sh>dn'; return r; }
+  var lo=(dn-sh)*base+sh, hi=sh===dn?dn*(base-1):null;
+  if(man<lo-1e-9){ r.warn='lo'; r.lim=lo; } else if(hi!=null&&man>hi+1e-9){ r.warn='hi'; r.lim=hi; }
+  r.half=sh*2<dn;
+  if(r.over&&r.half){ r.res=true; r.rule='avg'; }
+  else if(!r.over&&!r.half){ r.res=false; r.rule='avg'; }
+  else if(!r.over){ r.res=true; r.rule='1'; }
+  else { r.res=false; r.rule='2'; }
   return r;
 }
 /*CALC_END*/
@@ -2754,18 +2774,19 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   function calcRun(){
     var man=num($('cman').value), dn=cInt($('cdn').value), sh=cInt($('cshort').value), b=calc.base, el=$('cres');
     $('cclr').hidden=!($('cman').value||$('cdn').value||$('cshort').value||$('cdays').value);
-    if(man==null||!dn){ el.innerHTML='<p class="c0">연인원과 가동일수를 넣으면 계산합니다.</p>'; return; }
-    var avg=man/dn, h='<p class="cn"><b>'+fmtN(avg)+'</b>명</p><p class="cf">연인원 '+fmtN(man)+'명 ÷ 가동일수 '+dn+'일'+(floor2(avg)!==avg?' (소수 셋째 자리 버림)':'')+'</p>';
+    var J=hcJudge({man:man,dn:dn,sh:b==='x'?null:sh,base:b==='x'?null:+b});
+    if(J.err==='need'){ el.innerHTML='<p class="c0">연인원과 가동일수를 넣으면 계산합니다.</p>'; return; }
+    var avg=J.avg, h='<p class="cn"><b>'+fmtN(avg)+'</b>명</p><p class="cf">연인원 '+fmtN(man)+'명 ÷ 가동일수 '+dn+'일'+(floor2(avg)!==avg?' (표시는 소수 둘째 자리까지, 판정은 실제 계산값)':'')+'</p>';
     if(b==='x'){ el.innerHTML=h; return; }
-    var base=+b, lab=base+'명', over=avg>=base;
+    var base=+b, lab=base+'명', over=J.over;
     if(sh==null){ h+='<p class="cv">평균으로는 '+lab+' '+(over?'이상':'미만')+'</p><p class="cw">'+lab+' 미만인 날을 넣으면 제2항에 따른 판정을 함께 보여 줍니다.</p>'; el.innerHTML=h; return; }
-    if(sh>dn){ el.innerHTML=h+'<p class="ce">'+lab+' 미만인 날('+sh+'일)이 가동일수('+dn+'일)보다 많습니다.</p>'; return; }
-    var half=sh*2<dn, rate=sh+'일(가동일수 '+dn+'일의 2분의 1 '+(half?'미만':'이상')+')', res, why;
-    if(over&&half){ res=true; why='평균 '+lab+' 이상, 미달 일수 '+rate; }
-    else if(!over&&!half){ res=false; why='평균 '+lab+' 미만, 미달 일수 '+rate; }
-    else if(!over&&half){ res=true; why='평균은 '+lab+' 미만이지만 미달 일수 '+rate+' → 제2항제1호에 따라 '+lab+' 이상으로 봄'; }
-    else { res=false; why='평균은 '+lab+' 이상이지만 미달 일수 '+rate+' → 제2항제2호에 따라 '+lab+' 이상으로 보지 않음'; }
-    h+='<p class="cv">'+lab+' 이상 사업장'+(res?'':'이 아님')+(base===10?' (제93조 판단)':'')+'</p><p class="cw">'+why+'</p>';
+    if(J.err==='sh>dn'){ el.innerHTML=h+'<p class="ce">'+lab+' 미만인 날('+sh+'일)이 가동일수('+dn+'일)보다 많습니다.</p>'; return; }
+    var rate=sh+'일(가동일수 '+dn+'일의 2분의 1 '+(J.half?'미만':'이상')+')', why;
+    if(J.rule==='avg')why='평균 '+lab+' '+(over?'이상':'미만')+', 미달 일수 '+rate;
+    else if(J.rule==='1')why='평균은 '+lab+' 미만이지만 미달 일수 '+rate+' → 제2항제1호에 따라 '+lab+' 이상으로 봄';
+    else why='평균은 '+lab+' 이상이지만 미달 일수 '+rate+' → 제2항제2호에 따라 '+lab+' 이상으로 보지 않음';
+    if(J.warn)h+='<p class="ce">입력값 재확인: 가동일마다 1명 이상 일했다면 연인원은 '+(J.warn==='lo'?'최소 ':'최대 ')+fmtN(J.lim)+'명입니다.</p>';
+    h+='<p class="cv">'+lab+' 이상 사업장'+(J.res?'':'이 아님')+(base===10?' (제93조 판단)':'')+'</p><p class="cw">'+why+'</p>';
     el.innerHTML=h; }
   function calcClear(){ ['cdays','cman','cdn','cshort'].forEach(function(id){ $(id).value=''; }); calcRun(); }
   document.addEventListener('click',function(ev){ var t=ev.target.closest('[data-copen],[data-cclose],[data-cbase]'); if(!t)return;
