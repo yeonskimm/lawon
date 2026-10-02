@@ -291,9 +291,10 @@ def app_note(code, key, new_x, app):
         tags.append('벌칙·과태료 연결')
     target = norm(new_x)
     if a.get('chg'):
-        c = a['chg']
-        same = norm(c.get('x', '')) == target
-        tags.append('앱에 개정 예정(%s) 수록 — %s' % (c.get('date', ''), '신 조문과 일치' if same else '🔵 신 조문과 다름'))
+        stg = [a['chg']] + list(a['chg'].get('nx') or [])   # 2026-10-02: 여러 단계 개정(chg.nx)
+        hit = [c.get('date', '') for c in stg if c.get('x') and norm(c['x']) == target]
+        tags.append('앱에 개정 예정(%s) 수록 — %s' % (' · '.join(c.get('date', '') for c in stg),
+                    ('신 조문과 일치(%s 단계)' % hit[0]) if hit else '🔵 신 조문과 다름'))
     elif a.get('fut'):
         tags.append('앱에 시행 예정 조문 수록 — ' + ('일치' if norm(a.get('x', '')) == target else '🔵 다름'))
     else:
@@ -478,8 +479,9 @@ def audit(code, meta, cur, app):
             continue
         x = a['x']
         c = a.get('chg')
-        if c and c.get('date', '9') <= NOW.strftime('%Y-%m-%d'):
-            x = c.get('x', x)
+        for st in ([c] + list(c.get('nx') or [])) if c else []:   # 2026-10-02: 오늘까지 시행된 마지막 단계
+            if st.get('date', '9') <= NOW.strftime('%Y-%m-%d'):
+                x = st.get('x', x)
         n = cur['arts'].get(no)
         if n is None:
             only_app.append(no)
