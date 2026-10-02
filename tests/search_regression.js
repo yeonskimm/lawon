@@ -4,7 +4,7 @@ const fs=require('fs'),vm=require('vm');
 const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const raw=/<script id="data" type="application\/json">([\s\S]*?)<\/script>/.exec(html)[1].replace(/<\\\//g,'</');
 const core=html.slice(html.indexOf('/*CORE_START*/'),html.indexOf('/*CORE_END*/'));
-const C=vm.runInNewContext(core+'\n;({prepare,search,bsearch})',{});
+const C=vm.runInNewContext(core+'\n;({prepare,search,bsearch,looseQuery})',{});
 const D=C.prepare(JSON.parse(raw));
 const LAB=['GK','MW','RET','EQ','EQR','FT','DISP','LMC'], OSH=['OSH','RULE','SAPA','SAPAD'];
 // [검색어, 기대 조문, 상위 몇 위 안, 분야]
@@ -45,6 +45,22 @@ for(const [q,exp,n,first] of CASES){
   if(!ok)fail++;
   console.log((ok?'PASS':'FAIL')+'  '+q.padEnd(12)+' → '+keys.slice(0,3).join(', ')+(r.notes&&r.notes.length?'  [안내] '+r.notes.join(' / '):''));
 }
+// 2026-10-02 현장 문장(실측 0건·엉뚱한 결과) — 화면과 같은 순서: 그대로 → 0건이면 군말 빼고 → 그래도 0건이면 검색어별 결과
+const LQ=(q,f)=>{ let r=C.search(D,q,'',f); if(!r.total&&!r.items.length){ const l=C.looseQuery(q); if(l)r=Object.assign(C.search(D,l.q,'',f),{lq:l}); } return r; };
+const top=(r,n)=>r.arts.slice(0,n).map(e=>e.l+':'+e.no);
+const LC=[ // [검색어, 분야, 기대 조문, 상위 몇 위, 뺄 말]
+ ['지게차 작업계획서',OSH,'RULE:제38조',1,null],['안전난간 없음',OSH,'RULE:제13조',1,'없음'],['안전난간없음',OSH,'RULE:제13조',1,'없음'],
+ ['관리감독자 교육 몇시간',OSH,'SR:제26조',1,'몇'],['건강진단 안했음 과태료',OSH,'OSH:제129조',2,'안했음'],['안전대 미착용',OSH,'RULE:제44조',1,null]];
+for(const [q,f,exp,n,dw] of LC){ const r=LQ(q,f), okk=top(r,n).includes(exp)&&(dw?(r.lq&&r.lq.drop.includes(dw)):!r.lq);
+  if(!okk)fail++; console.log((okk?'PASS':'FAIL')+'  현장 문장 '+q+' → '+top(r,3).join(', ')+(r.lq?'  [제외] '+r.lq.drop.join('·'):'')); }
+// 뜻이 있는 말은 빼지 않음, 검색어별 결과로
+{ const okk=C.looseQuery('건설현장 안전난간')===null&&C.looseQuery('지게차 안전관리')===null; if(!okk)fail++; console.log((okk?'PASS':'FAIL')+'  건설현장·안전관리는 빼지 않음'); }
+{ const l=C.looseQuery('지게차 후진하다 사고'), okk=l&&l.q==='지게차 후진 사고'&&l.drop.join()==='하다'; if(!okk)fail++; console.log((okk?'PASS':'FAIL')+'  후진하다 → 후진(사고는 그대로) '+JSON.stringify(l)); }
+// 한 조문에 없는 두 개념: 단어별로 각 조문이 나와야 함
+{ const a=top(C.search(D,'5인미만','',LAB),1), b=top(C.search(D,'야간수당','',LAB),2), okk=a.includes('GK:제11조')&&b.includes('GK:제56조'); if(!okk)fail++; console.log((okk?'PASS':'FAIL')+'  5인미만 / 야간수당 단어별 → '+a+' / '+b); }
+// 파견법 시행규칙 제4조 '관계서류 없음'은 알고 있는 예외(0건일 때만 빼므로 영향 없음)
+// 군말 목록의 말은 조문 본문 낱말로 쓰이지 않아야 함(빼도 뜻이 안 바뀜) — 본문에 '없음'이 단독 낱말로 나오면 알림
+{ const W=['없음','안함','안했음','했음','몇시간'], KNOWN={'DISPR:제4조':1}, hit=W.filter(w=>D.arts.some(e=>!KNOWN[e.l+':'+e.no]&&new RegExp('(^|[\\s,.(])'+w+'($|[\\s,.)])').test(e.x))); const okk=!hit.length; if(!okk)fail++; console.log((okk?'PASS':'FAIL')+'  군말이 본문 낱말로 없음 '+hit.join(',')); }
 // 별표: 직업성 질병 → 중처법 시행령 별표1
 const bh=C.bsearch(D,'열사병','osh'); const okb=bh.some(x=>(x.tab&&x.tab.id==='ZD1')||(x.r&&x.r.tb==='ZD1'));
 console.log((okb?'PASS':'FAIL')+'  별표 검색 열사병 → 중처법 시행령 별표1 포함'); if(!okb)fail++;
