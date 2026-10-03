@@ -5,7 +5,7 @@ const fs=require('fs'),vm=require('vm');
 const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const raw=/<script id="data" type="application\/json">([\s\S]*?)<\/script>/.exec(html)[1].replace(/<\\\//g,'</');
 const core=html.slice(html.indexOf('/*CORE_START*/'),html.indexOf('/*CORE_END*/'));
-const C=vm.runInNewContext(core+'\n;({prepare,judgeItem,judgeArt})',{});
+const C=vm.runInNewContext(core+'\n;({prepare,judgeItem,judgeArt,sizeSum:typeof sizeSum==="function"?sizeSum:null})',{});
 const D=C.prepare(JSON.parse(raw));
 const TODAY='2026-09-23';
 const P=(ind,n,amt)=>{const s=ind&&D.inds.find(x=>x.id===ind); if(ind&&!s)throw new Error('업종 없음: '+ind);
@@ -74,5 +74,36 @@ chk('보건관리자 건설 공사금액 미입력·600명 → 적용',C.judgeIt
 // ── 입력 누락 시 단정하지 않는지 ──
 chk('인원 미입력 → 판정 보류',C.judgeItem(IT('o_safe'),P('mfgHeavy',null),TODAY).st,'unk');
 chk('업종 미선택 → 확인 필요',C.judgeItem(IT('o_safe'),P('',100),TODAY).st,'cond');
+
+// ── 인원 미입력 때 규모별 요약(2026-10-03, sizeSum): 문구가 실제 판정과 맞는지 ──
+if(!C.sizeSum){ chk('sizeSum 함수 있음',false,true); } else {
+const SI=(id,only)=>{const r=C.sizeSum(D,p=>C.judgeItem(IT(id),p,TODAY),TODAY,only||''); return r&&r.t;};
+const SA=(k,only)=>{const r=C.sizeSum(D,p=>C.judgeArt(AR(k),p),TODAY,only||''); return r&&r.t;};
+chk('요약 근기법 제56조',SA('GK:제56조'),'상시 5명부터');
+chk('요약 근기법 제17조',SA('GK:제17조'),'규모와 관계없이 적용');
+chk('요약 근기법 제93조',SA('GK:제93조'),'상시 10명부터');
+chk('요약 근참법 제4조',SA('LMC:제4조'),'상시 30명부터');
+chk('요약 기간제법 제4조',SA('FT:제4조'),'상시 5명부터');
+chk('요약 중처법 제4조',SA('SAPA:제4조'),'상시 5명부터');
+chk('요약 정기교육',SI('o_edu'),'상시 5명부터 (일부 업종 제외)');
+chk('요약 관리감독자',SI('o_sup'),'상시 5명부터');
+chk('요약 안전보건관리책임자',SI('o_resp'),'상시 50명부터 (업종별 다름 · 건설업 별도)');
+chk('요약 안전보건관리담당자',SI('o_charge'),'상시 20~49명 (일부 업종만)');
+chk('요약 기술지도',SI('o_tech'),'건설업만 해당 (공사금액 기준)');
+chk('요약 안전관리자',SI('o_safe'),'상시 50명부터 (일부 업종 제외 · 건설업 별도)');
+chk('요약 이사회 보고',SI('o_board'),'상시 500명부터 (건설업 별도)');
+chk('요약 산업안전보건위원회',SI('o_comm'),'상시 50명부터 (업종별 다름 · 건설업 별도)');
+chk('요약 정기교육(금융업 선택)',SI('o_edu','fin'),'이 업종은 대상 아님');
+chk('요약 산안법 제29조(금융업 선택)',SA('OSH:제29조','fin'),'이 업종은 일부 적용');
+chk('요약 안전관리자(도매업 선택)',SI('o_safe','wholesale'),'상시 50명부터');
+chk('요약 안전보건관리책임자(금융업 선택)',SI('o_resp','fin'),'상시 300명부터');
+// 모든 조문·주요 의무 × 업종: '상시 N명 이상 적용' 요약이면 N-1명은 적용 아님(일부 적용이면 요약에도 '일부 적용'), N명·1000명은 적용
+let pc=0,pf=0; const PI=(s,n)=>({n,amt:null,ind:s.g,id:s.id,ov:s.ov||null,today:TODAY});
+const prop=(lab,jf)=>D.inds.filter(s=>s.g!=='const').forEach(s=>{ const r=C.sizeSum(D,jf,TODAY,s.id), m=r&&/^상시 (\d+)명부터(?! 추가)/.exec(r.t); if(!m)return; const N=+m[1]; pc++;
+  const b=jf(PI(s,N-1)), ok=(b.st!=='apply'||!!b.part)===true&&(!!b.part===/명 미만은 일부 적용/.test(r.t)||b.st!=='apply')&&jf(PI(s,N)).st==='apply'&&jf(PI(s,1000)).st==='apply'; if(!ok){pf++; console.log('FAIL  요약 기준 불일치 '+lab+' '+s.id+' '+r.t);} });
+D.items.forEach(it=>prop(it.id,p=>C.judgeItem(it,p,TODAY)));
+D.arts.filter(e=>/^(GK|OSH|SD|SR|LMC|FT|SAPA)$/.test(e.l)&&!e.nj).forEach(e=>prop(e.l+':'+e.no,p=>C.judgeArt(e,p)));
+cnt++; if(pf||pc<100)fail++; if(pf||process.env.VERBOSE)console.log((pf?'FAIL':'PASS')+'  요약 기준 대조 '+pc+'건 중 불일치 '+pf);
+}
 
 console.log(fail?('실패 '+fail+'건 / '+cnt+'건'):('전체 통과 '+cnt+'건')); process.exit(fail?1:0);
