@@ -744,6 +744,9 @@ a.mrow{color:inherit;text-decoration:none}
 /* 2026-09-30: 계산 도구 2×2까지 한 화면에 — 낮은 화면(아이폰 SE 등)은 머리 여백을 줄임(위의 .hero 여백 규칙보다 뒤에 둠) */
 @media (max-height:700px){.hero{padding-top:10px;padding-bottom:14px}}
 @media (max-height:800px){html[data-fs="l"] .pick{padding-top:10px;padding-bottom:10px} html[data-fs="l"] .start .sq.tsq{margin-top:10px} html[data-fs="l"] .start{padding-top:12px}}   /* 큰 글자일 때 */
+.jsz .jin{margin-top:4px}
+.jsz .jin .btn{margin-top:10px}
+.jsz>.lnk{margin-top:2px}
 </style>
 </head>
 <body>
@@ -1536,6 +1539,54 @@ function xrefs(D,e){
     var id=xnk(t)+':'+no; if(seen[id])continue; seen[id]=1;
     out.push({n:t,no:no,k:(key&&D.byKey[key])?key:''}); }   // 앱 수록 법령인데 조문이 없으면(삭제 조문 등) 법제처로
   return out; }
+// 2026-10-03: 인원 미입력 때 '적용 판단' 칸의 규모별 요약. 새 법령 지식 없이 판정 함수(jf)에 인원·업종을 넣어 보며 계산(기준선과 같은 방식)
+var SZC=null;
+function sizeCands(D){ if(SZC)return SZC; var c={1:1,5:1}, add=function(v){if(typeof v==='number'&&v>0&&v<100000)c[v]=1;};
+  D.items.forEach(function(it){ var r=it.rule; add(r.n); if(r.type==='range'){add(r.min);add(r.max+1);} if(r.map)Object.keys(r.map).forEach(function(k){add(r.map[k]);}); add(r.constN); if(r.const){add(r.const.orN);add(r.const.minN);} if(r.mid)add(r.mid.n); });
+  D.arts.forEach(function(e){add(e.min);}); D.inds.forEach(function(s){ if(s.ov)Object.keys(s.ov).forEach(function(k){var v=s.ov[k];add(v&&typeof v==='object'?v.n:v);}); });
+  SZC=Object.keys(c).map(Number).sort(function(a,b){return a-b;}); return SZC; }
+function sizeSum(D,jf,today,only){   // jf(pf) → {st,part}. only: 고른 업종 id(그 업종만 보고 요약). 반환 {t:요약 문구, ind:업종에 따라 다름} 또는 null(요약하지 않음 — 기존 안내 유지)
+  var N=sizeCands(D), P=function(s,n){return {n:n,amt:null,ind:s.g,id:s.id,ov:s.ov||null,today:today};};
+  var seq=function(s){ return N.map(function(n){ var j=jf(P(s,n)); return j.st==='apply'?(j.part?'p':'a'):(j.st==='na'?'n':(j.st==='cond'?'c':'x')); }).join(''); };
+  var at=function(q,ch){ var i=q.indexOf(ch); return i<0?null:N[i]; };
+  var desc=function(q){   // 한 업종의 인원별 판정 모양
+    var m;
+    if(/^a+$/.test(q))return {k:'all'};
+    if((m=/^(p+|n+)?(c+)?(a+)$/.exec(q))){ var a1=(m[1]||'').length, c1=(m[2]||'').length; return {k:'up',lo:N[a1+c1],mid:c1?N[a1]:null,low:a1&&m[1].charAt(0)==='p'?N[a1]:null}; }
+    if((m=/^(n*)(a+)(n+)$/.exec(q)))return {k:'rng',lo:N[m[1].length],hi:N[m[1].length+m[2].length]};
+    if((m=/^(n+)(c+)$/.exec(q)))return {k:'cup',lo:N[m[1].length]};
+    if(/^n+$/.test(q))return {k:'never'};
+    if(/^p+$/.test(q))return {k:'part'};
+    return {k:'other'}; };
+  var by={}, cons=null, tot=0; D.inds.forEach(function(s){ if(only&&s.id!==only)return; var q=seq(s); if(s.g==='const'&&!only){cons=q;return;} (by[q]=by[q]||[]).push(s.id); tot++; });
+  var ks=Object.keys(by); if(!ks.length)return null; var main=ks.reduce(function(a,k){return by[k].length>by[a].length?k:a;},ks[0]);
+  var cn=(cons!=null&&cons!==main)?' · 건설업 별도 기준':'';
+  var ds=ks.map(function(k){return {d:desc(k),c:by[k].length};});
+  if(ds.some(function(x){return x.d.k==='other';}))return null;
+  var up=ds.filter(function(x){return x.d.k==='up'||x.d.k==='all';}), rng=ds.filter(function(x){return x.d.k==='rng';}), cup=ds.filter(function(x){return x.d.k==='cup';});
+  // 표시: '상시 N명부터' + 괄호 안 단서(일부 업종 제외 / 업종별 다름 / 건설업 별도 등, 2026-10-03 사용자 결정)
+  var F=function(m,ex){ ex=ex.filter(function(x){return x;}); return m+(ex.length?' ('+ex.join(' · ')+')':''); };
+  var cx=cn?'건설업 별도':'';
+  var mids={}; up.forEach(function(x){ if(x.d.mid)mids[x.d.mid+'~'+(x.d.lo-1)]=1; });
+  var midX=Object.keys(mids).length===1?Object.keys(mids)[0]+'명은 추가 확인':(Object.keys(mids).length?'일부 인원 구간 추가 확인':'');
+  if(ks.length===1){ var d=ds[0].d;
+    if(d.k==='all')return {t:F('규모와 관계없이 적용',[cx]),ind:!!cn};
+    if(d.k==='up')return {t:F('상시 '+d.lo+'명부터',[midX,d.low?d.low+'명 미만은 일부 적용':'',cx]),ind:!!cn};
+    if(d.k==='rng')return {t:F('상시 '+d.lo+'~'+(d.hi-1)+'명',[cx]),ind:!!cn};
+    if(d.k==='cup')return {t:F('상시 '+d.lo+'명부터 추가 확인',[cx]),ind:!!cn};
+    if(d.k==='never'&&cons&&/c/.test(cons))return {t:'건설업만 해당 (공사금액 기준)',ind:true};
+    if(only&&d.k==='never')return {t:'이 업종은 대상 아님',ind:false};
+    if(only&&d.k==='part')return {t:'이 업종은 일부 적용',ind:false};
+    return null; }
+  var src=up.length?up:(rng.length?rng:cup), lo={}; src.forEach(function(x){ var v=x.d.k==='all'?N[0]:x.d.lo; lo[v]=(lo[v]||0)+x.c; });
+  var ls=Object.keys(lo).map(Number).sort(function(a,b){return a-b;}); if(!ls.length)return null;
+  var rest=tot-src.reduce(function(a,x){return a+x.c;},0), exc=ds.some(function(x){return x.d.k==='never'||x.d.k==='part';});
+  var ux=exc?'일부 업종 제외':((ls.length>1||rest)?'업종별 다름':'');   // 아예 적용 안 되는 업종이 있으면 '제외', 인원만 다르면 '다름'
+  if(src===rng){ if(ls.length!==1||rng.some(function(x){return x.d.hi!==rng[0].d.hi;}))return null; return {t:F('상시 '+ls[0]+'~'+(rng[0].d.hi-1)+'명',['일부 업종만',cx]),ind:true}; }
+  var lw=src.filter(function(x){return x.d.lo===ls[0]&&x.d.low;})[0];
+  var m=ls[0]===N[0]?'규모와 관계없이 적용':'상시 '+ls[0]+'명부터'+(src===cup?' 추가 확인':'');
+  return {t:F(m,[ux,midX,lw?lw.d.low+'명 미만은 일부 적용':'',cx]),ind:true};
+}
 /*CORE_END*/
 /*CALC_START*/
 // ── 계산 도구 산식(임금 환산·연차 발생일수). 화면과 떼어 tests/calc_test.js에서 법령 기준 기대값으로 검사 ──
@@ -2307,6 +2358,23 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   function whyCard(j,none,via){ var it=null; if(via)D.items.forEach(function(x){if(x.id===via)it=x;});
     return '<div class="card">'+(none?'<p class="why sm">'+esc(none)+'</p>':'<p class="why"><b>'+esc(stLabel(j))+'</b></p>'+(j.why?'<p class="why sm">'+esc(j.why)+'</p>':''))
       +(it?'<button type="button" class="lnk" data-item="'+esc(it.id)+'">적용기준 상세 · '+esc(it.title)+'</button>':'')+'</div>'; }   // 규모·업종 기준을 가진 주요 의무로 이동
+  // ── 2026-10-03: 인원 미입력 '적용 판단' — 규모별 요약(sizeSum, 판정 규칙으로 계산) + 카드 안 입력(입력값은 사업장 조건과 같은 값) ──
+  function ruleSzNote(r){ return (r&&(r.sit||r.naNote))||''; }   // 도급 등 상황 조건, '설치 의무는 모든 사업장' 같은 안내
+  function artSzNote(e){ if(e.lnk)return ruleSzNote(e.lnk.rule); if(e.pa)return '근거 법 조문('+e.pa.no+') 기준'; return ''; }
+  function unkCard(jf,note,via,osh){ var all=sizeSum(D,jf,today,''), s=pf.id?sizeSum(D,jf,today,pf.id):all, it=null; if(via)D.items.forEach(function(x){if(x.id===via)it=x;});
+    var ui=all?all.ind:osh, nv=$('n').value, av=$('amt').value, op=$('ind2').innerHTML;
+    if(pf.id)op=op.replace('value="'+pf.id+'"','value="'+pf.id+'" selected');
+    var h='<div class="card jsz"><p class="why"><b>'+esc(s?s.t:'인원 미입력')+'</b></p>'+(s?'':'<p class="why sm">상시근로자 수를 입력하면 규모 기준을 판정합니다.</p>')
+      +(s&&pf.id&&ui?'<p class="why sm">'+esc(pf.lab)+' 기준</p>':'')+(note?'<p class="why sm">'+esc(note)+'</p>':'')
+      +'<button type="button" class="lnk" data-jin="1" aria-expanded="false">'+(ui?'인원·업종 입력':'인원 입력')+'</button>'
+      +'<div class="jin" hidden><div class="fgrid'+(ui?'':' one')+'"><label class="fld"><span>상시근로자 수</span><input data-jf="n" type="text" inputmode="decimal" autocomplete="off" placeholder="예: 5" value="'+esc(nv)+'"></label>'
+      +(ui?'<label class="fld"><span>업종</span><select data-jf="ind">'+op+'</select></label><label class="fld amt"'+(pf.ind==='const'?'':' hidden')+'><span>건설공사 금액 (억원)</span><input data-jf="amt" type="text" inputmode="decimal" autocomplete="off" placeholder="예: 60" value="'+esc(av)+'"></label>':'')
+      +'</div><button type="button" class="btn pri" data-japply="1">판정</button></div>';
+    return h+(it?'<button type="button" class="lnk" data-item="'+esc(it.id)+'">적용기준 상세 · '+esc(it.title)+'</button>':'')+'</div>'; }
+  function jApply(c){ var g=function(k){ var x=c.querySelector('[data-jf="'+k+'"]'); return x?x.value.trim():null; }, n=g('n'), ind=g('ind'), amt=g('amt');
+    if(n!=null)setVal('n',n); if(ind!=null){ setVal('ind',ind); if(amt!=null&&(indOf(ind)||{}).g==='const')setVal('amt',amt); }
+    if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+    var k=profKey(); if(k===lastProf){ refresh(); return; } lastProf=k; readProf(); save(); ver++; refresh(); }
   // 최저임금법 제6조④ 산입 범위의 연도별 특례(법률 제15666호 부칙 제2조 원문, 국가법령정보센터 2026. 9. 26. 대조). 조문 데이터에는 부칙이 없어 따로 둠
   var MW6NOTE='부칙 <법률 제15666호, 2018. 6. 12.>\n제2조(최저임금의 효력에 관한 적용 특례)\n① 제6조제4항제2호의 개정규정에도 불구하고 같은 호에서 규정하고 있는 "100분의 25"는 다음 각 호에 따른 비율로 한다.\n 1. 2020년은 100분의 20\n 2. 2021년은 100분의 15\n 3. 2022년은 100분의 10\n 4. 2023년은 100분의 5\n 5. 2024년부터는 100분의 0\n② 제6조제4항제3호의 개정규정에도 불구하고 같은 호 나목에서 규정하고 있는 "100분의 7"은 다음 각 호에 따른 비율로 한다.\n 1. 2020년은 100분의 5\n 2. 2021년은 100분의 3\n 3. 2022년은 100분의 2\n 4. 2023년은 100분의 1\n 5. 2024년부터는 100분의 0';
   function artNote(e){ if(e.l!=='MW'||e.no!=='제6조')return '';
@@ -2331,7 +2399,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     h+=actCard(e);   // 위반 시 감독 조치기준(집무규정 별표)
     h+='<div class="acts"><a class="btn pri" href="'+(L.adm?admUrl(L.url):lawUrl(L.url,e.no))+'" target="_blank" rel="noopener">국가법령정보센터 원문 보기</a></div>';
     var jr=(pf.n==null&&e.l==='RULE')?judgeArt(e,{n:5,ind:'',amt:null}):j;   // 안전보건규칙은 규모와 무관하므로 인원이 없어도 판단 문구를 보여줌
-    if(!e.nj||e.fut)h+='<h3 class="gl">'+(e.nj?'시행일':'적용 판단')+'</h3>'+whyCard(jr,(pf.n==null&&!e.fut&&e.l!=='RULE')?'상시근로자 수를 입력하면 규모 기준을 판정합니다.':'',e.lnk?e.lnk.id:'');
+    if(!e.nj||e.fut)h+='<h3 class="gl">'+(e.nj?'시행일':'적용 판단')+'</h3>'+(jr.st==='unk'?unkCard(function(p){return judgeArt(e,p);},artSzNote(e),e.lnk?e.lnk.id:'',/^(OSH|SD|SR|SAPA|SAPAD)$/.test(e.l)):whyCard(jr,'',e.lnk?e.lnk.id:''));   // 2026-10-03: 인원 미입력이면 규모별 요약 + 바로 입력
     if(pd)h+=pendBlock(e,pd);
     h+=prevNext(e);
     en.el.innerHTML=h;
@@ -2384,7 +2452,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     h+='</div>';
     h+='<h3 class="gl">조문</h3>'+refCards(it,en);
     h+=sancSections(it.s,itemCtx(it),lk,'');
-    h+='<h3 class="gl">적용 판단</h3>'+whyCard(j,'');
+    h+='<h3 class="gl">적용 판단</h3>'+(j.st==='unk'?unkCard(function(p){return judgeItem(it,p,today);},ruleSzNote(it.rule),'',it.f==='osh'):whyCard(j,''));
     h+=hcCard(it);
     h+='<h3 class="gl">적용 기준과 근거</h3><div class="card"><p class="why sm">'+esc(it.basis)+'</p>'+(it.note?'<p class="why sm">'+esc(it.note)+'</p>':'')+indNote()+(GRADE[it.g]?'<p class="why sm">근거 확인: '+esc(GRADE[it.g])+'</p>':'')+'</div>';
     if(it.edu&&it.edu.length)h+='<h3 class="gl">교육시간 <span>산업안전보건법 시행규칙 별표4</span></h3><div class="card"><ul class="edu">'+it.edu.map(function(x){return '<li><small>'+esc(x.c+(x.w?' · '+x.w:''))+'</small><b>'+esc(x.t)+'</b></li>';}).join('')+'</ul></div>';
@@ -2776,6 +2844,11 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     else if(t.hasAttribute('data-iclose')){ closeISheet(); }
     else if(t.hasAttribute('data-otog')){ if(st.q.trim())st.condOpen=!st.condOpen; else st.oOpen=!st.oOpen; renderCond(); if(t.id==='ltog'&&!$('lbody').hidden&&!$('n3').value)$('n3').focus(); } });
   $('iq').addEventListener('input',renderIList);
+  document.addEventListener('click',function(ev){ var b=ev.target.closest('[data-jin],[data-japply]'); if(!b)return; var c=b.closest('.jsz'); if(!c)return;   // 2026-10-03 적용 판단 카드 안 입력
+    if(b.hasAttribute('data-japply')){ jApply(c); return; }
+    var f=c.querySelector('.jin'), op=f.hidden; f.hidden=!op; b.setAttribute('aria-expanded',String(op)); if(op){ var i=c.querySelector('[data-jf="n"]'); if(i)i.focus(); } });
+  document.addEventListener('change',function(ev){ var t=ev.target; if(!t.matches||!t.matches('.jsz [data-jf="ind"]'))return; var a=t.closest('.jsz').querySelector('.fld.amt'); if(a)a.hidden=(indOf(t.value)||{}).g!=='const'; });
+  document.addEventListener('keydown',function(ev){ var t=ev.target; if(ev.key==='Enter'&&t.matches&&t.matches('.jsz [data-jf]')){ ev.preventDefault(); jApply(t.closest('.jsz')); } });
   document.addEventListener('click',function(ev){ var t=ev.target.closest('[data-xr],[data-xclose]'); if(!t)return;   // 인용 조문 창(2026-09-29)
     if(t.hasAttribute('data-xr'))openXSheet(t.getAttribute('data-xr')); else closeXSheet(); });
   $('xsheet').addEventListener('click',function(ev){ if(ev.target.closest('[data-art]'))closeXSheet(); },true);   // 창 안 앱 조문 줄: 창을 먼저 닫고(기록은 push가 이어 씀) 조문 화면으로
