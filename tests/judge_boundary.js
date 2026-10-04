@@ -5,7 +5,7 @@ const fs=require('fs'),vm=require('vm');
 const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const raw=/<script id="data" type="application\/json">([\s\S]*?)<\/script>/.exec(html)[1].replace(/<\\\//g,'</');
 const core=html.slice(html.indexOf('/*CORE_START*/'),html.indexOf('/*CORE_END*/'));
-const C=vm.runInNewContext(core+'\n;({prepare,judgeItem,judgeArt,sizeSum:typeof sizeSum==="function"?sizeSum:null})',{});
+const C=vm.runInNewContext(core+'\n;({prepare,judgeItem,judgeArt,sizeSum:typeof sizeSum==="function"?sizeSum:null,nwbNote:typeof nwbNote==="function"?nwbNote:null,sameSanc:typeof sameSanc==="function"?sameSanc:null,ruleSanc,applyDue})',{});
 const D=C.prepare(JSON.parse(raw));
 const TODAY='2026-09-23';
 const P=(ind,n,amt)=>{const s=ind&&D.inds.find(x=>x.id===ind); if(ind&&!s)throw new Error('업종 없음: '+ind);
@@ -86,13 +86,13 @@ chk('요약 근참법 제4조',SA('LMC:제4조'),'상시 30명부터');
 chk('요약 기간제법 제4조',SA('FT:제4조'),'상시 5명부터');
 chk('요약 중처법 제4조',SA('SAPA:제4조'),'상시 5명부터');
 chk('요약 정기교육',SI('o_edu'),'상시 5명부터 (일부 업종 제외)');
-chk('요약 관리감독자',SI('o_sup'),'상시 5명부터');
-chk('요약 안전보건관리책임자',SI('o_resp'),'상시 50명부터 (업종별 다름 · 건설업 별도)');
+chk('요약 관리감독자',SI('o_sup'),'상시 5명부터 (일부 업종 제외)');
+chk('요약 안전보건관리책임자',SI('o_resp'),'상시 50명부터 (일부 업종 제외 · 건설업 별도)');
 chk('요약 안전보건관리담당자',SI('o_charge'),'상시 20~49명 (일부 업종만)');
 chk('요약 기술지도',SI('o_tech'),'건설업만 해당 (공사금액 기준)');
 chk('요약 안전관리자',SI('o_safe'),'상시 50명부터 (일부 업종 제외 · 건설업 별도)');
-chk('요약 이사회 보고',SI('o_board'),'상시 500명부터 (건설업 별도)');
-chk('요약 산업안전보건위원회',SI('o_comm'),'상시 50명부터 (업종별 다름 · 건설업 별도)');
+chk('요약 이사회 보고',SI('o_board'),'상시 500명부터 (일부 업종 제외 · 건설업 별도)');
+chk('요약 산업안전보건위원회',SI('o_comm'),'상시 50명부터 (일부 업종 제외 · 건설업 별도)');
 chk('요약 정기교육(금융업 선택)',SI('o_edu','fin'),'이 업종은 대상 아님');
 chk('요약 산안법 제29조(금융업 선택)',SA('OSH:제29조','fin'),'이 업종은 일부 적용');
 chk('요약 안전관리자(도매업 선택)',SI('o_safe','wholesale'),'상시 50명부터');
@@ -106,4 +106,38 @@ D.arts.filter(e=>/^(GK|OSH|SD|SR|LMC|FT|SAPA)$/.test(e.l)&&!e.nj).forEach(e=>pro
 cnt++; if(pf||pc<100)fail++; if(pf||process.env.VERBOSE)console.log((pf?'FAIL':'PASS')+'  요약 기준 대조 '+pc+'건 중 불일치 '+pf);
 }
 
+// ── 2026-10-04 업종 판정 정비(한국법MCP 별표 원문 대조) ──
+// 연구개발업: 시행령 별표2 제30호·별표9 제17호·시행규칙 별표2 제8호는 '연구개발업은 제외' → 300명이 아니라 100명
+item('o_resp','lab',99,100,'연구개발업 안전보건관리책임자'); item('o_comm','lab',99,100,'연구개발업 산업안전보건위원회'); item('o_reg','lab',99,100,'연구개발업 안전보건관리규정');
+item('o_resp','prof',299,300,'전문·과학·기술 서비스 안전보건관리책임자(300명 유지)');
+// 학교 외 교육서비스업: 시행령 별표1 제5호(제2장제1절·제2절, 제3장, 제5장제2절 적용 제외)
+const PE=(n)=>{const s=D.inds.find(x=>x.id==='edu'); return {n,amt:null,ind:s.g,id:s.id,ov:s.ov,today:TODAY};};
+for(const id of ['o_resp','o_sup','o_safe','o_health','o_doc','o_comm','o_reg','o_edu','o_edu3','o_board','o_charge','o_gen','o_63']){ const j=C.judgeItem(IT(id),PE(300),TODAY); chk('교육서비스업 300명 '+id+' → 적용 제외',j.st+(j.ex?'·ex':''),'na·ex'); }
+for(const id of ['o_ra','o_hc','o_54','o_57']) chk('교육서비스업 '+id+' → 적용',C.judgeItem(IT(id),PE(300),TODAY).st,'apply');
+chk('교육서비스업 인원 미입력이어도 안전관리자 적용 제외',C.judgeItem(IT('o_safe'),PE(null),TODAY).st,'na');
+chk('교육서비스업 산안법 제29조 → 적용 제외',C.judgeArt(AR('OSH:제29조'),PE(100)).st,'na');
+chk('교육서비스업 산안법 제17조 → 적용 제외',C.judgeArt(AR('OSH:제17조'),PE(100)).st,'na');
+chk('교육서비스업 산안법 제64조 → 제1항제6호만',C.judgeArt(AR('OSH:제64조'),PE(100)).part,'제1항제6호(위생시설 장소 제공·이용 협조)만 적용');
+chk('교육서비스업 산안법 제36조 → 적용',C.judgeArt(AR('OSH:제36조'),PE(100)).st,'apply');
+chk('교육서비스업 산안법 제73조(제5장제3절) → 제외 안 함',C.judgeArt(AR('OSH:제73조'),PE(100)).st!=='na'||C.judgeArt(AR('OSH:제73조'),PE(100)).why.indexOf('별표1 제5호')<0,true);
+chk('교육서비스업 시행령 제16조(모법 제17조) → 적용 제외',C.judgeArt(AR('SD:제16조'),PE(100)).st,'na');
+chk('공공행정·학교 50명 안전관리자 → 적용(현업)',C.judgeItem(IT('o_safe'),P('public',50),TODAY).st,'apply');
+if(C.sizeSum){ chk('요약 관리감독자(교육서비스업 선택)',(C.sizeSum(D,p=>C.judgeItem(IT('o_sup'),p,TODAY),TODAY,'edu')||{}).t,'이 업종은 대상 아님'); }
+// ── 2026-10-04 제재 표시: 반의사불벌, 안전보건규칙 제1편 사망 벌칙, 개정 예정 제재 비교 ──
+if(!C.nwbNote||!C.sameSanc){ chk('nwbNote·sameSanc 함수 있음',false,true); } else {
+const S0=k=>AR(k).s[0];
+chk('반의사불벌 근기법 제36조(제109조제1항)',C.nwbNote(S0('GK:제36조'),'GK'),'반의사불벌(근로기준법 제109조제2항) · 명단 공개 체불사업주의 공개 기간 중 위반은 제외');
+chk('반의사불벌 근기법 제36조 10. 8. 이후(제107조제1항)',C.nwbNote(AR('GK:제36조').sn.list[0],'GK'),'반의사불벌(근로기준법 제107조제2항) · 명단 공개 체불사업주의 공개 기간 중 위반은 제외');
+chk('반의사불벌 아님 근기법 제65조(같은 제109조제1항)',C.nwbNote(S0('GK:제65조'),'GK'),'');
+chk('반의사불벌 근기법 제52조제2항제2호만',C.nwbNote(AR('GK:제52조').s[0],'GK')!==''&&C.nwbNote(AR('GK:제52조').s[1],'GK')==='',true);
+chk('반의사불벌 퇴직급여법 제9조',C.nwbNote(S0('RET:제9조'),'RET'),'반의사불벌(퇴직급여법 제43조 단서) · 명단 공개 체불사업주의 공개 기간 중 위반은 제외');
+const lr=IT('l_ret').s; chk('반의사불벌 주요 의무 퇴직금(현행)',C.nwbNote(lr[0],'')!=='',true); chk('반의사불벌 주요 의무 퇴직금(종전 조항은 표시 안 함)',C.nwbNote(lr[1],''),'');
+chk('반의사불벌 과태료는 표시 안 함',C.nwbNote({kind:'과태료',basis:'제109조제1항',qual:'제36조'},'GK'),'');
+chk('개정 예정 제재 같음(근기법 제13조 문구 정비)',C.sameSanc(AR('GK:제13조').s,AR('GK:제13조').sn.list),true);
+chk('개정 예정 제재 다름(근기법 제36조 벌칙 이동)',C.sameSanc(AR('GK:제36조').s,AR('GK:제36조').sn.list),false);
+chk('개정 예정 제재 다름(근기법 제104조 위반 범위)',C.sameSanc(AR('GK:제104조').s,AR('GK:제104조').sn.list),false);
+}
+{ const L=(C.ruleSanc(D,AR('RULE:제42조'))||{list:[]}).list.map(z=>z.basis).join('|');
+  chk('안전보건규칙 제42조(제1편) 사망 시 제167조제1항',/제167조제1항/.test(L),true); chk('안전보건규칙 제42조(제1편) 근로자 준수의무 과태료',/제175조제6항제3호/.test(L),true);
+  const L2=(C.ruleSanc(D,AR('RULE:제79조'))||{list:[]}).list.map(z=>z.basis).join('|'); chk('안전보건규칙 제79조(조문별 연결)는 그대로 — 제167조 없음',/제167조/.test(L2),false); }
 console.log(fail?('실패 '+fail+'건 / '+cnt+'건'):('전체 통과 '+cnt+'건')); process.exit(fail?1:0);
