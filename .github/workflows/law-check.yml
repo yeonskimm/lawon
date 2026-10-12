@@ -13,7 +13,7 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
 
@@ -21,6 +21,7 @@ jobs:
         id: check
         env:
           LAW_API_KEY: ${{ secrets.LAW_API_KEY }}
+          LAW_OC: ${{ secrets.LAW_OC }}   # 공공데이터포털 접속 실패 시 법제처 Open API로 대체 조회
         run: python3 tools/check_laws.py
 
       - name: 이슈로 알림

@@ -7,10 +7,15 @@
 #   공포번호가 기준표 known에 있을 때만 적는다(앱이 반영하지 않은 개정의 날짜는 표시하지 않음). 바뀐 경우에만 파일을 쓴다.
 # - 2026-09-25: 기준표에 시행일(eff)이 있는 제정 법령은 시행일 전까지 '조회되지 않음' 알림에서 뺀다
 #   (예: 노동감독관 직무집행법 — 시행 전이라 법제처 현행 목록에 없어 매주 거짓 알림이 났음). 시행일부터는 평소처럼 대조.
-import json, os, sys, time, datetime, urllib.error, urllib.parse, urllib.request
+# - 2026-10-12: 공공데이터포털(apis.data.go.kr) 접속이 GitHub에서 시간 초과로 막혀 점검 전체가 멈춘 일이 있었음
+#   → 접속 실패 시 법제처 Open API(law.go.kr DRF, 비밀값 LAW_OC — 법령 본문 대조와 같은 키)로 같은 목록을 받아 계속 점검.
+#   한 번 대체로 바뀌면 나머지 법령도 대체로 조회(법령마다 2분씩 기다리지 않게). 보고서 오류 문구의 <…>는 이스케이프.
+import html, json, os, sys, time, datetime, urllib.error, urllib.parse, urllib.request
 import xml.etree.ElementTree as ET
 
 URL = 'https://apis.data.go.kr/1170000/law/lawSearchList.do'
+DRF = 'https://www.law.go.kr/DRF/lawSearch.do'
+FIELDS = ('법령명한글', '법령구분명', '제개정구분명', '공포번호', '공포일자', '시행일자')
 HERE = os.path.dirname(os.path.abspath(__file__))
 KST = datetime.timezone(datetime.timedelta(hours=9))
 TODAY = datetime.datetime.now(KST).strftime('%Y%m%d')
@@ -46,6 +51,44 @@ def fetch(key, name, tries=3):
             time.sleep(10 * (i + 1))
 
 
+def fetch_drf(oc, name, tries=3):
+    """법제처 Open API eflaw 검색(현행 nw=3 + 시행예정 nw=2) → 공공데이터포털과 같은 모양의 기록 목록."""
+    recs, seen = [], set()
+    for nw in (3, 2):
+        q = urllib.parse.urlencode({'OC': oc, 'target': 'eflaw', 'type': 'JSON', 'query': name, 'display': 100, 'nw': nw})
+        req = urllib.request.Request(DRF + '?' + q, headers={'User-Agent': 'lawon-law-check'})
+        for i in range(tries):
+            try:
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    t = r.read().decode('utf-8', 'replace')
+                break
+            except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as ex:
+                if isinstance(ex, urllib.error.HTTPError) and ex.code < 500:
+                    raise
+                if i == tries - 1:
+                    raise
+                time.sleep(10 * (i + 1))
+        if '검증에 실패' in t:
+            raise RuntimeError('법제처 Open API 인증키(LAW_OC)·IP 검증 거절')
+        try:
+            rows = (json.loads(t).get('LawSearch') or {}).get('law') or []
+        except ValueError:
+            raise RuntimeError('법제처 Open API 응답을 읽을 수 없음: ' + t[:120].replace(oc, '***'))
+        if isinstance(rows, dict):
+            rows = [rows]
+        for x in rows:
+            if nw == 3 and x.get('현행연혁코드') not in (None, '현행'):
+                continue
+            if nw == 2 and x.get('현행연혁코드') not in (None, '시행예정'):
+                continue
+            rec = {k: str(x.get(k) or '').strip() for k in FIELDS}
+            k = (rec['공포번호'], rec['시행일자'], nz(rec['법령명한글']))
+            if k not in seen:
+                seen.add(k); recs.append(rec)
+        time.sleep(0.3)
+    return recs
+
+
 def parse(raw):
     """→ (기록 목록, 오류 문구). 게이트웨이 오류 응답(OpenAPI_ServiceResponse)도 잡는다."""
     try:
@@ -69,21 +112,37 @@ def parse(raw):
 
 def main():
     key = os.environ.get('LAW_API_KEY', '').strip()
+    oc = os.environ.get('LAW_OC', '').strip()
+    use_drf = not key and bool(oc)   # 공공데이터포털 키가 없으면 처음부터 법제처 Open API
+    drf_note = ''
     if '%' in key:   # 'Encoding' 키를 넣은 경우 한 번 풀어서 사용(두 번 인코딩 방지)
         key = urllib.parse.unquote(key)
     base = json.load(open(os.path.join(HERE, 'law_versions.json'), encoding='utf-8'))
     new, miss, err, ok, reg, pend = [], [], [], [], [], []
     meta_new = {}   # code → 법령집 표기 정보
-    if not key:
-        err.append('인증키(LAW_API_KEY)가 등록되지 않았습니다. 저장소 Settings → Secrets and variables → Actions 확인')
+    if not key and not oc:
+        err.append('인증키(LAW_API_KEY·LAW_OC)가 등록되지 않았습니다. 저장소 Settings → Secrets and variables → Actions 확인')
     down = 0   # 연속 접속 실패 수
-    for L in (base['laws'] if key else []):
-        try:
-            recs, e = parse(fetch(key, L['name']))
-            down = 0
-        except Exception as ex:   # 네트워크·차단 등(3번 다시 시도한 뒤)
-            recs, e = [], '%s: %s' % (type(ex).__name__, ex)
-            down += 1
+    for L in (base['laws'] if (key or oc) else []):
+        recs, e = [], ''
+        if not use_drf:
+            try:
+                recs, e = parse(fetch(key, L['name']))
+                down = 0
+            except Exception as ex:   # 네트워크·차단 등(3번 다시 시도한 뒤)
+                e = '%s: %s' % (type(ex).__name__, ex)
+                if oc and not (isinstance(ex, urllib.error.HTTPError) and ex.code < 500):
+                    use_drf = True   # 이 법령부터 법제처 Open API로
+                    drf_note = '공공데이터포털 접속 실패(%s 조회 중 — %s)로 %s부터 법제처 Open API(law.go.kr)로 조회했습니다.' % (L['name'], e, L['name'])
+                else:
+                    down += 1
+        if use_drf:
+            try:
+                recs, e = fetch_drf(oc, L['name']), ''
+                down = 0
+            except Exception as ex:
+                recs, e = [], '%s: %s (법제처 Open API)' % (type(ex).__name__, str(ex).replace(oc, '***'))
+                down += 1
         if e:
             err.append('%s — %s' % (L['name'], e))
             if down >= 2:   # 연달아 두 법령이 접속 실패면 서버 장애로 보고 중단(작업 시간 10분 제한 안에 보고서를 남기기 위해)
@@ -130,10 +189,12 @@ def main():
     if err:
         title = '법령 점검 실패' if not new else title
         body.append('\n## 점검 오류\n')
-        body += ['- %s' % e for e in err]
+        body += ['- %s' % html.escape(e, quote=False) for e in err]
         if any('DEADLINE' in e for e in err):
             body.append('\n인증키 사용 기한이 끝났습니다. 공공데이터포털 마이페이지에서 활용기간 연장 신청.')
     body.append('\n---\n점검일 %s · 대조 %d건 · 이상 없음 %d건' % (TODAY, len(ok) + len(new), len(ok)))
+    if drf_note:
+        body.append('\n' + html.escape(drf_note, quote=False))
     if pend:
         body.append('\n시행 전이라 조회 제외: ' + ', '.join('%s(%s 시행)' % (L['name'], ymd(L['eff'])) for L in pend))
     if ok:
