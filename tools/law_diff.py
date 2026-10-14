@@ -290,7 +290,12 @@ def app_note(code, key, new_x, app):
     if a.get('s') or a.get('fn') or a.get('sn'):
         tags.append('벌칙·과태료 연결')
     target = norm(new_x)
-    if a.get('chg'):
+    if a.get('chg') and norm(a.get('x', '')) == target:
+        # 2026-10-14: 개정 예정이 있어도 앱 본문이 이미 법제처 현행과 같으면 일치로 본다
+        # (근기법 제105조 — 12. 8. '삭제' 예정은 비교할 문구가 없어 늘 🔵로 나왔음)
+        stg = [a['chg']] + list(a['chg'].get('nx') or [])
+        tags.append('앱 조문 이미 일치 · 개정 예정(%s) 수록' % ' · '.join(c.get('date', '') for c in stg))
+    elif a.get('chg'):
         stg = [a['chg']] + list(a['chg'].get('nx') or [])   # 2026-10-02: 여러 단계 개정(chg.nx)
         hit = [c.get('date', '') for c in stg if c.get('x') and norm(c['x']) == target]
         tags.append('앱에 개정 예정(%s) 수록 — %s' % (' · '.join(c.get('date', '') for c in stg),
