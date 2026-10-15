@@ -77,8 +77,27 @@ def run(w, big):
         lab = F.locator('.fcres small').inner_text()
         ok(tag + ' 같은 문구 줄은 위반행위 이름 붙임', '·' in lab.replace('부과 예정 ·', ''), lab)
         ok(tag + ' 가로 넘침 없음(제29조 펼침)', not wide(p))
-        # 3) 건설업 공사금액 2억 → 70%
+        setf(p, 'n', '30')
+        # 2차: 위반행위 문구의 단위(1대당)·단위 두 개(1종당 × 1개소당)·각 서류당·대상별
+        for q, art, idx, fills, exp_units, exp_res in [
+            ('안전검사', 'OSH:제93조', 0, ['3'], ['대수'], ['200만원 × 3대 = 600만원', '480만원']),
+            ('물질안전보건자료 게시', 'OSH:제114조', 0, ['3', '2'], ['물질 수', '개소 수'], ['100만원 × 3종 × 2개소 = 600만원', '480만원']),
+            ('물질안전보건자료 제공', 'OSH:제111조', 0, ['2', '1'], ['물질 수', '개소 수'], ['100만원 × 2종 × 1개소 = 200만원', '160만원']),
+            ('서류 보존', 'OSH:제164조', 0, ['4'], ['서류 수'], ['30만원 × 4건 = 120만원', '100만원 미만이라 100만원'])]:
+            p.click('#hback'); p.wait_for_timeout(400)
+            go(p, q, art)
+            F = first_fines_with_calc(p, idx)
+            F.locator('[data-fcopen]').click(); p.wait_for_timeout(200)
+            labs = [x.inner_text().strip() for x in F.locator('.fct').all()]
+            ok(tag + ' %s 입력칸 %s' % (art, exp_units), all(any(u in l for l in labs) for u in exp_units) and F.locator('[data-fcn]').count() == len(exp_units), labs)
+            for i, v in enumerate(fills):
+                F.locator('[data-fcn]').nth(i).fill(v); p.wait_for_timeout(100)
+            r = F.locator('.fcres').inner_text()
+            ok(tag + ' %s 결과' % art, all(e in r for e in exp_res), r)
+            lab = F.locator('.fcres small').inner_text().replace('부과 예정 ·', '').strip()
+            ok(tag + ' %s 결과 제목 있음' % art, len(lab) > 4, lab)
         p.click('#hback'); p.wait_for_timeout(400)
+        # 3) 건설업 공사금액 2억 → 70%
         p.evaluate("()=>{const s=document.getElementById('ind'); s.value='const'; s.dispatchEvent(new Event('change',{bubbles:true}));}"); p.wait_for_timeout(200)
         setf(p, 'amt', '2')
         go(p, '안전관리자 선임', 'OSH:제17조')
