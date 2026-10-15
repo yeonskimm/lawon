@@ -86,4 +86,19 @@ for(const [q,inc,exc] of ICASES){
 }
 const rl=C.search(D,'산안법','',OSH); const okl=rl.lawOnly===1&&rl.items.length>5;
 console.log((okl?'PASS':'FAIL')+'  법령 이름만(산안법) → 주요 의무 '+rl.items.length+'건(화면에서 접힘)'); if(!okl)fail++;
+// 2026-10-16 조문 번호 약칭(선택 분야 기준) — 화면처럼 first·grp에 분야 법령을 줌. [검색어, 분야, 기대 1순위, 정확히 1건이면 1]
+const OSHF=['OSH','SD','SR','RULE','LIC','SAPA','SAPAD','OAM','LIO'], LABF=['GK','GKD','GKR','MW','MWD','MWR','RET','RETD','RETR','EQ','EQD','EQR','FT','FTD','FTR','DISP','DISPD','DISPR','LMC','LMCD','FW','FWD','TU','TUD','TUR','GAM','LIO'];
+for(const [q,f,exp,one] of [['영 제16조',OSHF,'SD:제16조',1],['영 16조',OSHF,'SD:제16조',1],['시행령 제16조',OSHF,'SD:제16조',1],['영 제16조제1항',OSHF,'SD:제16조',1],['영 16조 2항',OSHF,'SD:제16조',1],
+  ['법 제16조',OSHF,'OSH:제16조',1],['법 38조',OSHF,'OSH:제38조',1],['법 제10조의2',OSHF,'OSH:제10조의2',1],['시행규칙 12조',OSHF,'SR:제12조',1],['규칙 제42조',OSHF,'RULE:제42조',1],
+  ['영 제7조의2',LABF,'GKD:제7조의2',1],['법 제60조',LABF,'GK:제60조',1],['시행규칙 제15조',LABF,'GKR:제15조',1],['규칙 제15조',LABF,'GKR:제15조',1],
+  ['제16조',OSHF,'OSH:제16조',0],['16조',OSHF,'OSH:제16조',0],['제16조',LABF,'GK:제16조',0],['제7조의2',LABF,'GKD:제7조의2',0],['제23조',LABF,'GK:제23조',0]]){
+  const r=C.search(D,q,'',f,f), k=r.arts.map(e=>e.l+':'+e.no), okk=k[0]===exp&&(!one||r.total===1); if(!okk)fail++;
+  console.log((okk?'PASS':'FAIL')+'  조문 약칭 '+q+' → '+k.slice(0,2).join(', ')+' ('+r.total+'건)'); }
+{ const r=C.search(D,'법 제16조','',null,null), okk=r.total>1; if(!okk)fail++; console.log((okk?'PASS':'FAIL')+'  분야 없으면 약칭 해석 안 함('+r.total+'건)'); }
+{ const r=C.search(D,'영 제999조','',OSHF,OSHF), okk=r.total===0; if(!okk)fail++; console.log((okk?'PASS':'FAIL')+'  없는 조문 → 0건'); }
+// 현장 약어(용어사전 2026-10-16) → 대표 조문 1순위
+for(const [q,exp] of [['관감','OSH:제16조'],['산안비','OSH:제72조'],['일검','OSH:제129조'],['배검','OSH:제130조'],['작측','OSH:제125조'],['유위','OSH:제42조'],['유위계','OSH:제42조'],['산보위','OSH:제24조'],['명감','OSH:제23조'],['근감','OSH:제155조'],['위평','OSH:제36조'],['안보교육','OSH:제29조'],['물안자','OSH:제114조'],['보관자','OSH:제18조'],['안관','OSH:제17조']]){
+  const r=C.search(D,q,'',OSHF,OSHF), k=r.arts.map(e=>e.l+':'+e.no), okk=k[0]===exp; if(!okk)fail++;
+  console.log((okk?'PASS':'FAIL')+'  현장 약어 '+q+' → '+k.slice(0,2).join(', ')); }
+{ const r=C.search(D,'근감','',LABF,LABF), okk=r.arts[0]&&r.arts[0].l+':'+r.arts[0].no==='GK:제102조'; if(!okk)fail++; console.log((okk?'PASS':'FAIL')+'  근로기준 분야 근감 → 근기법 제102조'); }
 console.log(fail?('실패 '+fail+'건'):'전체 통과'); process.exit(fail?1:0);
