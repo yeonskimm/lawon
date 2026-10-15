@@ -204,6 +204,30 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 .q2{margin:4px 0 0;font-size:.875rem;line-height:1.5;color:var(--ink2)} .vh{font-size:1.0625rem;font-weight:800;line-height:1.4;color:var(--ink);font-variant-numeric:tabular-nums} .vd{margin:6px 0 0;font-size:.9375rem;line-height:1.55;color:var(--ink)} .fg{margin:12px 0 6px;font-size:.875rem;font-weight:700;line-height:1.5;color:var(--ink)} .fines>.fg:first-child{margin-top:0} .vb{display:flex;align-items:baseline;gap:6px;margin:10px 0 0;font-size:.8125rem;line-height:1.45;color:var(--ink2);text-align:left} .vb.sbl{padding:6px 30px 6px 0} .vbk{flex:none;font-weight:600;color:var(--ink3)} .vbt{font-weight:700;font-variant-numeric:tabular-nums}
 .ef{margin:6px 0 0;font-size:.8125rem;color:var(--ink2)}
 .fines{margin-top:10px}
+.fcl{display:inline-flex;align-items:center;min-height:44px;margin-top:2px;padding:0 2px;font-size:.8125rem;font-weight:700;color:var(--pri)}   /* 2026-10-15 산안법 과태료 금액 계산 */
+.fcb{margin-top:4px;padding:12px;border-radius:8px;background:var(--fld);font-size:.875rem;color:var(--ink2)}
+.fcb .fct{margin:12px 0 6px;font-size:.8125rem;font-weight:700;color:var(--ink)}
+.fcb .fcr{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.fcb .fcr.s4{grid-template-columns:repeat(2,1fr)}
+.fcb .fcr button{min-height:40px;padding:0 4px;border-radius:6px;border:1px solid var(--line2);background:var(--card);font-size:.875rem;font-weight:700;color:var(--ink2);text-align:center;justify-content:center;word-break:keep-all}
+.fcb .fcr button[aria-pressed="true"]{background:var(--prbg);border-color:var(--prbg);color:var(--prink)}
+.fcb .fcr button:disabled{opacity:.45}
+.fcb .fcsz{margin:12px 0 0;font-size:.8125rem;line-height:1.5}
+.fcb .fcsz b{color:var(--ink)}
+.fcb label.fck{display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:.875rem;font-weight:700;color:var(--ink);line-height:1.45}
+.fcb label.fck input{width:20px;height:20px;margin:1px 0 0;flex:none}
+.fcb label.fck small{display:block;font-weight:500;font-size:.75rem;color:var(--ink3)}
+.fcb .fcn{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fcb .fcn input{width:6em;height:40px;padding:0 10px;border-radius:6px;border:1px solid var(--line2);background:var(--card);color:var(--ink);font-size:1rem}
+.fcb .fcerr{margin:6px 0 0;font-size:.8125rem;font-weight:700;color:var(--pen)}
+.fcb .fcres{padding:10px 12px;border-radius:6px;background:var(--card);border:1px solid var(--line)}
+.fcb .fcres small{display:block;font-size:.75rem;color:var(--ink3);line-height:1.45}
+.fcb .fcres b{display:block;font-size:1.25rem;font-weight:800;color:var(--fine);white-space:nowrap}
+.fcb .fcres span{display:block;font-size:.8125rem;line-height:1.45}
+.fcb .fcnote{margin:10px 0 0;font-size:.75rem;color:var(--ink3);line-height:1.45}
+.fines.fcon .fr[data-fa]{cursor:pointer}
+.fines.fcon .fr.fsel .fa span.fpk{box-shadow:inset 0 0 0 2px var(--pri);background:var(--hl)}
+.fines.fcon .fr.fsel .fd{color:var(--ink);font-weight:700}
 .fr+.fr{margin-top:10px}
 .fd{margin:0 0 5px;font-size:.875rem;line-height:1.45;color:var(--ink2)}
 .fa{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -1762,6 +1786,30 @@ function hcJudge(o){
   else { r.res=false; r.rule='2'; }
   return r;
 }
+// 2026-10-15 산안법 과태료 금액 계산(시행령 별표 35 일반기준). 금액 단위 만원
+//  - 규모 비율(제3호): 상시근로자 100명 이상 1, 50~99명 0.9, 10~49명 0.8, 10명 미만 0.7 / 건설공사는 공사금액(억원) 40억 이상 1, 10~40억 0.9, 3~10억 0.8, 3억 미만 0.7
+//  - 위반 조항별로 금액 × 인원(1명당·1대당 등)을 먼저 합한 뒤, 합계가 100만원 미만이면 감경하지 않음, 감경 후 100만원 미만이면 100만원(일반기준 마목)
+//  - 중대재해·중대산업사고 발생 사업장의 발생원인 조사·관련 감독 적발: 3차 이상 금액(제2호). 규모 감경은 그대로 적용(제3호에 제외 단서 없음 — 2026-10-15 사용자 확인: 실무도 감경)
+//  - 재량 감경(다목)·자진납부 감경은 반영하지 않음
+function fineRate(o){ var cons=!!o.cons, v=cons?o.amt:o.n;
+  if(v==null||isNaN(v)||v<0)return null;
+  if(cons)return v>=40?1:v>=10?0.9:v>=3?0.8:0.7;
+  return v>=100?1:v>=50?0.9:v>=10?0.8:0.7;
+}
+function fineCalc(o){   // o: {a:[1차,2차,3차], c:0~2, sj:중대재해 사업장, u:1명당 등 단위('' 이면 1건), n:인원·대수, r:규모 비율}
+  var a=o.a; if(!a||a.length!==3||a.some(function(v){return typeof v!=='number'||!(v>0);}))return {err:'amt'};
+  var ci=o.sj?2:(o.c===1||o.c===2?o.c:0), n=o.u?o.n:1;
+  if(o.u&&!(typeof n==='number'&&n>=1&&n%1===0))return {err:'n',ci:ci};
+  var base=a[ci]*n;
+  if(o.r==null)return {err:'r',ci:ci,base:base};
+  var out=base, cut=false, floor=false;
+  if(o.r<1&&base>=100){ out=Math.round(base*o.r*10000)/10000; cut=true; if(out<100){ out=100; floor=true; } }
+  return {ci:ci,base:base,r:o.r,cut:cut,floor:floor,out:out};
+}
+function fineWon(v){   // 만원 단위 수 → '143만 5,000원'·'400만원'
+  var w=Math.round(v*10000), m=Math.floor(w/10000), r=w%10000;
+  return (m?m.toLocaleString('ko-KR')+'만':'')+(r?(m?' ':'')+r.toLocaleString('ko-KR'):'')+'원';
+}
 /*CALC_END*/
 
 (function(){
@@ -1856,13 +1904,64 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     return out;
   }
   function fineHTML(ctx,basis){   // 위반행위 한 줄 아래 1·2·3차 금액 3칸(휴대폰 폭에서 표가 쪼개지지 않게)
-    var L=fineRowsAll(ctx,basis); if(!L.length)return ''; var h='', lg='';
+    var L=fineRowsAll(ctx,basis); if(!L.length)return ''; var h='', lg='', nfc=0;
     L.forEach(function(x){ var one=x.a.length===1, same=one||(x.a[0]===x.a[1]&&x.a[1]===x.a[2]);
       if(x.g&&x.g!==lg){ h+='<p class="fg">'+esc(x.g)+'</p>'; lg=x.g; }   // 2026-09-25: 위반행위가 여럿이면 위반행위별 제목
-      h+='<div class="fr">'+(x.d?'<p class="fd">'+esc(x.d)+'</p>':'')+(same?'<div class="fa one"><span><small>'+(one?'금액':'1~3차')+'</small>'+wonF(x.a[0])+'</span></div>'
+      var num=x.a.every(function(v){return typeof v==='number';}), u=(/1(명|대|개소|종|건|회)당/.exec((x.d||'')+' '+(x.g||''))||[])[1]||'';
+      if(num)nfc++;
+      h+='<div class="fr"'+(num?' data-fa="'+(x.a.length===1?[x.a[0],x.a[0],x.a[0]]:x.a).join(',')+'" data-fu="'+u+'" data-fg="'+esc(x.g||'')+'"':'')+'>'+(x.d?'<p class="fd">'+esc(x.d)+'</p>':'')+(same?'<div class="fa one"><span><small>'+(one?'금액':'1~3차')+'</small>'+wonF(x.a[0])+'</span></div>'
         :'<div class="fa"><span><small>1차</small>'+wonF(x.a[0])+'</span><span><small>2차</small>'+wonF(x.a[1])+'</span><span><small>3차</small>'+wonF(x.a[2])+'</span></div>')+'</div>'; });
-    return '<div class="fines">'+h+'</div>';
+    var cb=(fineKey(ctx)==='OSH'&&nfc)?'<button type="button" class="fcl" data-fcopen>금액 계산 ›</button><div class="fcb" hidden></div>':'';   // 2026-10-15 산안법(시행령 별표 35)만
+    return '<div class="fines">'+h+cb+'</div>';
   }
+  // ── 산안법 과태료 금액 계산(2026-10-15): 계산은 CALC의 fineRate·fineCalc, 여기서는 화면만 ──
+  function fcSize(){ var ind=$('ind').value, cons=ind==='const', n=num($('n').value), amt=num($('amt').value), r=fineRate({cons:cons,n:n,amt:amt});
+    return {cons:cons, r:r, t:r==null?'':(cons?'공사금액 '+amt+'억원':'상시 '+n+'명')}; }
+  function fcLabel(F,R){ var d=R.querySelector('.fd'), dt=d?d.textContent:'', g=R.getAttribute('data-fg')||'', dup=false;
+    Array.prototype.forEach.call(F.querySelectorAll('.fr[data-fa] .fd'),function(x){ if(x!==d&&x.textContent===dt)dup=true; });
+    if(!dt)return g; if(!dup||!g)return dt; return (g.length>24?g.slice(0,23)+'…':g)+' · '+dt; }
+  function fcDraw(F){   // 패널 다시 그리기(줄 선택·규모·단위가 바뀔 때)
+    var B=F.querySelector('.fcb'), st=F._fc, R=F.querySelector('.fr.fsel'); if(!R||!B)return;
+    var u=R.getAttribute('data-fu'), sz=fcSize(), h='<div class="fcres"><small data-fcl></small><b data-fco></b><span data-fcw></span></div>';
+    h+='<p class="fct">위반 차수 (최근 5년)</p><div class="fcr">'+['1차','2차','3차 이상'].map(function(t,i){return '<button type="button" data-fcc="'+i+'">'+t+'</button>';}).join('')+'</div>';
+    if(u)h+='<p class="fct">'+(u==='명'?'인원':u==='대'?'대수':'개수')+' (1'+u+'당 금액)</p><div class="fcn"><input type="text" inputmode="numeric" data-fcn value="'+(st.n||'')+'" aria-label="'+u+' 수"><span>'+u+'</span></div><p class="fcerr" data-fce hidden>1 이상의 정수를 넣으세요</p>';
+    if(sz.r!=null)h+='<p class="fcsz">규모 <b>'+esc(sz.t)+' → '+(sz.r<1?Math.round(sz.r*100)+'%':'감경 없음')+'</b> (검색 조건)</p>';
+    else h+='<p class="fct">규모 ('+(sz.cons?'건설공사 금액':'상시근로자 수')+')</p><div class="fcr s4">'+(sz.cons?[[1,'40억원 이상'],[0.9,'10~40억원 90%'],[0.8,'3~10억원 80%'],[0.7,'3억원 미만 70%']]:[[1,'100명 이상'],[0.9,'50~99명 90%'],[0.8,'10~49명 80%'],[0.7,'10명 미만 70%']]).map(function(x){return '<button type="button" data-fcs="'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div>';
+    h+='<label class="fck"><input type="checkbox" data-fcj'+(st.sj?' checked':'')+'><span>중대재해·중대산업사고 발생 사업장<small>원인조사·관련 감독 적발 시 3차 금액(별표&nbsp;35&nbsp;제2호)</small></span></label>';
+    h+='<p class="fcnote">재량 감경(2분의 1 범위)·자진납부 감경은 반영하지 않음</p>';
+    B.innerHTML=h; fcUpd(F); }
+  function fcUpd(F){   // 결과·선택 표시만 바꿈(입력 중 커서 유지)
+    var B=F.querySelector('.fcb'), st=F._fc, R=F.querySelector('.fr.fsel'); if(!R||!B)return;
+    var a=R.getAttribute('data-fa').split(',').map(Number), u=R.getAttribute('data-fu'), sz=fcSize(), r=sz.r!=null?sz.r:st.r;
+    var o=fineCalc({a:a,c:st.c,sj:st.sj,u:u,n:st.n,r:r}), ci=o.ci==null?(st.sj?2:st.c):o.ci;
+    each('.fa span.fpk',function(x){ if(F.contains(x))x.classList.remove('fpk'); });
+    var cells=R.querySelectorAll('.fa span'); if(cells.length)(cells.length===1?cells[0]:cells[ci]).classList.add('fpk');
+    Array.prototype.forEach.call(B.querySelectorAll('[data-fcc]'),function(x){ var i=+x.getAttribute('data-fcc'); x.setAttribute('aria-pressed',String(!st.sj&&i===st.c)); x.disabled=!!st.sj; });
+    Array.prototype.forEach.call(B.querySelectorAll('[data-fcs]'),function(x){ x.setAttribute('aria-pressed',String(+x.getAttribute('data-fcs')===st.r)); });
+    var e=B.querySelector('[data-fce]'); if(e)e.hidden=o.err!=='n';
+    B.querySelector('[data-fcl]').textContent='부과 예정 · '+fcLabel(F,R);
+    var ob=B.querySelector('[data-fco]'), ow=B.querySelector('[data-fcw]');
+    if(o.err){ ob.textContent='—'; ow.textContent=o.err==='n'?(u==='명'?'인원':'수')+'를 넣으면 계산합니다':o.err==='r'?'규모를 고르면 계산합니다':''; return; }
+    var w=fineWon(a[ci])+(u?' × '+st.n+u+' = '+fineWon(o.base):'');
+    if(o.r<1&&!o.cut)w+=' · 100만원 미만이라 규모 감경 없음';
+    if(o.cut)w+=' × '+Math.round(o.r*100)+'%'+(o.floor?' → 100만원 미만이라 100만원':'');
+    if(st.sj)w+=' · 3차 금액 적용';
+    ob.textContent=fineWon(o.out); ow.textContent=w; }
+  document.addEventListener('click',function(ev){ var t=ev.target, F=t&&t.closest?t.closest('.fines'):null; if(!F)return;
+    var op=t.closest('[data-fcopen]');
+    if(op){ var B=F.querySelector('.fcb'), on=B.hidden; B.hidden=!on; F.classList.toggle('fcon',on); op.textContent=on?'금액 계산 접기':'금액 계산 ›';
+      if(on){ F._fc=F._fc||{c:0,r:null,sj:false,n:1}; if(!F.querySelector('.fr.fsel')){ var R0=F.querySelector('.fr[data-fa]'); if(R0)R0.classList.add('fsel'); } fcDraw(F); }
+      else each('.fa span.fpk',function(x){ if(F.contains(x))x.classList.remove('fpk'); });
+      return; }
+    if(!F.classList.contains('fcon')||!F._fc)return;
+    var R=t.closest('.fr[data-fa]');
+    if(R){ if(!R.classList.contains('fsel')){ each('.fr.fsel',function(x){ if(F.contains(x))x.classList.remove('fsel'); }); R.classList.add('fsel'); fcDraw(F); } return; }
+    var c=t.closest('[data-fcc]'); if(c){ F._fc.c=+c.getAttribute('data-fcc'); fcUpd(F); return; }
+    var z=t.closest('[data-fcs]'); if(z){ F._fc.r=+z.getAttribute('data-fcs'); fcUpd(F); return; }
+  });
+  document.addEventListener('change',function(ev){ var t=ev.target; if(!t||!t.matches||!t.matches('[data-fcj]'))return; var F=t.closest('.fines'); if(!F||!F._fc)return; F._fc.sj=t.checked; fcUpd(F); });
+  document.addEventListener('input',function(ev){ var t=ev.target; if(!t||!t.matches||!t.matches('[data-fcn]'))return; var F=t.closest('.fines'); if(!F||!F._fc)return;
+    var v=t.value.trim(); F._fc.n=/^\d+$/.test(v)?parseInt(v,10):NaN; fcUpd(F); });
   function fineKey(ctx){ if(!ctx)return null; if(ctx.l)return ctx.l==='RULE'?'OSH':ctx.l; var f=(ctx.fn||[])[0]; return f&&f.law?f.law:null; }
   // ── 위반행위(2026-09-25): 제재 카드에 '몇 항을 무엇을 어겨서'를 먼저, 벌칙·과태료 조항은 근거로 아래에 ──
   // 문구 출처: 과태료 → 시행령 부과기준 별표의 위반행위 / 그 밖 → 벌칙·과태료 조문의 해당 호 원문. 조항 나열뿐인 호(예: '제6조, 제16조…를 위반한 자')는 문구 없이 항만

@@ -7,7 +7,7 @@ const fs=require('fs'),vm=require('vm');
 const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const a=html.indexOf('/*CALC_START*/'), b=html.indexOf('/*CALC_END*/');
 if(a<0||b<0){console.log('FAIL  CALC 표시를 찾지 못함');process.exit(1);}
-const C=vm.runInNewContext(html.slice(a,b)+'\n;({wgConv,wgHours,alCalc,MWT,hrNum,amtNum,wkCalc,mHrs,judgeM,unitTable,wgDue,sevCalc,hcJudge})',{});
+const C=vm.runInNewContext(html.slice(a,b)+'\n;({wgConv,wgHours,alCalc,MWT,hrNum,amtNum,wkCalc,mHrs,judgeM,unitTable,wgDue,sevCalc,hcJudge,fineRate,fineCalc,fineWon})',{});
 let fail=0,cnt=0;
 const chk=(name,got,exp)=>{cnt++; const ok=JSON.stringify(got)===JSON.stringify(exp); if(!ok)fail++; if(!ok||process.env.VERBOSE)console.log((ok?'PASS':'FAIL')+'  '+name+'  기대 '+JSON.stringify(exp)+' / 실제 '+JSON.stringify(got));};
 
@@ -189,6 +189,41 @@ chk('30일·미달 14일·연인원 93 → 최소 94명(경고)',(r=>[r.warn,r.l
 chk('30일·미달 14일·연인원 94 → 경고 없음',C.hcJudge({man:94,dn:30,sh:14,base:5}).warn,undefined);
 chk('30일 모두 미달·연인원 121 → 최대 120명(경고)',(r=>[r.warn,r.lim])(C.hcJudge({man:121,dn:30,sh:30,base:5})),['hi',120]);
 chk('30일 모두 미달·연인원 120 → 경고 없음',C.hcJudge({man:120,dn:30,sh:30,base:5}).warn,undefined);
+
+// ── 산안법 과태료 금액 계산(2026-10-15, 시행령 별표 35 일반기준 마목·제2호·제3호) ──
+// 규칙(사용자 확인): 위반 조항별 금액 × 인원 → 합계 100만원 미만이면 감경 없음 → 감경 후 100만원 미만이면 100만원. 1·2·3차 같음. 중대재해 사업장 3차 금액에도 규모 감경
+const R=o=>C.fineRate(o), F=o=>C.fineCalc(o);
+chk('규모 100명 → 1',R({n:100}),1); chk('규모 99명 → 0.9',R({n:99}),0.9); chk('규모 50명 → 0.9',R({n:50}),0.9);
+chk('규모 49명 → 0.8',R({n:49}),0.8); chk('규모 10명 → 0.8',R({n:10}),0.8); chk('규모 9명 → 0.7',R({n:9}),0.7); chk('규모 4.5명 → 0.7',R({n:4.5}),0.7);
+chk('규모 미입력 → null',R({n:null}),null);
+chk('건설 40억 → 1',R({cons:true,amt:40}),1); chk('건설 39.9억 → 0.9',R({cons:true,amt:39.9}),0.9); chk('건설 10억 → 0.9',R({cons:true,amt:10}),0.9);
+chk('건설 3억 → 0.8',R({cons:true,amt:3}),0.8); chk('건설 2.9억 → 0.7',R({cons:true,amt:2.9}),0.7);
+chk('건설인데 공사금액 없음(인원만) → null',R({cons:true,n:300,amt:null}),null);
+const P=o=>(x=>[x.out,x.cut,x.floor])(F(o));
+chk('관리감독자 300/400/500 1차·30명(0.8) → 240',P({a:[300,400,500],c:0,r:0.8}),[240,true,false]);
+chk('같은 2차 → 320',P({a:[300,400,500],c:1,r:0.8}),[320,true,false]);
+chk('같은 3차·10명 미만(0.7) → 350',P({a:[300,400,500],c:2,r:0.7}),[350,true,false]);
+chk('100명 이상(1) → 감경 없음 300',P({a:[300,400,500],c:0,r:1}),[300,false,false]);
+chk('중대재해 사업장 → 3차 500 × 0.8 = 400',P({a:[300,400,500],c:0,sj:true,r:0.8}),[400,true,false]);
+chk('중대재해 사업장 표시 차수 2',F({a:[300,400,500],c:0,sj:true,r:0.8}).ci,2);
+chk('50만원 × 3명 = 150 → 0.8 → 120',P({a:[50,100,150],c:0,u:'명',n:3,r:0.8}),[120,true,false]);
+chk('10만원 × 8명 = 80 → 100만원 미만 감경 없음 80',P({a:[10,20,50],c:0,u:'명',n:8,r:0.8}),[80,false,false]);
+chk('10만원 × 10명 = 100 → 감경 80 → 하한 100',P({a:[10,20,50],c:0,u:'명',n:10,r:0.8}),[100,true,true]);
+chk('10만원 × 12명 = 120 → 96 → 하한 100',P({a:[10,20,50],c:0,u:'명',n:12,r:0.8}),[100,true,true]);
+chk('10만원 × 15명 = 150 → 0.7 → 105',P({a:[10,20,50],c:0,u:'명',n:15,r:0.7}),[105,true,false]);
+chk('2차 20만원 × 7명 = 140 → 0.9 → 126',P({a:[10,20,50],c:1,u:'명',n:7,r:0.9}),[126,true,false]);
+chk('3차 50만원 × 3명 = 150 → 0.7 → 105',P({a:[10,20,50],c:2,u:'명',n:3,r:0.7}),[105,true,false]);
+chk('99만원 미만 1건(50만원) → 감경 없음',P({a:[50,250,500],c:0,r:0.7}),[50,false,false]);
+chk('정확히 100만원 → 0.9 → 90 → 하한 100',P({a:[100,200,300],c:0,r:0.9}),[100,true,true]);
+chk('205만원 × 0.7 = 143.5(만원 단위 소수 유지)',F({a:[205,205,205],c:0,r:0.7}).out,143.5);
+chk('1,500만원 × 0.9 = 1,350',F({a:[1500,1500,1500],c:0,r:0.9}).out,1350);
+chk('인원 0 → 오류',F({a:[10,20,50],c:0,u:'명',n:0,r:0.8}).err,'n');
+chk('인원 2.5 → 오류',F({a:[10,20,50],c:0,u:'명',n:2.5,r:0.8}).err,'n');
+chk('인원 없음(NaN) → 오류',F({a:[10,20,50],c:0,u:'명',n:NaN,r:0.8}).err,'n');
+chk('규모 없음 → 오류 r',F({a:[300,400,500],c:0,r:null}).err,'r');
+chk('글 금액(공사금액 5%) → 계산 안 함',F({a:['공사금액 5%',200,300],c:0,r:0.8}).err,'amt');
+chk('표시: 400 → 400만원',C.fineWon(400),'400만원'); chk('표시: 143.5 → 143만 5,000원',C.fineWon(143.5),'143만 5,000원');
+chk('표시: 1350 → 1,350만원',C.fineWon(1350),'1,350만원'); chk('표시: 0.5 → 5,000원',C.fineWon(0.5),'5,000원');
 
 console.log((fail?'실패 '+fail+'건':'모두 통과')+' ('+cnt+'건)');
 process.exit(fail?1:0);
