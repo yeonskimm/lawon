@@ -2286,9 +2286,11 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     return '<div class="fsec"><button type="button" class="gl fold" data-fold="'+key+'" aria-expanded="'+op+'">'+esc(title)+(meta?' <span>'+esc(meta)+'</span>':'')+'<i class="fdd" aria-hidden="true"></i></button><div class="fbody"'+(op?'':' hidden')+'>'+body+'</div></div>'; }
   function setSbH(){ var sb=document.querySelector('#vFind .sbar'); if(sb&&sb.offsetHeight)document.documentElement.style.setProperty('--sbh',sb.offsetHeight+'px'); }
   function renderResults(){
-    var ord=lawOrder(), bh=bsearch(D,st.q,st.field), nB=bh.length; if(st.law==='BT'&&!nB)st.law='';
-    var isB=st.law==='BT', fl=fieldLaws(), r=search(D,st.q,isB?'':st.law,ord,fl); if(st.law&&!isB&&!r.byLaw[st.law]){st.law='';r=search(D,st.q,'',ord,fl);}
-    var qq=st.q, lz=null;   // 2026-10-02: 0건이면 군말('없음·하다' 등)을 빼고 다시 찾음 — 뺀 말은 화면 맨 위에 표시
+    var ord=lawOrder(), fl=fieldLaws(), q0=abbQuery(st.q,fl);   // 2026-10-16 '영 16조' → '산안법시행령 16조'(그 조문이 있을 때만) — 별표 검색·강조·검색어 줄도 같은 검색어로
+    if(!q0||!search(D,q0,'',ord,fl).total)q0=st.q;
+    var bh=bsearch(D,q0,st.field), nB=bh.length; if(st.law==='BT'&&!nB)st.law='';
+    var isB=st.law==='BT', r=search(D,q0,isB?'':st.law,ord,fl); if(st.law&&!isB&&!r.byLaw[st.law]){st.law='';r=search(D,q0,'',ord,fl);}
+    var qq=q0, lz=null;   // 2026-10-02: 0건이면 군말('없음·하다' 등)을 빼고 다시 찾음 — 뺀 말은 화면 맨 위에 표시
     if(!isB&&!r.items.length&&!r.arts.length&&!nB){ var lq=looseQuery(st.q);
       if(lq){ qq=lq.q; lz=lq; r=search(D,qq,'',ord,fl); bh=bsearch(D,qq,st.field); nB=bh.length; } }   // 다시 찾아도 0건이면 뺀 뒤의 검색어로 검색어별 결과
     var laws=ord.filter(function(k){return r.byLaw[k];}), allN=0; laws.forEach(function(k){allN+=r.byLaw[k];});   // 결과가 있는 법령만 거르기 칩으로
