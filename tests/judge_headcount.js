@@ -4,7 +4,7 @@ const fs=require('fs'), vm=require('vm');
 function load(p){ const s=fs.readFileSync(p,'utf8');
   const data=/<script id="data" type="application\/json">([\s\S]*?)<\/script>/.exec(s)[1].replace(/<\\\//g,'</');
   const js=s.slice(s.indexOf('/*CORE_START*/'),s.indexOf('/*CORE_END*/'));
-  const ctx={}; vm.createContext(ctx); vm.runInContext(js+';this.C={prepare,judgeItem,judgeArt,search,headcount:typeof headcount==="function"?headcount:null,HCI:typeof HCI==="object"?HCI:null};',ctx);
+  const ctx={}; vm.createContext(ctx); vm.runInContext(js+';this.C={prepare,judgeItem,judgeArt,search,headcount:typeof headcount==="function"?headcount:null,HCI:typeof HCI==="object"?HCI:null,fullOn:typeof fullOn==="function"?fullOn:null};',ctx);
   return {C:ctx.C, D:ctx.C.prepare(JSON.parse(data))}; }
 const A=load(process.argv[2]), C=A.C, D=A.D;
 let fail=0; const ok=(n,c,i)=>{console.log(c?'PASS':'FAIL',n,c?'':(i===undefined?'':JSON.stringify(i))); if(!c)fail++;};
@@ -28,9 +28,25 @@ ok('사진 처리업 60명 → 기준 미만, 150명 → 1명', HC('o_health','p
 ok('건설 2,300억 → 공사금액 기준 2명, 1,300명 → 인원 기준 2명', HC('o_health','const',100,2300).hcons.byA===2&&HC('o_health','const',1300,900).hcons.byN===2);
 ok('건설 900억·1,300명 → 금액 1명·인원 2명이라 하나로 안 정함', HC('o_health','const',1300,900).one===null);
 ok('예술·스포츠·여가 60명 보건관리자 → 확인 필요(골프장 운영업)', J('o_health','leisure',60).st==='cond');
-ok('수리·개인 서비스 60명 보건관리자 → 확인 필요(수리업·세탁업)', J('o_health','repair',60).st==='cond');
 ok('예술·스포츠·여가 30명 → 비적용', J('o_health','leisure',30).st==='na');
 ok('다른 업종은 그대로(도소매 60명 적용)', J('o_health','retail',60).st==='apply');
+// ── 2026-10-16 업종 판정 교차 점검(시행령 별표3·5 원문 대조): 업종 선택지 정비 ──
+ok('수리·세탁업 60명 보건관리자 → 적용 1명(별표5 제42·43호, 확인 필요 아님)', J('o_health','repair',60).st==='apply'&&HC('o_health','repair',60).one===1);
+ok('환경 정화·복원업 60명 보건관리자 → 적용 1명(별표5 제26호 수도·하수·폐기물 처리·원료 재생업), 49명 → 비적용', J('o_health','envclean',60).st==='apply'&&HC('o_health','envclean',60).one===1&&J('o_health','envclean',49).st==='na');
+ok('환경 정화·복원업 5천명 보건관리자 → 2명', HC('o_health','envclean',5000).one===2);
+ok('산업용 기계·장비 수리업 600명 → 안전관리자 2명(별표3 제1~27호), 보건관리자 1명(별표5 제23호), 1천명 → 2명', HC('o_safe','mfgRepair',600).one===2&&HC('o_health','mfgRepair',600).one===1&&HC('o_health','mfgRepair',1000).one===2);
+ok('그 밖의 개인 서비스(세탁 제외) 60명 → 안전관리자 1명, 보건관리자 대상 아님', HC('o_safe','personal',60).one===1&&!!HC('o_health','personal',500).none&&J('o_health','personal',500).st==='na');
+ok('협회·단체 → 안전·보건관리자 모두 대상 아님', !!HC('o_safe','assoc',500).none&&!!HC('o_health','assoc',500).none&&J('o_safe','assoc',500).st==='na');
+ok('영화·비디오·방송프로그램 제작·배급업 60명 → 안전관리자 1명(별표3 제34호 영상·오디오 기록물 제작·배급업), 보건관리자 대상 아님', HC('o_safe','film',60).one===1&&!!HC('o_health','film',500).none);
+ok('법무·회계·광고 등 전문 서비스 → 안전·보건관리자 대상 아님', !!HC('o_safe','profA',500).none&&!!HC('o_health','profA',500).none);
+// 전담 여부(fullOn): 상시 300명(영 제16조제2항·제20조제2항), 건설업 안전관리자는 공사금액 120억원(토목 150억원)
+const FO=(it,id,n,amt)=>C.fullOn(I(it),P(id,n,amt));
+ok('fullOn 함수 있음', typeof C.fullOn==='function');
+ok('제조업 299명 → 전담 아님, 300명 → 전담', FO('o_safe','mfgHeavy',299).on===false&&FO('o_safe','mfgHeavy',300).on===true&&FO('o_health','mfgHeavy',300).on===true);
+ok('건설 119억 → 전담 아님, 120억 → 전담(토목 150억 미만이라 확인), 150억 → 전담 확정', FO('o_safe','const',30,119).on===false&&FO('o_safe','const',30,120).on===true&&FO('o_safe','const',30,120).amb===true&&FO('o_safe','const',30,150).amb===false&&FO('o_safe','const',30,150).byAmt===true);
+ok('건설 보건관리자는 인원 기준(299명 → 전담 아님, 300명 → 전담)', FO('o_health','const',299,500).on===false&&FO('o_health','const',300,500).on===true&&FO('o_health','const',300,500).byAmt===false);
+ok('인원·금액 미입력 → null, 전담 기준 없는 항목(책임자) → null', FO('o_safe','mfgHeavy',null)===null&&FO('o_safe','const',30,null)===null&&FO('o_resp','mfgHeavy',500)===null);
+ok('판정 문구도 같은 기준(300명 → 전담 문구, 299명 → 없음)', /상시 300명 이상은 업무만 전담/.test(J('o_safe','mfgHeavy',300).why)&&!/전담/.test(J('o_safe','mfgHeavy',299).why)&&/공사금액 120억원\(토목공사업 150억원\) 이상은/.test(J('o_safe','const',30,120).why));
 if(process.argv[3]){ const B=load(process.argv[3]); let n=0,d=0;
   const N=[null,0,3,4.9,5,10,20,49,50,99,100,299,300,499,500,599,600,999,1000,2000,5000], AM=[null,1,20,50,120,150,800,1000,1500,10000];
   for(const s of [null].concat(D.inds.map(x=>x.id))) for(const n0 of N) for(const a of (s==='const'?AM:[null])){
