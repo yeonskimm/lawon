@@ -171,8 +171,12 @@ def parse_adm(root):
             elif cur and s and not re.match(r'^제\d+(장|절|관)', s):
                 arts[cur]['x'] += '\n' + s
     bts = {}
-    for i, el in enumerate(root.iter('별표제목')):
-        bts['별표 %d' % (i + 1)] = {'t': (el.text or '').strip(), 'h': ''}
+    for i, u in enumerate(root.iter('별표단위')):   # 2026-10-16: 고시 별표(관리비 계상기준표 등)는 내용 변경도 알림 — 키는 종전과 같은 순번(훈령 기준본 호환)
+        body = (u.findtext('별표내용') or '').strip()
+        bts['별표 %d' % (i + 1)] = {'t': (u.findtext('별표제목') or '').strip(), 'h': h(norm(body)) if body else ''}
+    if not bts:
+        for i, el in enumerate(root.iter('별표제목')):
+            bts['별표 %d' % (i + 1)] = {'t': (el.text or '').strip(), 'h': ''}
     info = root.find('행정규칙기본정보')
     g = (lambda t: (info.findtext(t) or '').strip()) if info is not None else (lambda t: '')
     return {'arts': arts, 'bts': bts, 'pno': g('발령번호'), 'ef': g('시행일자')}
@@ -377,7 +381,7 @@ def section(code, name, label, old, new, app):
     for k in sorted(rm, key=sortkey):
         L.append('- %s(%s) 조문 없어짐 — %s' % (k, old['arts'][k]['t'], '앱 수록' if (code, k) in app else '앱 미수록'))
     for k, how, t in bch:
-        L.append('- %s(%s) %s — 원문 파일로 대조 필요' % (k, t, how))
+        L.append('- %s(%s) %s — 원문 파일로 대조 필요%s' % (k, t, how, ' · 🔴 관리비 계산기 요율(index.html CSR)·calc_test 확인' if code == 'CSC' and '계상기준표' in t else ''))
     return '\n'.join(L) + '\n'
 
 

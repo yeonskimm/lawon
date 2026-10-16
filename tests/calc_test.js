@@ -7,7 +7,7 @@ const fs=require('fs'),vm=require('vm');
 const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const a=html.indexOf('/*CALC_START*/'), b=html.indexOf('/*CALC_END*/');
 if(a<0||b<0){console.log('FAIL  CALC 표시를 찾지 못함');process.exit(1);}
-const C=vm.runInNewContext(html.slice(a,b)+'\n;({wgConv,wgHours,alCalc,MWT,hrNum,amtNum,wkCalc,mHrs,judgeM,unitTable,wgDue,sevCalc,hcJudge,fineRate,fineCalc,fineWon})',{});
+const C=vm.runInNewContext(html.slice(a,b)+'\n;({wgConv,wgHours,alCalc,MWT,hrNum,amtNum,wkCalc,mHrs,judgeM,unitTable,wgDue,sevCalc,hcJudge,fineRate,fineCalc,fineWon,csCalc,CSR,CSF,wonKr})',{});
 let fail=0,cnt=0;
 const chk=(name,got,exp)=>{cnt++; const ok=JSON.stringify(got)===JSON.stringify(exp); if(!ok)fail++; if(!ok||process.env.VERBOSE)console.log((ok?'PASS':'FAIL')+'  '+name+'  기대 '+JSON.stringify(exp)+' / 실제 '+JSON.stringify(got));};
 
@@ -234,6 +234,36 @@ chk('단위 두 개인데 수 하나 → 오류',F({a:[100,200,500],c:0,u:['종'
 chk('안전검사 미실시 200만원 × 3대 = 600 → 0.9 → 540',P({a:[200,600,1000],c:0,u:['대'],n:[3],r:0.9}),[540,true,false]);
 chk('안전검사 미실시 2차 600만원 × 2대 = 1,200 → 0.7 → 840',P({a:[200,600,1000],c:1,u:['대'],n:[2],r:0.7}),[840,true,false]);
 chk('단위 없는 위반(n 무시)',P({a:[300,400,500],c:0,u:[],n:[],r:0.8}),[240,true,false]);
+
+// ── 건설업 산업안전보건관리비 계상(2026-10-16): 관리비 고시 제3조·제4조·별표 1(계약 시기별 3개 판) ──
+//  기대값은 파이썬 분수 계산으로 따로 구함(대상액 × 비율, 원 미만 버림, 5억~50억은 기초액 더함)
+const CS=o=>C.csCalc(Object.assign({per:'p3',k:0,tgt:null,mat:0,hm:false,plan:null},o));
+chk('별표 1 현행 요율(건축 3.11·2.28·4,325,000·2.37·2.64)',C.CSR.p3.k[0],['건축공사',311,228,4325000,237,264]);
+chk('별표 1 2024 하반기(토목 3.09·1.99·5,499,000)',C.CSR.p2.k[1].slice(1,4),[309,199,5499000]);
+chk('별표 1 종전 철도·궤도(2.45·1.57·4,411,000·1.66·1.81)',C.CSR.p1.k[3],['철도·궤도신설공사',245,157,4411000,166,181]);
+chk('총공사금액 19,999,999원 → 적용 대상 아님(제3조)',CS({tot:19999999}).na,1);
+chk('2천만원 × 70% = 1,400만 × 3.11% = 435,400',CS({tot:20000000}).min,435400);
+chk('대상액 4.99억(499,999,999) × 3.11% → 15,549,999(버림)',CS({tot:600000000,tgt:499999999}).min,15549999);
+chk('대상액 5억 → × 2.28% + 4,325,000 = 15,725,000',CS({tot:700000000,tgt:500000000}).min,15725000);
+chk('토목 대상액 4,999,999,999 → 129,799,999',CS({k:1,tot:7e9,tgt:4999999999}).min,129799999);
+chk('토목 대상액 50억 · 보건관리자 대상 아님 → × 2.60% = 130,000,000',CS({k:1,tot:7e9,tgt:5e9}).min,130000000);
+chk('토목 대상액 50억 · 보건관리자 대상 → × 2.73% = 136,500,000',CS({k:1,tot:9e10,tgt:5e9,hm:true}).min,136500000);
+chk('대상액 50억 이상인데 보건관리자 여부 없음 → 선택 요구',CS({tot:9e10,tgt:6e9,hm:null}).err,'hm');
+chk('총공사금액 30억 · 70% → 21억 × 2.28% + 4,325,000 = 52,205,000',CS({tot:3e9}).min,52205000);
+chk('관급 재료 6억: min(52,205,000, (15억 계상 38,525,000) × 1.2 = 46,230,000)',[CS({tot:3e9,tgt:2.1e9,mat:6e8}).a.v,CS({tot:3e9,tgt:2.1e9,mat:6e8}).b12,CS({tot:3e9,tgt:2.1e9,mat:6e8}).min],[52205000,46230000,46230000]);
+chk('관급 재료로 구간이 바뀜: 6억(18,005,000) vs 4억 × 3.11% × 1.2 = 14,928,000',[CS({tot:9e8,tgt:6e8,mat:2e8}).a.v,CS({tot:9e8,tgt:6e8,mat:2e8}).min],[18005000,14928000]);
+chk('재료비 ≥ 대상액 → 오류',CS({tot:9e8,tgt:6e8,mat:6e8}).err,'mat');
+chk('2024. 7.~12. 계약 건축 10억 → × 1.86% + 5,349,000 = 23,949,000',CS({per:'p2',tot:2e9,tgt:1e9}).min,23949000);
+chk('2024. 6. 30. 이전 철도·궤도 3억 → × 2.45% = 7,350,000',CS({per:'p1',k:3,tot:5e8,tgt:3e8}).min,7350000);
+chk('2024. 6. 30. 이전 특수및기타 60억 → × 1.27% = 76,200,000',CS({per:'p1',k:4,tot:1e10,tgt:6e9}).min,76200000);
+chk('계약서 0원 → 전액 미계상 줄, 1차 1천만원 상한',[CS({tot:3e9,plan:0}).row,CS({tot:3e9,plan:0}).fine],[0,[10000000,10000000,10000000]]);
+chk('미계상 정확히 50%(26,102,500) → 50% 이상 줄(100·300·600만원)',[CS({tot:3e9,plan:26102500}).row,CS({tot:3e9,plan:26102500}).fine],[1,[1000000,3000000,6000000]]);
+chk('미계상 50% 미만(26,102,499) → 50% 미만 줄',CS({tot:3e9,plan:26102501}).row,2);
+chk('미계상 12,205,000 → 50% 미만 줄 1·2·3차 100·200·300만원',CS({tot:3e9,plan:40000000}).fine,[1000000,2000000,3000000]);
+chk('미계상액이 상한보다 작으면 미계상액: 30만원 부족 → 각 차수 30만원',CS({tot:3e9,plan:51905000}).fine,[300000,300000,300000]);
+chk('기준 이상 계상 → 부족 없음',[CS({tot:3e9,plan:52205000}).sh,CS({tot:3e9,plan:52205000}).row],[0,undefined]);
+chk('별표 35 미계상 줄 문구',C.CSF.map(x=>x[0]),['전액을 계상하지 않은 경우','50% 이상 100% 미만을 계상하지 않은 경우','50% 미만을 계상하지 않은 경우']);
+chk('읽기 표시 1,234억 5,678만 9,012원 / 30억원 / 0원',[C.wonKr(123456789012),C.wonKr(3e9),C.wonKr(0)],['1,234억 5,678만 9,012원','30억원','0원']);
 
 console.log((fail?'실패 '+fail+'건':'모두 통과')+' ('+cnt+'건)');
 process.exit(fail?1:0);
