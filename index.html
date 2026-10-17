@@ -209,6 +209,7 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 .fcb .fct{margin:12px 0 6px;font-size:.8125rem;font-weight:700;color:var(--ink)}
 .fcb .fcr{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .fcb .fcr.s4{grid-template-columns:repeat(2,1fr)}
+.fcr.fcbs{grid-template-columns:repeat(2,1fr)}
 .fcb .fcr button{min-height:40px;padding:0 4px;border-radius:6px;border:1px solid var(--line2);background:var(--card);font-size:.875rem;font-weight:700;color:var(--ink2);text-align:center;justify-content:center;word-break:keep-all}
 .fcb .fcr button[aria-pressed="true"]{background:var(--prbg);border-color:var(--prbg);color:var(--prink)}
 .fcb .fcr button:disabled{opacity:.45}
@@ -793,6 +794,13 @@ a.mrow{color:inherit;text-decoration:none}
 /* 2026-10-17 작업별 기준 */
 .wchip{display:inline-flex;align-items:center;gap:6px}
 .wchip::after{content:"";width:6px;height:6px;margin-left:1px;border-right:1.8px solid var(--ink3);border-bottom:1.8px solid var(--ink3);transform:rotate(-45deg)}
+.wgs{margin:14px 4px 7px;font-size:.8125rem;font-weight:700;color:var(--ink3)}
+.gl+.wgs{margin-top:2px}
+.wgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.wgrid .wchip{display:block;width:100%;height:42px;padding:0 4px;text-align:center;letter-spacing:-.02em;overflow:hidden;text-overflow:ellipsis}
+.wgrid .wchip::after{display:none}
+@media (max-width:359px){.wgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:439px){html[data-fs="l"] .wgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .wcard{display:block;position:relative;width:100%;margin-top:10px;padding:12px 38px 12px 14px;text-align:left;color:var(--ink);font:inherit}
 .wcard b{display:block;font-size:.9375rem;font-weight:800;color:var(--pri)}
 .wcard small{display:block;margin-top:3px;font-size:.8125rem;line-height:1.45;color:var(--ink3)}
@@ -1746,6 +1754,12 @@ function workLines(x,ln){ var L=String(x||'').split('\n').map(function(l){return
     if(hit){ out.push(t); on=hang&&(ln||[]).some(function(p){return /^[①-⑳]$/.test(p)&&t.indexOf(p)===0;}); return; }
     if(on&&!hang){ out.push(t); return; } on=false; });
   return out; }
+// 2026-10-17: 작업별 기준 칩 묶음(화면 표시 순서만 — 검색어 겹칠 때 우선순위는 데이터 work 순서). 안전보건규칙 편·장 구성 기준, 묶음 안은 현장 빈도 순
+var WORK_GROUPS=[['하역·양중',['forklift','crane','aerial']],['건설·추락',['scaffold','ladder','fall','excav','formwork','steel','demol','pile']],['제조 기계',['conveyor','press','robot','injection','roller','grinder']],['위험작업',['confined','hotwork','electric']],['보건',[]]];
+function workGroups(D){ var by={}, used={}, out=[]; (D.work||[]).forEach(function(W){by[W.id]=W;});
+  WORK_GROUPS.forEach(function(g){ var L=g[1].filter(function(id){return by[id];}).map(function(id){used[id]=1;return by[id];}); if(L.length)out.push({h:g[0],list:L}); });
+  var rest=(D.work||[]).filter(function(W){return !used[W.id];}); if(rest.length)out.push({h:'기타',list:rest});   // 묶음에 안 넣은 새 작업도 빠지지 않게
+  return out; }
 /*CORE_END*/
 /*CALC_START*/
 // ── 계산 도구 산식(임금 환산·연차 발생일수). 화면과 떼어 tests/calc_test.js에서 법령 기준 기대값으로 검사 ──
@@ -2071,8 +2085,10 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     if(/각\s*서류당/.test(t)&&u.indexOf('서류')<0)u.push('서류');
     if(/(?:안전인증|자율안전확인)대상별/.test(t)&&u.indexOf('대상')<0)u.push('대상');
     return u; }
-  function fcSize(){ var ind=$('ind').value, cons=ind==='const', n=num($('n').value), amt=num($('amt').value), r=fineRate({cons:cons,n:n,amt:amt});
-    return {cons:cons, r:r, t:r==null?'':(cons?'공사금액 '+amt+'억원':'상시 '+n+'명')}; }
+  function fcSize(st){   // 2026-10-17: 업종 미선택이면 규모 기준(인원/공사금액)을 창에서 고름(tog) — 전에는 인원 기준만 나와 건설공사 금액 감경을 고를 수 없었음
+    var ind=$('ind').value, tog=!ind, cons=tog?((st&&st.b)==='amt'):ind==='const', n=num($('n').value), amt=num($('amt').value);
+    var r=fineRate({cons:cons,n:n,amt:cons&&tog?null:amt});   // 업종 미선택 + 공사금액 기준은 검색 조건에 금액이 없으므로 직접 고름
+    return {cons:cons, tog:tog, r:r, t:r==null?'':(cons?'공사금액 '+amt+'억원':'상시 '+n+'명')}; }
   function fcLabel(F,R){ var d=R.querySelector('.fd'), dt=d?d.textContent:'', g=R.getAttribute('data-fg')||'', dup=false;
     Array.prototype.forEach.call(F.querySelectorAll('.fr[data-fa] .fd'),function(x){ if(x!==d&&x.textContent===dt)dup=true; });
     if(!dt){ var ft=R.getAttribute('data-ft')||''; return g||actText(ft)||ft; }   // 줄 설명이 없으면 위반행위 문구
@@ -2081,11 +2097,12 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   function fcNs(F,us){ return us.map(function(k){ var v=F._fc.nm[k]; return v===undefined?1:v; }); }
   function fcDraw(F){   // 패널 다시 그리기(줄 선택·규모·단위가 바뀔 때)
     var B=F.querySelector('.fcb'), st=F._fc, R=F.querySelector('.fr.fsel'); if(!R||!B)return;
-    var us=fcU(R), sz=fcSize(), h='<div class="fcres"><small data-fcl></small><b data-fco></b><span data-fcw></span></div>';
+    var us=fcU(R), sz=fcSize(st), h='<div class="fcres"><small data-fcl></small><b data-fco></b><span data-fcw></span></div>';
     h+='<p class="fct">위반 차수 (최근 5년)</p><div class="fcr">'+['1차','2차','3차 이상'].map(function(t,i){return '<button type="button" data-fcc="'+i+'">'+t+'</button>';}).join('')+'</div>';
     if(us.length){ h+='<div class="fcns">';   // 2026-10-15 3차: 단위가 둘이면(물질 수·개소 수) 한 줄에 나란히
       us.forEach(function(k){ var L=FCU[k], v=st.nm[k]; h+='<div><p class="fct">'+L[0]+' <small>'+(k==='서류'?'서류당':k==='대상'?'대상별':'1'+k+'당')+'</small></p><div class="fcn"><input type="text" inputmode="numeric" data-fcn="'+k+'" value="'+(v===undefined?1:(isNaN(v)?'':v))+'" aria-label="'+L[0]+'"><span>'+L[1]+'</span></div></div>'; });
       h+='</div><p class="fcerr" data-fce hidden>1 이상의 정수를 넣으세요</p>'; }
+    if(sz.tog)h+='<p class="fct">규모 기준</p><div class="fcr fcbs">'+[['n','상시근로자 수'],['amt','건설공사 금액']].map(function(x){return '<button type="button" data-fcbs="'+x[0]+'" aria-pressed="'+((sz.cons?'amt':'n')===x[0])+'">'+x[1]+'</button>';}).join('')+'</div>';
     if(sz.r!=null)h+='<p class="fcsz">규모 <b>'+esc(sz.t)+' → '+(sz.r<1?Math.round(sz.r*100)+'%':'감경 없음')+'</b> (검색 조건)</p>';
     else h+='<p class="fct">규모 ('+(sz.cons?'건설공사 금액':'상시근로자 수')+')</p><div class="fcr s4">'+(sz.cons?[[1,'40억원 이상'],[0.9,'10~40억원 90%'],[0.8,'3~10억원 80%'],[0.7,'3억원 미만 70%']]:[[1,'100명 이상'],[0.9,'50~99명 90%'],[0.8,'10~49명 80%'],[0.7,'10명 미만 70%']]).map(function(x){return '<button type="button" data-fcs="'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div>';
     h+='<label class="fck"><input type="checkbox" data-fcj'+(st.sj?' checked':'')+'><span>중대재해·중대산업사고 발생 사업장<small>원인조사·관련 감독 적발 시 3차 금액(별표&nbsp;35&nbsp;제2호)</small></span></label>';
@@ -2093,7 +2110,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     B.innerHTML=h; fcUpd(F); }
   function fcUpd(F){   // 결과·선택 표시만 바꿈(입력 중 커서 유지)
     var B=F.querySelector('.fcb'), st=F._fc, R=F.querySelector('.fr.fsel'); if(!R||!B)return;
-    var a=R.getAttribute('data-fa').split(',').map(Number), us=fcU(R), ns=fcNs(F,us), sz=fcSize(), r=sz.r!=null?sz.r:st.r;
+    var a=R.getAttribute('data-fa').split(',').map(Number), us=fcU(R), ns=fcNs(F,us), sz=fcSize(st), r=sz.r!=null?sz.r:st.r;
     var o=fineCalc({a:a,c:st.c,sj:st.sj,u:us,n:ns,r:r}), ci=o.ci==null?(st.sj?2:st.c):o.ci;
     each('.fa span.fpk',function(x){ if(F.contains(x))x.classList.remove('fpk'); });
     var cells=R.querySelectorAll('.fa span'); if(cells.length)(cells.length===1?cells[0]:cells[ci]).classList.add('fpk');
@@ -2119,6 +2136,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     if(R){ if(!R.classList.contains('fsel')){ each('.fr.fsel',function(x){ if(F.contains(x))x.classList.remove('fsel'); }); R.classList.add('fsel'); fcDraw(F); } return; }
     var c=t.closest('[data-fcc]'); if(c){ F._fc.c=+c.getAttribute('data-fcc'); fcUpd(F); return; }
     var z=t.closest('[data-fcs]'); if(z){ F._fc.r=+z.getAttribute('data-fcs'); fcUpd(F); return; }
+    var bs=t.closest('[data-fcbs]'); if(bs){ var nb=bs.getAttribute('data-fcbs'); if(nb!==(F._fc.b||'n')){ F._fc.b=nb; F._fc.r=null; fcDraw(F); } return; }   // 2026-10-17 규모 기준 바꾸면 고른 규모는 지움
   });
   document.addEventListener('change',function(ev){ var t=ev.target; if(!t||!t.matches||!t.matches('[data-fcj]'))return; var F=t.closest('.fines'); if(!F||!F._fc)return; F._fc.sj=t.checked; fcUpd(F); });
   document.addEventListener('input',function(ev){ var t=ev.target; if(!t||!t.matches||!t.matches('[data-fcn]'))return; var F=t.closest('.fines'); if(!F||!F._fc)return;
@@ -2387,7 +2405,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     var L=recentList(), F=FIELD[st.field]||FIELD.labor, h='';
     if(L.length)h+='<h3 class="gl top">최근 검색<button type="button" class="ga" data-clear="1">지우기</button></h3><div class="chips">'+L.map(function(w){return '<button type="button" class="chip" data-q="'+esc(w)+'">'+esc(w)+'</button>';}).join('')+'</div>';
     else h+='<h3 class="gl top">검색 예시</h3><div class="list">'+F.ex.map(exRow).join('')+'</div>';
-    if(st.field==='osh'&&D.work&&D.work.length)h+='<h3 class="gl">작업별 기준</h3><div class="chips">'+D.work.map(function(W){return '<button type="button" class="chip wchip" data-wk="'+esc(W.id)+'">'+esc(W.n)+'</button>';}).join('')+'</div>';   // 2026-10-17
+    if(st.field==='osh'&&D.work&&D.work.length)h+='<h3 class="gl">작업별 기준</h3>'+workGroups(D).map(function(g){ return '<div class="wgs">'+esc(g.h)+'</div><div class="wgrid">'+g.list.map(function(W){return '<button type="button" class="chip wchip" data-wk="'+esc(W.id)+'">'+esc(W.n)+'</button>';}).join('')+'</div>'; }).join('');   // 2026-10-17
     else h+='<h3 class="gl">자주 찾는 말</h3><div class="chips">'+F.quick.map(function(w){return '<button type="button" class="chip" data-q="'+esc(w)+'">'+esc(w)+'</button>';}).join('')+'</div>';
     $('quick').innerHTML=h+installCard();
   }
