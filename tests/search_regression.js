@@ -104,4 +104,17 @@ for(const [q,exp] of [['관감','OSH:제16조'],['산안비','OSH:제72조'],['�
   const r=C.search(D,q,'',OSHF,OSHF), k=r.arts.map(e=>e.l+':'+e.no), okk=k[0]===exp; if(!okk)fail++;
   console.log((okk?'PASS':'FAIL')+'  현장 약어 '+q+' → '+k.slice(0,2).join(', ')); }
 { const r=C.search(D,'근감','',LABF,LABF), okk=r.arts[0]&&r.arts[0].l+':'+r.arts[0].no==='GK:제102조'; if(!okk)fail++; console.log((okk?'PASS':'FAIL')+'  근로기준 분야 근감 → 근기법 제102조'); }
+// 2026-10-17 주요 의무를 근거 조문 줄 아래에 붙이므로: 주요 의무 이름으로 찾으면 근거 법 조문이 결과에(근거가 하나면 앞쪽으로), 두 글자 낱말 하나·근거 여럿인 의무로는 순위를 바꾸지 않음
+{ const LCx={}; Object.keys(D.meta.laws).forEach(k=>LCx[D.meta.laws[k].name]=k);
+  const host=(r,it)=>it.refs.some(x=>r.arts.some(e=>e.l+':'+e.no===LCx[x.law]+':'+x.no));
+  for(const [q,exp,top] of [['특별교육(유해·위험 작업)','OSH:제29조',1],['안전보건계획','OSH:제14조',1],['안전관리자 선임','OSH:제17조',1],['보건관리자 선임','OSH:제18조',1],['근로자 정기교육·채용 시 교육','OSH:제29조',1],
+      ['중대재해 발생 시 조치·보고','OSH:제54조',1],['일반·특수건강진단','OSH:제129조',2],['안전조치·보건조치','OSH:제38조',2],['특수건강진단','OSH:제130조',1]]){
+    const r=C.search(D,q,'',OSHF,OSHF), k=r.arts.map(e=>e.l+':'+e.no), i=k.indexOf(exp), okk=i>=0&&i<top; if(!okk)fail++;
+    console.log((okk?'PASS':'FAIL')+'  주요 의무 이름 '+q+' → '+k.slice(0,3).join(', ')); }
+  for(const [q,f,not] of [['위험',OSHF,'OSH:제29조'],['작업',OSHF,'OSH:제29조'],['업무',OSHF,'OSH:제16조'],['이내',LABF,'RET:제9조'],['가족돌봄휴직',LABF,'EQ:제18조의3'],['차별금지',LABF,'FT:제6조']]){
+    const r=C.search(D,q,'',f,f), k=r.arts[0]?r.arts[0].l+':'+r.arts[0].no:'', okk=k!==not; if(!okk)fail++;
+    console.log((okk?'PASS':'FAIL')+'  '+q+' 1순위가 '+not+' 아님(주요 의무 제목 낱말로 끌어올리지 않음) → '+k); }
+  for(const q of ['안전교육','휴게시설','건강진단','도급인','안전보건관리책임자','육아휴직']){
+    const r=C.search(D,q,'',OSHF.concat(LABF),OSHF), miss=r.items.filter(it=>!host(r,it)).map(it=>it.id), okk=r.items.length>0&&miss.length===0; if(!okk)fail++;
+    console.log((okk?'PASS':'FAIL')+'  '+q+' → 주요 의무 '+r.items.length+'건 모두 근거 조문이 결과에'+(miss.length?' (없음: '+miss.join(',')+')':'')); } }
 console.log(fail?('실패 '+fail+'건'):'전체 통과'); process.exit(fail?1:0);

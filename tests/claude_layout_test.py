@@ -64,7 +64,8 @@ with sync_playwright() as pw:
     # 2. 근로기준에서 '교육'
     c, p, errs = ctx(); search(p, 'labor', '교육')
     h = p.evaluate(HEADS); f = p.evaluate(FOLDS); print('   구획:', h)
-    ok('근로: 근로기준 분야 주요 의무가 맨 앞', h and h[0].startswith('근로기준 분야 주요 의무'), h)
+    ok('근로: 근로기준 분야 조문이 맨 앞(주요 의무는 근거 조문 줄 아래 — 2026-10-17)', h and h[0].startswith('근로기준 분야 조문'), h)
+    ok('근로: 성희롱 예방교육 의무는 고평법 제13조 줄 아래', p.evaluate("()=>{const a=document.querySelector('#results [data-art=\"EQ:제13조\"]'); let x=a&&a.nextElementSibling; while(x&&x.classList.contains('subr')){ if(x.getAttribute('data-item')==='l_sh')return true; x=x.nextElementSibling; } return false;}"))
     ok('근로: 산업안전 분야 접힘', f.get('ox') == ['false', True], f)
     shot(p, '5_labor_교육'); ok('오류 없음(근로)', not errs, errs); c.close()
 
