@@ -97,6 +97,25 @@ def run(w, big):
             lab = F.locator('.fcres small').inner_text().replace('부과 예정 ·', '').strip()
             ok(tag + ' %s 결과 제목 있음' % art, len(lab) > 4, lab)
         p.click('#hback'); p.wait_for_timeout(400)
+        # 2-2) 업종 미선택(2026-10-17): 규모 기준을 인원/건설공사 금액 중 고름 — 별표 35 제3호(건설공사는 공사금액)
+        go(p, '안전관리자 선임', 'OSH:제17조')
+        F = first_fines_with_calc(p)
+        F.locator('[data-fcopen]').click(); p.wait_for_timeout(200)
+        ok(tag + ' 업종 미선택 → 규모 기준 버튼 2개', F.locator('[data-fcbs]').count() == 2)
+        ok(tag + ' 기본은 상시근로자 수(검색 조건 30명 → 80%)', F.locator('[data-fcbs="n"]').count() == 1 and F.locator('[data-fcbs="n"]').get_attribute('aria-pressed') == 'true' and '상시 30명 → 80%' in F.locator('.fcb').inner_text())
+        if F.locator('[data-fcbs="amt"]').count():
+            F.locator('[data-fcbs="amt"]').click(); p.wait_for_timeout(150)
+        t = F.locator('.fcb').inner_text()
+        ok(tag + ' 건설공사 금액 기준 → 금액 버튼 4개', F.locator('[data-fcs]').count() == 4 and '40억원 이상' in t and '3억원 미만 70%' in t, t)
+        ok(tag + ' 기준 바꾸면 고르기 전 계산 안 함', '규모를 고르면' in F.locator('.fcres').inner_text())
+        if F.locator('[data-fcs="0.7"]').count():
+            F.locator('[data-fcs="0.7"]').click(); p.wait_for_timeout(150)
+        ok(tag + ' 공사금액 3억 미만 → 500 × 70% = 350만원', '350만원' in F.locator('.fcres').inner_text(), F.locator('.fcres').inner_text())
+        if F.locator('[data-fcbs="n"]').count():
+            F.locator('[data-fcbs="n"]').click(); p.wait_for_timeout(150)
+        ok(tag + ' 인원 기준으로 되돌리면 30명 → 400만원', '400만원' in F.locator('.fcres').inner_text(), F.locator('.fcres').inner_text())
+        ok(tag + ' 가로 넘침 없음(규모 기준)', not wide(p))
+        p.click('#hback'); p.wait_for_timeout(400)
         # 3) 건설업 공사금액 2억 → 70%
         p.evaluate("()=>{const s=document.getElementById('ind'); s.value='const'; s.dispatchEvent(new Event('change',{bubbles:true}));}"); p.wait_for_timeout(200)
         setf(p, 'amt', '2')
@@ -105,6 +124,7 @@ def run(w, big):
         F.locator('[data-fcopen]').click(); p.wait_for_timeout(200)
         t = F.locator('.fcb').inner_text()
         ok(tag + ' 건설 공사금액 2억 → 70%', '공사금액 2억원 → 70%' in t, t)
+        ok(tag + ' 업종을 고르면 규모 기준 버튼 없음', F.locator('[data-fcbs]').count() == 0)
         ok(tag + ' 건설 미선임 500 × 70% = 350만원', '350만원' in F.locator('.fcres').inner_text())
         # 4) 근로기준 법령에는 링크 없음
         p.click('#hback'); p.wait_for_timeout(400)

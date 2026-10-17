@@ -5,7 +5,7 @@ const fs=require('fs'),vm=require('vm');
 const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const raw=/<script id="data" type="application\/json">([\s\S]*?)<\/script>/.exec(html)[1].replace(/<\\\//g,'</');
 const core=html.slice(html.indexOf('/*CORE_START*/'),html.indexOf('/*CORE_END*/'));
-const C=vm.runInNewContext(core+'\n;({prepare,prepareBT,ruleSanc,workIdx:typeof workIdx==="function"?workIdx:null,workOf:typeof workOf==="function"?workOf:null,workLines:typeof workLines==="function"?workLines:null})');
+const C=vm.runInNewContext(core+'\n;({prepare,prepareBT,ruleSanc,workIdx:typeof workIdx==="function"?workIdx:null,workOf:typeof workOf==="function"?workOf:null,workLines:typeof workLines==="function"?workLines:null,workGroups:typeof workGroups==="function"?workGroups:null})');
 let fail=0,cnt=0;
 const chk=(name,c,info)=>{cnt++; if(!c)fail++; if(!c||process.env.VERBOSE)console.log((c?'PASS':'FAIL')+'  '+name+(c?'':'  → '+(info===undefined?'':JSON.stringify(info))));};
 if(!C.workIdx||!C.workOf||!C.workLines){ console.log('FAIL  작업별 기준 함수 없음(workIdx·workOf·workLines)'); process.exit(1); }
@@ -87,5 +87,13 @@ D.eduTime.filter(x=>x.c==='특별교육').forEach(x=>chk('특별교육 시간 �
 const sup=D.eduTime.find(x=>x.s==='관리감독자'&&x.c==='특별교육');
 chk('관리감독자 특별교육 단기간·간헐적 2시간 이상 포함(시행규칙 별표4 제1호의2)',!!sup&&/단기간 작업 또는 간헐적 작업인 경우에는 2시간 이상$/.test(sup.t),sup&&sup.t);
 D.items.forEach(it=>(it.edu||[]).forEach(x=>{ if(x.c==='특별교육')chk('주요 의무 '+it.id+' 특별교육 시간 끝 "이상"',/이상(\))?$/.test(x.t),x.t); }));
+
+// 칩 묶음(2026-10-17): 화면 표시만 묶음 순서, 검색어 우선순위는 데이터 순서 그대로. 작업을 늘리면 WORK_GROUPS에도 넣을 것('기타'가 생기면 실패)
+chk('작업 묶음 함수 있음(workGroups)',!!C.workGroups);
+if(C.workGroups){ const G=C.workGroups(D), all=G.flatMap(g=>g.list.map(w=>w.id));
+  chk('묶음 이름·순서',G.map(g=>g.h).join()==='하역·양중,건설·추락,제조 기계,위험작업',G.map(g=>g.h));
+  chk('모든 작업이 묶음에 한 번씩(기타 없음)',all.length===W.length&&new Set(all).size===W.length&&!G.some(g=>g.h==='기타'),all);
+  chk('하역·양중 = 지게차·크레인·고소작업대',G[0].list.map(w=>w.id).join()==='forklift,crane,aerial',G[0].list.map(w=>w.id));
+  chk('묶음에 없는 새 작업은 기타로 표시(빠지지 않음)',C.workGroups({work:W.concat([{id:'zz',n:'새 작업'}])}).slice(-1)[0].h==='기타'); }
 
 console.log(fail?('실패 '+fail+'건 / '+cnt+'건'):('전체 통과 '+cnt+'건')); process.exit(fail?1:0);
