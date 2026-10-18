@@ -1,6 +1,6 @@
 # 법ON 고시 10종 수록·앱 미수록 별표/서식 '원문' 링크·원문 연결 고시 7종(2026-10-18, 5-37) 화면 검사
 # 사용: python3 claude_gosi2_ui_test.py <파일명.html> [캡처 폴더]   (tests 폴더 기준 파일명, 포트 8778)
-import sys, os, threading, functools, http.server, socketserver, urllib.parse
+import sys, os, re, threading, functools, http.server, socketserver, urllib.parse
 from playwright.sync_api import sync_playwright
 
 class Q(http.server.SimpleHTTPRequestHandler):
@@ -109,6 +109,18 @@ with sync_playwright() as pw:
         H = heads(p, '#book')
         lg = p.evaluate("""(()=>{const a=[...document.querySelectorAll('#book .gl')].find(x=>x.textContent.trim()==='고시'); return a?[...a.nextElementSibling.querySelectorAll('[data-bk]')].map(x=>x.dataset.bk):null;})()""")
         ok(tag + ' 근로기준 법령집 고시 묶음 = 단순노무직종 고시, 고시(앱 미수록) 없음', lg == ['MWS'] and not any(x.startswith('고시(앱 미수록)') for x in H), [lg, H])
+        # 10. 단순노무직종 고시 → 대분류 9 분류 항목표(5-39), 직업명 검색 카드
+        p.click('#tabbar [data-nav="find"]'); p.wait_for_timeout(150); p.fill('#q', '택배원'); p.wait_for_timeout(700); p.evaluate('scrollTo(0,0)'); shot(p, tag + '_9_택배원_검색')
+        kc = p.evaluate("""(()=>{const g=[...document.querySelectorAll('#results .gl')].find(x=>x.textContent.trim().startsWith('한국표준직업분류 대분류 9')); return g?[...g.nextElementSibling.querySelectorAll('[data-art]')].map(b=>[b.dataset.art,b.querySelector('.no').textContent,b.querySelector('.ttl').textContent]):null;})()""")
+        ok(tag + " '택배원' → 대분류 9 카드 92220 택배원(단순노무직종 고시로)", kc == [['MWS:본문', '92220', '택배원']], kc)
+        p.locator('#results [data-art="MWS:본문"]').first.click(); p.wait_for_timeout(400)
+        r2 = p.evaluate("[...document.querySelectorAll('%s .k9r .r2')].length" % SUB); ok(tag + ' 분류표 줄은 코드·이름 한 줄(소분류 줄 없음)', r2 == 0, r2)
+        H = heads(p); ok(tag + " 단순노무직종 고시 화면 '대분류 9 분류 항목' + 중분류 6", any(x.startswith('대분류 9 분류 항목') for x in H) and sum(1 for x in H if re.match(r'^9\d ', x)) == 6, H)
+        k9 = p.evaluate("({n:document.querySelectorAll('%s .k9r').length, hit:[...document.querySelectorAll('%s .k9hit .no')].map(x=>x.textContent), sw:document.scrollingElement.scrollWidth})" % (SUB, SUB))
+        ok(tag + ' 분류표 52줄·택배원 줄 강조·가로 넘침 없음', k9['n'] == 52 and k9['hit'] == ['92220'] and k9['sw'] <= w, k9)
+        p.evaluate("""(()=>{const g=[...document.querySelectorAll('%s .gl')].find(x=>x.textContent.trim().startsWith('대분류 9 분류 항목')); window.scrollBy(0,g.getBoundingClientRect().top-120);})()""" % SUB); p.wait_for_timeout(100); shot(p, tag + '_10_대분류9')
+        q = start('osh'); q.click('#tabbar [data-nav="find"]'); q.fill('#q', '택배원'); q.wait_for_timeout(700)
+        ok(tag + " 산업안전 분야 '택배원'에는 대분류 9 카드 없음", not q.evaluate("[...document.querySelectorAll('#results .gl')].some(x=>x.textContent.trim().startsWith('한국표준직업분류'))")); q.close()
         ok(tag + ' 화면 오류 없음', not errs, errs)
         c.close()
 print('실패 %d건' % len(fails) if fails else '전체 통과'); sys.exit(1 if fails else 0)

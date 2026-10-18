@@ -4,7 +4,7 @@ const fs=require('fs'),vm=require('vm');
 const h=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const raw=/<script id="data" type="application\/json">([\s\S]*?)<\/script>/.exec(h)[1].replace(/<\\\//g,'</');
 const core=h.slice(h.indexOf('/*CORE_START*/'),h.indexOf('/*CORE_END*/')+12);
-const C=vm.runInNewContext(core+'\n;({prepare,search,splitQuery,ruleSanc,missOf:typeof missOf==="function"?missOf:null,glOf:typeof glOf==="function"?glOf:null})',{});
+const C=vm.runInNewContext(core+'\n;({prepare,search,splitQuery,ruleSanc,missOf:typeof missOf==="function"?missOf:null,glOf:typeof glOf==="function"?glOf:null,k9Of:typeof k9Of==="function"?k9Of:null})',{});
 const D=C.prepare(JSON.parse(raw)), L=D.meta.laws, BT=D.bt; D.glink=D.glink||[];
 let fail=0, n=0; const ok=(name,c,info)=>{ n++; if(!c){ fail++; console.log('FAIL '+name+(info===undefined?'':'  → '+JSON.stringify(info).slice(0,300))); } };
 const A=k=>D.byKey[k]||{x:'',no:'',l:''}, arts=c=>D.arts.filter(e=>e.l===c);   // 없는 조문도 오류 없이 FAIL로
@@ -124,5 +124,21 @@ ok("'이행상태평가' → PSM 제54~58조",top('이행상태평가').some(e=>
 // 8. 작업별 기준 근골격계에 고시 묶음
 const W=(D.work||[]).find(w=>w.id==='msd'), sec=W&&W.sec.find(s=>/범위/.test(s.h));   // 조문 키는 근골격계 고시
 ok('작업별 기준 근골격계: 범위·조사 방법 묶음(고시 제2·3·4조)',sec&&sec.a.map(x=>x.k).join()==='MSD:제2조,MSD:제3조,MSD:제4조',sec);
+
+// 9. 단순노무직종 고시 참고 — 제8차 한국표준직업분류 대분류 9(국가데이터처 고시 제2024-328호 첨부 '분류 항목표' 원문 기준, 5-39)
+const K=D.k9||{g:[]}, leaf=K.g.reduce((a,g)=>a.concat(g[2]),[]);
+ok('대분류 9: 중분류 6·세세분류 52(원문 분류 체계 표)',K.g.length===6&&leaf.length===52,[K.g.length,leaf.length]);
+ok('중분류 91·92·93·94·95·99',K.g.map(g=>g[0]).join()==='91,92,93,94,95,99',K.g.map(g=>g[0]));
+ok('제8차·고시 번호·시행일 표시',K.src==='제8차 한국표준직업분류'&&/제2024-328호/.test(K.ver)&&/2025\. 1\. 1\. 시행/.test(K.ver),K.ver);
+const LF=c=>(leaf.find(r=>r[0]===c)||[])[1];
+ok('원문 항목: 92220 택배원·94201 아파트 경비원·95220 주방 보조원·93091 수동 포장원·99992 정리 수납원',LF('92220')==='택배원'&&LF('94201')==='아파트 경비원'&&LF('95220')==='주방 보조원'&&LF('93091')==='수동 포장원'&&LF('99992')==='정리 수납원');
+ok('세세분류 코드는 모두 9로 시작하는 5자리, 소분류 이름 있음',leaf.every(r=>/^9\d{4}$/.test(r[0])&&r[2]));
+const KO=q=>C.k9Of?C.k9Of(D,q).map(r=>r.c).join():'(없음)';
+ok('k9Of 함수(CORE)',!!C.k9Of);
+ok("'택배원' → 92220",KO('택배원')==='92220',KO('택배원'));
+ok("'경비원' → 아파트 경비원만(다른 경비·보안 직종은 대분류 9 아님)",KO('경비원')==='94201',KO('경비원'));
+ok("'택배'(2자)·'최저임금 수습'은 없음",KO('택배')===''&&KO('최저임금 수습')==='');
+ok("'그 외 …' 항목은 이름으로 찾지 않음",KO('그 외 배달원')==='');
+ok('화면: 고시 화면 분류표·검색 카드 함수',/function k9Block\(\)/.test(h)&&/function k9Hit\(q\)/.test(h));
 
 console.log(fail?`\n실패 ${fail}건 / ${n}건`:`\n전체 통과 ${n}건`); process.exit(fail?1:0);
