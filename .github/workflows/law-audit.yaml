@@ -1,0 +1,75 @@
+# 법ON: 앱 ↔ 법제처 현행 조문 전체 대조 — 2026. 10. 18. 신설
+# - 매월 첫째 월요일 10:30(한국 시간) 앱에 수록한 조문 전부를 법제처 현행과 비교해, 다르면 이슈(law-audit 라벨)로 알린다.
+# - 주간 대조(law-diff)는 '기준본 ↔ 법제처' 변화만 보므로 앱 수록 때부터 틀린 문구는 이 대조에서만 잡힌다.
+# - 기준본(tools/law_snapshot)은 건드리지 않는다. 의도된 차이는 tools/audit_ignore.json(문구가 바뀌면 다시 보고).
+# - 수동 실행: Actions → 앱 전체 대조 → Run workflow
+name: 앱 전체 대조
+
+on:
+  schedule:
+    - cron: '30 1 * * 1'   # 매주 월요일 10:30(한국 시간) — 아래 단계에서 그달 첫째 월요일만 실행
+  workflow_dispatch:
+    inputs:
+      codes:
+        description: '법령 코드(쉼표로 구분, 예: GK,OSH) 또는 all'
+        default: all
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: law-audit
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: 첫째 월요일인지 확인
+        id: gate
+        run: |
+          d=$(TZ=Asia/Seoul date +%-d)
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$d" -gt 7 ]; then
+            echo "첫째 월요일이 아니라 건너뜀(${d}일)"; echo "go=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v5
+        if: steps.gate.outputs.go == '1'
+
+      - name: 앱 ↔ 법제처 대조
+        id: audit
+        if: steps.gate.outputs.go == '1'
+        env:
+          LAW_OC: ${{ secrets.LAW_OC }}
+        run: |
+          python3 tools/law_diff.py audit "${{ inputs.codes || 'all' }}"
+          cat law_audit_report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 이슈로 알림
+        if: steps.gate.outputs.go == '1' && steps.audit.outputs.alert == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SIG: ${{ steps.audit.outputs.sig }}
+        run: |
+          gh label create law-audit --color 5319E7 --description "앱 ↔ 법제처 전체 대조" --force || true
+          num=$(gh issue list --label law-audit --state open --json number --jq '.[0].number // empty')
+          if [ -n "$num" ]; then
+            if gh issue view "$num" --json body,comments --jq '.body, .comments[].body' | grep -q "law-audit:$SIG"; then
+              echo "지난번과 같은 내용이라 알리지 않음"
+            else
+              gh issue comment "$num" --body-file law_audit_issue.md
+            fi
+          else
+            gh issue create --title "$(cat law_audit_title.txt)" --body-file law_audit_issue.md --label law-audit
+          fi
+
+      - name: 실패 표시
+        if: steps.gate.outputs.go == '1' && steps.audit.outputs.status == 'error'
+        run: |
+          echo "조회 실패가 있었습니다. 위 '앱 ↔ 법제처 대조' 단계를 확인하세요."
+          exit 1
