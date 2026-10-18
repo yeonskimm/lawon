@@ -162,6 +162,10 @@ flowchart LR
 - 이 대조도 발견·보고만 하고, 앱 반영은 보고서와 원문을 확인한 뒤 사람이 합니다. 반영을 마친 법령은 기준본을 갱신합니다(`tools/law_snapshot/`).
 - 첫 대조(2026. 9. 27.): 앱 조문 2,353개(시행 전 조문 제외) 중 2,350개가 법제처 현행 조문과 일치했습니다. 다른 3개 중 2개(최저임금법 시행규칙 제2조 한자 누락, 퇴직급여법 시행령 제8조 계산식 누락)는 바로 고쳤고, 1개(산업안전보건법 제175조)는 2027년·2028년 시행 예정 과태료 조항을 시행일 안내와 함께 수록한 것이라 그대로 두었습니다.
 
+**앱 전체 대조(월 1회)** — 매월 첫째 월요일 앱에 수록한 조문 전부를 법제처 현행 조문과 직접 비교합니다(`.github/workflows/law-audit.yml`, `tools/law_diff.py audit`). 주간 본문 대조는 법제처 쪽 변화만 보므로, 앱에 처음 넣을 때부터 다른 문구는 이 대조로 확인합니다.
+- 다른 조문이 있을 때만 이슈로 알리고, 같은 내용은 다시 알리지 않습니다. 기준본은 바꾸지 않습니다.
+- 위 3개처럼 의도한 차이는 `tools/audit_ignore.json`에 두고, 법제처나 앱 문구가 바뀌면 다시 알립니다.
+
 ---
 
 ## 6. 사용 방법
@@ -217,10 +221,10 @@ manifest.json         홈 화면 앱 설정
 service-worker.js     오프라인 사용·자동 업데이트
 icon-192.png, icon-512.png, icon-maskable-512.png   홈 화면 아이콘
 tests/                배포 전 자동 검사(.js) · 화면 검사(.py, 수동 실행)
-tools/                법령 개정 점검(check_laws.py, law_versions.json), 법령 본문 대조(law_diff.py, law_snapshot/),
+tools/                법령 개정 점검(check_laws.py, law_versions.json), 법령 본문 대조(law_diff.py, law_snapshot/, audit_ignore.json),
                       법령집 표기(law_meta.json, inject_meta.py), 앱 반영 정보 표기(stamp_build.py),
                       이용자 수 집계 서버(lawon-stats-worker.js) — 배포에서 제외
-.github/workflows/    배포(deploy.yml)·개정 점검(law-check.yml)·본문 대조(law-diff.yml)
+.github/workflows/    배포(deploy.yml)·개정 점검(law-check.yml)·본문 대조(law-diff.yml)·앱 전체 대조(law-audit.yml)
 ```
 
 ---
