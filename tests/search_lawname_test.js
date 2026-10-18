@@ -67,4 +67,30 @@ if(process.argv[3]){ const O=load(process.argv[3]); const qs=new Set(['지게차
   ok('법령 이름 없는 검색 '+n.toLocaleString()+'회: 조문·주요 의무 결과 이전판과 같음',dS.length===0,dS.slice(0,20));
   ok('법령 이름 없는 별표 검색 '+(qs.size-skip)*2+'회: 이전판과 같음(중복 별표 EQR1만 빠짐)',dB.length===0,dB.slice(0,20));
   console.log('   (법령 이름이 든 검색어 '+skip+'개는 비교에서 제외 — 위 1~2에서 따로 확인)'); }
+// ── 안전보건표지 별표 연결·그림 별표 안내(2026-10-18) — 기대값은 조문 본문(법령 원문)에서 뽑음 ──
+{ const RAW=JSON.parse(/<script id="data" type="application\/json">([\s\S]*?)<\/script>/.exec(fs.readFileSync(process.argv[2]||'index.html','utf8'))[1].replace(/<\\\//g,'</'));
+  const RB=RAW.bt, RW={}, TBX={}; RB.rows.forEach(x=>RW[x.id]=x); RB.tabs.forEach(T=>TBX[T.id]=T);
+  const s6no=n=>RB.rows.filter(x=>x.tb==='S6'&&x.no===n).map(x=>x.id);
+  // 원문: 안전보건규칙 조문 중 '시행규칙」 별표 6 중 일람표 번호 NNN'을 지정한 것
+  const want={}; RAW.arts.filter(e=>e.l==='RULE').forEach(e=>{ const re=/시행규칙」\s*별표\s*6\s*중\s*일람표\s*번호\s*(\d{3})/g; let m; while((m=re.exec(e.x||''))){ (want['RULE:'+e.no]=want['RULE:'+e.no]||[]).push(...s6no(m[1])); } });
+  ok('원문에서 별표 6 일람표 번호를 지정한 안전보건규칙 조문 3개(제457·490·505조)',same(Object.keys(want),['RULE:제457조','RULE:제490조','RULE:제505조']),Object.keys(want));
+  for(const k in want){ const got=(RB.art[k]||[]).filter(v=>v.r).map(v=>v.r);
+    ok(k+' 조문 화면 → 지정한 표지 줄('+want[k].join('·')+')',same(got,want[k]),got);
+    want[k].forEach(id=>ok(id+' 표지 화면 부착 의무 조문에 '+k,(RW[id].al||[]).some(a=>a[0]+':'+a[1]===k&&/^안전보건규칙 · \S/.test(a[2])),RW[id].al)); }
+  ok("표지 화면 구획 이름 '부착 의무 조문'",TBX.S6.alh==='부착 의무 조문',TBX.S6.alh);
+  ok('부착 의무 조문은 원문이 지정한 조문만(별표 6 다른 줄에는 없음)',RB.rows.filter(x=>x.tb==='S6'&&x.al).every(x=>Object.keys(want).some(k=>want[k].includes(x.id)))&&RB.rows.filter(x=>x.tb==='S6'&&x.al).length===3);
+  ok('법 제37조 → 시행규칙 별표 6·7·8·9',same((RB.art['OSH:제37조']||[]).map(v=>v.t),['S6','S7','S8','S9']),RB.art['OSH:제37조']);
+  ok('표지 501~503 문구에 연속 빈 줄 없음',['S6.41','S6.42','S6.43'].every(id=>!/\n\s*\n/.test(RW[id].x)));
+  // 그림이 원문에만 있는 별표: 머리 안내(pic), 하단 '원문에서 확인하세요' 안내 없음
+  const PIC=['S6','S9','S14','S15','EDU4'];
+  PIC.forEach(id=>ok(id+' 머리 안내 문구',/원문에서 확인$/.test(TBX[id].pic||''),TBX[id].pic));
+  const GN=/(그림|도안)[^.]*원문에서 확인하세요/;
+  ok("그림·도안 하단 안내('…원문에서 확인하세요.') 남은 별표 없음",!RB.tabs.some(T=>GN.test(T.note||'')),RB.tabs.filter(T=>GN.test(T.note||'')).map(T=>T.id));
+  const t9=TBX.S9.blk[0].tb, col=t9[0].findIndex(c=>c.t==='기본모형'), empt=[];
+  t9.forEach((row,ri)=>row.forEach((c,ci)=>{ if(!c.t.trim())empt.push([ri,ci,!!c.pic]); }));
+  ok('별표 9 기본모형 빈 칸 6곳 모두 원문 참조 표시(글자는 빈 칸 그대로)',col===1&&empt.length===6&&empt.every(x=>x[2]),empt);
+  // 작업별 기준: 석면 → 제490조+502, 허가대상 유해물질 → 제457조+501·502
+  const wk=n=>RAW.work.find(w=>w.n===n), itm=(w,k)=>w.sec.flatMap(S=>(S.a||[]).filter(i=>i.k===k));
+  ok('작업별 기준 석면: 제490조에 표지 502',JSON.stringify(itm(wk('석면'),'RULE:제490조').map(i=>i.bt))===JSON.stringify([want['RULE:제490조']]),itm(wk('석면'),'RULE:제490조'));
+  ok('작업별 기준 허가대상 유해물질: 제457조에 표지 501·502',JSON.stringify(itm(wk('허가대상 유해물질'),'RULE:제457조').map(i=>i.bt))===JSON.stringify([want['RULE:제457조']]),itm(wk('허가대상 유해물질'),'RULE:제457조')); }
 console.log(fail?'실패 '+fail+'건':'전체 통과'); process.exit(fail?1:0);
