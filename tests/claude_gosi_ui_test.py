@@ -33,7 +33,7 @@ def run(w, big):
         hs = p.evaluate("()=>[...document.querySelectorAll('#book h3')].map(x=>x.textContent)")
         ok(tag + ' 법령집 고시 묶음', '고시' in hs, hs)
         g = p.evaluate("()=>{const h=[...document.querySelectorAll('#book h3')].find(x=>x.textContent==='고시'); const l=h.nextElementSibling; return [...l.querySelectorAll('[data-bk]')].map(x=>x.getAttribute('data-bk'));}")
-        ok(tag + ' 고시 3종 순서', g == ['CSC', 'RAG', 'EDU'], g)
+        ok(tag + ' 고시 순서(기존 3종 먼저 — 2026-10-18 10종 추가)', g[:3] == ['CSC', 'RAG', 'EDU'] and len(g) == 12, g)
         first = p.evaluate("()=>[...document.querySelectorAll('#book .list')][0].innerText")
         ok(tag + ' 산업안전 법령 목록에 고시 없음', '관리비' not in first and '교육규정' not in first)
         if not big: p.evaluate("()=>{const h=[...document.querySelectorAll('#book h3')].find(x=>x.textContent==='고시'); h.scrollIntoView({block:'center'});}"); shot(p, '1_book')

@@ -43,6 +43,8 @@ jobs:
         run: node tests/work_check.js index.html
       - name: 항목별 기준 (근로기준 조문 연결·5명 미만 판정·검색어)
         run: node tests/labor_item_check.js index.html
+      - name: 고시 수록 (조문 수·제재 연결·적용범위 별표·미수록 별표/서식·원문 연결 고시)
+        run: node tests/gosi2_check.js index.html
       - name: 캐시 삭제 범위 (오늘의안전 저장본 보존)
         run: node tests/check_sw_scope.js service-worker.js
       - name: 배포 정보 자리 (관리자 화면 커밋 번호·최종 업데이트)

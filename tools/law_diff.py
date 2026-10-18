@@ -173,6 +173,10 @@ def parse_adm(root):
                 arts[cur] = {'t': (m.group(3) or '').strip(), 'x': s[m.end():].strip()}
             elif cur and s and not re.match(r'^제\d+(장|절|관)', s):
                 arts[cur]['x'] += '\n' + s
+    if not arts:   # 2026-10-18: 조문 형식이 아닌 고시(단순노무직종·자체심사업체 등 한두 문단) → 앱과 같은 '본문' 한 개
+        body = '\n'.join((el.text or '').strip() for el in root.iter('조문내용') if (el.text or '').strip())
+        if body:
+            arts['본문'] = {'t': '', 'x': body}
     bts = {}
     for i, u in enumerate(root.iter('별표단위')):   # 2026-10-16: 고시 별표(관리비 계상기준표 등)는 내용 변경도 알림 — 키는 종전과 같은 순번(훈령 기준본 호환)
         body = (u.findtext('별표내용') or '').strip()
@@ -502,7 +506,7 @@ def audit(code, meta, cur, app):
         else:
             diff += 1
             rows.append('<details><summary>%s(%s)</summary>\n\n- %s\n\n</details>' % (no, n['t'], wdiff(x, n['x'], ctx=6, limit=900)))
-    only_api = [k for k in cur['arts'] if k not in mine and cur['arts'][k]['x'].strip() and not re.search(r'삭제', cur['arts'][k]['x'][:20])]
+    only_api = [k for k in cur['arts'] if k not in mine and cur['arts'][k]['x'].strip() and not re.search(r'삭\s*제', cur['arts'][k]['x'][:20])]   # 2026-10-18: '<삭 제>'(띄어 쓴 삭제)도
     s = '### %s (%s)\n- 일치 %d · 다름 %d · 앱에만 %d · 법제처에만 %d\n' % (meta['name'], code, same, diff, len(only_app), len(only_api))
     if only_app:
         s += '- 앱에만: ' + ', '.join(only_app[:30]) + (' …' if len(only_app) > 30 else '') + '\n'
@@ -575,7 +579,7 @@ def audit_rows(code, cur, app):
             same += 1
         else:
             diffs.append((no, n.get('t', ''), x, n['x']))
-    only_api = [k for k in cur['arts'] if k not in mine and cur['arts'][k]['x'].strip() and not re.search(r'삭제', cur['arts'][k]['x'][:20])]
+    only_api = [k for k in cur['arts'] if k not in mine and cur['arts'][k]['x'].strip() and not re.search(r'삭\s*제', cur['arts'][k]['x'][:20])]   # 2026-10-18: '<삭 제>'(띄어 쓴 삭제)도
     return same, diffs, only_app, sorted(only_api, key=sortkey)
 
 
