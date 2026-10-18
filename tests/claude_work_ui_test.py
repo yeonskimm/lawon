@@ -28,10 +28,10 @@ def run(w, big):
         errs = []; p.on('pageerror', lambda e: errs.append(str(e)))
         p.goto(URL); p.wait_for_timeout(1200)
         if big: p.evaluate("()=>{document.documentElement.setAttribute('data-fs','l');}")
-        # 1) 근로기준 첫 화면: 자주 찾는 말 그대로, 작업별 기준 없음
+        # 1) 근로기준 첫 화면: 2026-10-18부터 '자주 찾는 말' 대신 항목별 기준(작업별 기준 칩은 없음)
         p.click('.pick[data-field="labor"]'); p.wait_for_timeout(300); p.click('#tabbar [data-nav="find"]'); p.wait_for_timeout(300)
         q = txt(p, '#quick')
-        ok(tag + ' 근로기준 첫 화면 자주 찾는 말 유지', q is not None and '자주 찾는 말' in q and '작업별 기준' not in q, q)
+        ok(tag + ' 근로기준 첫 화면 항목별 기준(자주 찾는 말·작업별 기준 없음)', q is not None and '항목별 기준' in q and '자주 찾는 말' not in q and '작업별 기준' not in q, q)
         p.click('#hhome' if p.query_selector('#hhome') else '[data-home]'); p.wait_for_timeout(400)
         # 2) 산업안전 첫 화면: 작업별 기준 칩 10개, 자주 찾는 말 없음
         p.click('.pick[data-field="osh"]'); p.wait_for_timeout(300); p.click('#tabbar [data-nav="find"]'); p.wait_for_timeout(300)

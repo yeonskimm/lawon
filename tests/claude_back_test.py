@@ -112,9 +112,9 @@ with sync_playwright() as pw:
             p.click('#tabbar [data-nav="book"]'); p.wait_for_timeout(400); p.click('#tabbar [data-nav="find"]'); p.wait_for_timeout(400)
             back(p); ok(name+' 법령집 갔다 검색으로 돌아와 뒤로=검색 첫 화면', where(p)=='vFind' and p.evaluate(qv)=='', (where(p),p.evaluate(qv)))
             back(p); ok(name+' 이어서=분야 선택', where(p)=='vStart', where(p)); p.close()
-            # 자주 찾는 말 누르기 → 뒤로
+            # 검색 예시 누르기 → 뒤로(근로기준 '자주 찾는 말'은 2026-10-18 항목별 기준으로 바뀜)
             p=fresh(); p.click('[data-field="labor"]'); p.wait_for_timeout(300); p.locator('#vFind [data-q]').first.click(); p.wait_for_timeout(500)
-            back(p); ok(name+' 자주 찾는 말→뒤로=검색 첫 화면', where(p)=='vFind' and p.evaluate(qv)=='', (where(p),p.evaluate(qv))); p.close()
+            back(p); ok(name+' 검색 예시→뒤로=검색 첫 화면', where(p)=='vFind' and p.evaluate(qv)=='', (where(p),p.evaluate(qv))); p.close()
         ctx.close()
     # 아이폰·아이패드: 방문기록을 쓰지 않음(스와이프 캡처 문제) — 앱 안 이동만 정상인지
     for name,ua in (('아이폰',IOS),('아이패드',IPAD)):

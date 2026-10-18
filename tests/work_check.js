@@ -11,7 +11,7 @@ let fail=0,cnt=0;
 const chk=(name,c,info)=>{cnt++; if(!c)fail++; if(!c||process.env.VERBOSE)console.log((c?'PASS':'FAIL')+'  '+name+(c?'':'  → '+(info===undefined?'':JSON.stringify(info))));};
 if(!C.workIdx||!C.workOf||!C.workLines){ console.log('FAIL  작업별 기준 함수 없음(workIdx·workOf·workLines)'); process.exit(1); }
 const D=C.prepare(JSON.parse(raw)); C.prepareBT(D);
-const W=D.work||[], RW={}; (D.bt.rows||[]).forEach(r=>RW[r.id]=r); const TB={}; D.bt.tabs.forEach(t=>TB[t.id]=t);
+const W=(D.work||[]).filter(w=>(w.f||'osh')==='osh')/* 2026-10-18: 산업안전 작업별 기준만(근로기준 항목은 labor_item_check.js) */, RW={}; (D.bt.rows||[]).forEach(r=>RW[r.id]=r); const TB={}; D.bt.tabs.forEach(t=>TB[t.id]=t);
 const lines=(x)=>String(x||'').split('\n').map(l=>l.trim());
 
 // 1. 작업 목록·조문 수(1차 10개)
@@ -109,7 +109,7 @@ chk('작업환경측정 묶음 근거 = 법 제125조, 특수건강진단 = 법 
 // 6. 검색어 → 작업
 const Q=[['둥근톱','wood'],['목공','wood'],['보일러','boiler'],['공기압축기','boiler'],['콤프레샤','boiler'],['안전밸브','boiler'],['위험물','hazmat'],['인화성 액체','hazmat'],['공정안전보고서','hazmat'],['PSM','hazmat'],['베릴륨','permit'],['염화비닐','permit'],['근골격계','msd'],['유해요인조사','msd'],['한랭','heat'],['동상','heat'],['냉동창고','heat'],['리프트','lift'],['곤돌라','lift'],['승강기','lift'],['사다리차','lift'],['호이스트','crane'],['양중기','crane'],['구내운반차','cart'],['화물차','truck'],['상하차','truck'],['하역','truck'],['중량물','heavy'],['드럼통','heavy'],['석면','asbestos'],['석면 해체','asbestos'],['석면 철거','asbestos'],['슬레이트','asbestos'],['유기용제','chem'],['톨루엔','chem'],['국소배기장치','chem'],['분진','dust'],['용접흄','dust'],['소음','noise'],['귀마개','noise'],['진동','noise'],['폭염','heat'],['열사병','heat'],['체감온도','heat'],['고열','heat'],['지게차','forklift'],['지게차 작업계획서','forklift'],['아시바','scaffold'],['말비계','scaffold'],['밀폐공간','confined'],['질식','confined'],['타워크레인','crane'],['카고크레인','crane'],['고소작업대','aerial'],['포클레인','excav'],['흙막이','excav'],['용접','hotwork'],['화재감시자','hotwork'],['동바리','formwork'],['감전','electric'],['컨베이어','conveyor'],['사다리','ladder'],['이동식 사다리','ladder'],['추락','fall'],['개구부','fall'],['철골','steel'],['철거','demol'],['해체','demol'],['비계 해체','scaffold'],['거푸집 해체','formwork'],['항타기','pile'],['프레스','press'],['로봇','robot'],['사출기','injection'],['롤러기','roller'],['그라인더','grinder'],['연삭숫돌','grinder']];
 Q.forEach(([q,w])=>{ const r=C.workOf(D,q); chk('검색어 "'+q+'" → '+w,!!r&&r.id===w,r&&r.id); });
-['안전교육','휴게시간','MSDS','위험성평가',''].forEach(q=>chk('검색어 "'+q+'" → 작업 없음',C.workOf(D,q)===null));
+['안전교육','휴게시간','MSDS','위험성평가',''].forEach(q=>chk('검색어 "'+q+'" → 작업 없음(산업안전)',C.workOf(D,q,'osh')===null));
 
 // 6-2. 항 단위 발췌(④ → 그 항의 호·목까지)
 chk('workLines 제42조 ④ → 호 7개·목 3개 포함',C.workLines(D.byKey['RULE:제42조'].x,['④']).length===11,C.workLines(D.byKey['RULE:제42조'].x,['④']).length);
