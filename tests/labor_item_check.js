@@ -15,7 +15,7 @@ const TB={}; D.bt.tabs.forEach(t=>TB[t.id]=t);
 const L=(D.work||[]).filter(w=>w.f==='labor');
 
 // 1. 항목 목록·순서·조문 수
-const EXP={lb_contract:['근로계약',12],lb_rules:['취업규칙',8],lb_docs:['서류 보존',9],lb_mw:['최저임금',10],lb_wage:['임금 지급',21],lb_ret:['퇴직급여',8],
+const EXP={lb_contract:['근로계약',12],lb_rules:['취업규칙',8],lb_docs:['서류 보존',12],lb_mw:['최저임금',10],lb_wage:['임금 지급',21],lb_ret:['퇴직급여',8],
   lb_hours:['근로시간·가산수당',20],lb_rest:['휴게·주휴',4],lb_leave:['연차',5],lb_dismiss:['해고',13],lb_ft:['기간제·단시간',10],lb_harass:['괴롭힘·성희롱',8],lb_mat:['모성·육아',18],lb_minor:['연소자·임산부',15]};
 chk('근로기준 항목 14개',L.length===14,L.length);
 chk('항목 순서(검색어 우선순위 — 최저임금이 임금 지급 앞)',L.map(w=>w.id).join()===Object.keys(EXP).join(),L.map(w=>w.id));
@@ -48,7 +48,7 @@ chk('시행령 제33조(휴가수당)는 법 제60조 판정을 따름(적용 �
 // 4. 검색어 → 항목(근로기준 분야), 분야 구분
 const Q=[['주휴','lb_rest'],['주휴수당','lb_rest'],['주휴 수당','lb_rest'],['휴게시간','lb_rest'],['임금체불','lb_wage'],['퇴직금','lb_ret'],['퇴직금 체불','lb_ret'],['최저임금','lb_mw'],['최저 임금','lb_mw'],
   ['해고예고','lb_dismiss'],['해고 예고 수당','lb_dismiss'],['연차','lb_leave'],['연차수당','lb_leave'],['근로계약서','lb_contract'],['취업규칙','lb_rules'],['괴롭힘','lb_harass'],['성희롱','lb_harass'],
-  ['출산휴가','lb_mat'],['육아휴직','lb_mat'],['기간제','lb_ft'],['알바','lb_ft'],['연장근로','lb_hours'],['52시간','lb_hours'],['가산수당','lb_hours'],['연장근로수당','lb_hours'],['야간수당','lb_hours'],['휴일근로수당','lb_hours'],['근로자명부','lb_docs'],['취직인허증','lb_minor'],['징계','lb_dismiss']];
+  ['출산휴가','lb_mat'],['육아휴직','lb_mat'],['기간제','lb_ft'],['알바','lb_ft'],['연장근로','lb_hours'],['52시간','lb_hours'],['가산수당','lb_hours'],['연장근로수당','lb_hours'],['야간수당','lb_hours'],['휴일근로수당','lb_hours'],['근로자명부','lb_docs'],['파견사업관리대장','lb_docs'],['사용사업관리대장','lb_docs'],['관리대장','lb_docs'],['회의록','lb_docs'],['노사협의회 회의록','lb_docs'],['취직인허증','lb_minor'],['징계','lb_dismiss']];
 Q.forEach(([q,id])=>{ const r=C.workOf(D,q,'labor'); chk('근로기준 검색어 "'+q+'" → '+id,!!r&&r.id===id,r&&r.id); });
 // 2026-10-17까지 근로기준 '자주 찾는 말' 12개가 모두 항목으로 이어짐(칩을 지워도 빠지는 것 없음)
 ['주휴','임금체불','퇴직금','최저임금','해고예고','연차','근로계약서','취업규칙','괴롭힘','성희롱','출산휴가','기간제'].forEach(q=>chk('옛 자주 찾는 말 "'+q+'" → 항목 있음',!!C.workOf(D,q,'labor')));
@@ -131,4 +131,13 @@ chk('근로시간·가산수당 첫 묶음이 가산수당(제56조·영 제6조
 chk('연차 → 연차 계산, 퇴직급여 → 퇴직금 계산',T.lb_leave==='aopen'&&T.lb_ret==='ropen',T);
 chk('계산 단추가 앱에 있는 열기 동작만(wopen·aopen·ropen·copen)',L.every(w=>!w.tool||['wopen','aopen','ropen','copen'].indexOf(w.tool[0])>=0&&html.indexOf("hasAttribute('data-"+w.tool[0]+"')")>=0));
 
+// 2026-10-18 오후: 서류 보존에 다른 법령 서류 의무 — 기대값은 조문 본문(원문)에서: '작성ㆍ보존'·'보존하여야' 조문
+{ const docs=L.find(w=>w.id==='lb_docs'), ks=docs.sec.flatMap(s=>(s.a||[]).map(i=>i.k));
+  ['DISP:제29조','DISP:제33조','LMC:제19조'].forEach(k=>{ const e=D.byKey[k];
+    chk('서류 보존에 '+k+'(본문에 작성·보존 의무)',ks.includes(k)&&/보존하여야/.test(e.x),ks); });
+  ['DISP:제29조','DISP:제33조'].forEach(k=>chk(k+' 과태료 연결(제46조제5항)',(D.byKey[k].s||[]).some(z=>z.kind==='과태료'&&/^제46조제5항/.test(z.basis)),D.byKey[k].s));
+  const m4=/상시(?:\(常時\))?\s*(\d+)명\s*미만[^.]*그러하지\s*아니하다/.exec((D.byKey['LMC:제4조']||{}).x||''), lab=C.l5Lab(D,D.byKey['LMC:제19조']);
+  chk('근참법 제19조 표시 = 제4조 단서 원문 인원(상시 '+(m4&&m4[1])+'명 미만 제외 → 이상)',!!m4&&!!lab&&lab.t==='상시 '+m4[1]+'명 이상',[m4&&m4[1],lab]);
+  ['DISP:제29조','DISP:제33조'].forEach(k=>chk(k+' 5명 미만 표시 없음(파견법은 인원 제한 없음)',C.l5Lab(D,D.byKey[k])===null,C.l5Lab(D,D.byKey[k])));
+  chk("'관리대장' 산업안전 분야에서는 카드 없음",C.workOf(D,'관리대장','osh')===null); }
 console.log(fail?('실패 '+fail+'건 / '+cnt+'건'):('전체 통과 '+cnt+'건')); process.exit(fail?1:0);
