@@ -818,6 +818,7 @@ a.mrow{color:inherit;text-decoration:none}
 .wrow .wl{flex-basis:100%;display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}   /* 2026-10-18 항목별 기준: 5명 미만 적용 여부 */
 .wtop .scbtn{margin-top:10px}
 .wrow .wld{flex-basis:100%;font-size:.75rem;line-height:1.45;color:var(--ink3)}
+.wtop .wnote{margin:6px 0 0;font-size:.75rem;line-height:1.5;color:var(--ink3);word-break:keep-all}
 .wrow .wz small{font-size:.75rem;color:var(--ink3)}
 .wrow .wvia:has(.wz+.wz){flex-direction:column;align-items:flex-start}
 .wx{padding:0 14px 12px}
@@ -1526,7 +1527,8 @@ function judgeArt(e,pf){
   if(e.min&&n<e.min)return {st:'na',why:'상시 '+e.min+'명 이상 사업장에 적용'};
   return {st:'apply',why:e.min?'상시 '+e.min+'명 이상':'규모 요건 없음 · 조문별 요건은 본문 확인'};
 }
-// 2026-10-18 항목별 기준(근로기준): 조문 줄의 상시 5명 미만 적용 표시. judgeArt 판정을 그대로 쓰되
+// 2026-10-18 항목별 기준(근로기준): 조문 줄의 상시 5명 미만 표시. judgeArt 판정을 그대로 쓰되
+//  ⓪ 2026-10-18 사용자 결정: 법 구성처럼 '전체 적용'이 기본 — 5명 미만에도 적용되는 조문은 표시하지 않고 예외(적용 제외·일부 적용·10명 이상·시행 예정)만 표시(항목 화면 머리에 안내 한 줄)
 //  ① 인원 기준이 5명보다 큰 조문(근기법 제93조 10명 등)은 '상시 N명 이상'(5~9명도 대상 아님을 드러냄)
 //  ② 모법 연결이 없는 시행령·시행규칙(정의·산식 — 통상임금 등)은 표시하지 않음(적용 여부는 그 조문을 쓰는 법 조문 기준)
 //  ④ 시행 전 신설 조문은 'YYYY. M. D. 시행 예정'
@@ -1538,11 +1540,11 @@ function l5Lab(D,e){ if(!e)return null; var sub=/(D|R)$/.test(e.l), par=(sub&&e.
   if(j.st==='future'){ var fd=String((par||e).fd||''), mm=/^(\d{4})-(\d{2})-(\d{2})$/.exec(fd); return {k:'fut',t:mm?(mm[1]+'. '+(+mm[2])+'. '+(+mm[3])+'. 시행 예정'):'시행 전'}; }   // 아직 시행 전인 신설 조문(근기법 제44조의4 2027. 1. 1. 등)은 5명 미만 표시보다 시행일이 먼저
   if(j.st==='na')return {k:'na',t:j.ex?'5명 미만 적용 제외':String(j.why||'').replace(/ 사업장에 적용$/,'')};
   if(j.st!=='apply')return null;
-  if(!j.part)return {k:'ap',t:'5명 미만 적용'};
+  if(!j.part)return null;   // 5명 미만에도 적용 — 표시 없음
   var pt=String(j.part), d=pt.replace(/만$/,'')+'만 적용';
-  if(par)return {k:'pt',t:'5명 미만 일부 적용',d:((D.meta.laws[par.l]||{}).short||'')+' '+par.no+' 중 '+d};
-  if(pt.length<=12&&pt.indexOf('(')<0)return {k:'pt',t:'5명 미만 '+pt};
-  return {k:'pt',t:'5명 미만 일부 적용',d:d}; }
+  if(par)return {k:'pt',t:'5명 미만은 일부만 적용',d:((D.meta.laws[par.l]||{}).short||'')+' '+par.no+' 중 '+d};
+  if(pt.length<=12&&pt.indexOf('(')<0)return {k:'pt',t:'5명 미만은 '+d};
+  return {k:'pt',t:'5명 미만은 일부만 적용',d:d}; }
 function thresholds(D,tab,pf,today,ax){   // 기준선: 지금 고른 업종·공사금액에서 판정이 바뀌는 인원(ax='n') 또는 공사금액(ax='amt')과 그때 바뀌는 항목. 새 법령 지식 없이 판정 규칙만으로 계산
   var items=D.items.filter(function(it){return it.f===(tab==='labor'?'labor':'osh');});
   var arts=ax==='n'?D.arts.filter(function(e){return e.l===(tab==='labor'?'GK':'OSH')&&e.s&&e.s.length&&!e.fut&&!e.lnk;}):[];
@@ -3078,6 +3080,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   function renderWork(en){ var W=WBY[en.spec.id], LB=!!W&&wkF(W)==='labor'; if(!W){en.title='기준';en.el.innerHTML='<div class="note"><p>기준을 찾지 못했습니다.</p></div>';return;}
     en.title=W.n+(LB?' 항목 기준':' 작업 기준');
     var h='<div class="card dhead wtop"><p class="dlaw">'+(LB?'항목별 기준':'작업별 기준')+'</p><h2 class="dt"><span class="dtt">'+esc(W.n)+'</span></h2><p class="dpath">'+esc(W.sub+' · 관련 조문 '+wkCount(W)+'개')+'</p>'
+      +(LB?'<p class="wnote">표시 없는 조문은 상시 5명 미만 사업장에도 적용 · 근거: 근로기준법·기간제법 시행령 별표 1</p>':'')
       +(W.tool?'<button type="button" class="btn sec scbtn" data-'+esc(W.tool[0])+'="1">'+esc(W.tool[1])+'</button>':'')+'</div>';
     W.sec.forEach(function(S){
       h+='<h3 class="gl">'+esc(S.h)+(S.s?' <span>'+esc(S.s)+'</span>':'')+'</h3><div class="list wlist">';
