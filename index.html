@@ -2729,16 +2729,24 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   // ── 2026-10-03: 인원 미입력 '적용 판단' — 규모별 요약(sizeSum, 판정 규칙으로 계산) + 카드 안 입력(입력값은 사업장 조건과 같은 값) ──
   function ruleSzNote(r){ return (r&&(r.sit||r.naNote))||''; }   // 도급 등 상황 조건, '설치 의무는 모든 사업장' 같은 안내
   function artSzNote(e){ if(e.lnk)return ruleSzNote(e.lnk.rule); if(e.pa)return '근거 법 조문('+e.pa.no+') 기준'; return ''; }
-  function unkCard(jf,note,via,osh){ var all=sizeSum(D,jf,today,''), s=pf.id?sizeSum(D,jf,today,pf.id):all, it=null; if(via)D.items.forEach(function(x){if(x.id===via)it=x;});
-    var ui=all?all.ind:osh, nv=$('n').value, av=$('amt').value, op=$('ind2').innerHTML;
+  function jinBox(ui,lab,fo){ var nv=$('n').value, av=$('amt').value, op=$('ind2').innerHTML;   // 카드 안 입력칸(인원 미입력·업종/공사금액 미입력 카드 공용). fo: 펼칠 때 먼저 누를 칸
     if(pf.id)op=op.replace('value="'+pf.id+'"','value="'+pf.id+'" selected');
+    return '<button type="button" class="lnk" data-jin="'+fo+'" aria-expanded="false">'+lab+'</button>'
+      +'<div class="jin" hidden><div class="fgrid'+(ui?'':' one')+'"><label class="fld"><span>상시근로자 수</span><input data-jf="n" type="text" inputmode="decimal" autocomplete="off" placeholder="예: 5" value="'+esc(nv)+'"></label>'
+      +(ui?'<label class="fld"><span>업종</span><select data-jf="ind">'+op+'</select></label><label class="fld amt"'+(pf.ind==='const'?'':' hidden')+'><span>건설공사 금액 (억원)</span><input data-jf="amt" type="text" inputmode="decimal" autocomplete="off" placeholder="예: 60" value="'+esc(av)+'"></label>':'')
+      +'</div><button type="button" class="btn pri" data-japply="1">판정</button></div>'; }
+  // 2026-10-18: 인원은 넣었는데 업종·공사금액이 없어 '추가 확인'에서 멈춘 경우에도 카드 안에서 바로 입력(전에는 입력칸이 사라져 막혔음)
+  function jNeed(j,osh){ if(!osh||j.st!=='cond')return ''; var w=j.why||''; return /업종 선택 필요/.test(w)?'ind':(/^공사금액 입력 필요/.test(w)?'amt':''); }
+  function condCard(j,need,via){ var it=null; if(via)D.items.forEach(function(x){if(x.id===via)it=x;});
+    return '<div class="card jsz"><p class="why"><b>'+esc(stLabel(j))+'</b></p>'+(j.why?'<p class="why sm">'+esc(j.why)+'</p>':'')
+      +jinBox(true,need==='amt'?'공사금액 입력':'업종 입력',need)
+      +(it?'<button type="button" class="lnk" data-item="'+esc(it.id)+'">적용기준 상세 · '+esc(it.title)+'</button>':'')+'</div>'; }
+  function unkCard(jf,note,via,osh){ var all=sizeSum(D,jf,today,''), s=pf.id?sizeSum(D,jf,today,pf.id):all, it=null; if(via)D.items.forEach(function(x){if(x.id===via)it=x;});
+    var ui=all?all.ind:osh;
     if(all&&!all.ind&&all.t==='규모와 관계없이 적용')return '<div class="card"><p class="why"><b>'+esc(all.t)+'</b></p>'+(note?'<p class="why sm">'+esc(note)+'</p>':'')+(it?'<button type="button" class="lnk" data-item="'+esc(it.id)+'">적용기준 상세 · '+esc(it.title)+'</button>':'')+'</div>';   // 2026-10-04: 입력해도 판정이 같으면 입력 버튼을 두지 않음
     var h='<div class="card jsz"><p class="why"><b>'+esc(s?s.t:'인원 미입력')+'</b></p>'+(s?'':'<p class="why sm">상시근로자 수를 입력하면 규모 기준을 판정합니다.</p>')
       +(s&&pf.id&&ui?'<p class="why sm">'+esc(pf.lab)+' 기준</p>':'')+(note?'<p class="why sm">'+esc(note)+'</p>':'')
-      +'<button type="button" class="lnk" data-jin="1" aria-expanded="false">'+(ui?'인원·업종 입력':'인원 입력')+'</button>'
-      +'<div class="jin" hidden><div class="fgrid'+(ui?'':' one')+'"><label class="fld"><span>상시근로자 수</span><input data-jf="n" type="text" inputmode="decimal" autocomplete="off" placeholder="예: 5" value="'+esc(nv)+'"></label>'
-      +(ui?'<label class="fld"><span>업종</span><select data-jf="ind">'+op+'</select></label><label class="fld amt"'+(pf.ind==='const'?'':' hidden')+'><span>건설공사 금액 (억원)</span><input data-jf="amt" type="text" inputmode="decimal" autocomplete="off" placeholder="예: 60" value="'+esc(av)+'"></label>':'')
-      +'</div><button type="button" class="btn pri" data-japply="1">판정</button></div>';
+      +jinBox(ui,ui?'인원·업종 입력':'인원 입력','n');
     return h+(it?'<button type="button" class="lnk" data-item="'+esc(it.id)+'">적용기준 상세 · '+esc(it.title)+'</button>':'')+'</div>'; }
   function jApply(c){ var g=function(k){ var x=c.querySelector('[data-jf="'+k+'"]'); return x?x.value.trim():null; }, n=g('n'), ind=g('ind'), amt=g('amt');
     if(n!=null)setVal('n',n); if(ind!=null){ setVal('ind',ind); if(amt!=null&&(indOf(ind)||{}).g==='const')setVal('amt',amt); }
@@ -2777,7 +2785,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     h+=actCard(e);   // 위반 시 감독 조치기준(집무규정 별표)
     h+='<div class="acts"><a class="btn pri" href="'+(L.adm?admUrl(L.url):lawUrl(L.url,e.no))+'" target="_blank" rel="noopener">국가법령정보센터 원문 보기</a></div>';
     var jr=(pf.n==null&&e.l==='RULE')?judgeArt(e,{n:5,ind:'',amt:null}):j;   // 안전보건규칙은 규모와 무관하므로 인원이 없어도 판단 문구를 보여줌
-    if(!e.nj||e.fut)h+='<h3 class="gl">'+(e.nj?'시행일':'적용 판단')+'</h3>'+(jr.st==='unk'?unkCard(function(p){return judgeArt(e,p);},artSzNote(e),e.lnk?e.lnk.id:'',/^(OSH|SD|SR|SAPA|SAPAD)$/.test(e.l)):whyCard(jr,'',e.lnk?e.lnk.id:''));   // 2026-10-03: 인원 미입력이면 규모별 요약 + 바로 입력
+    if(!e.nj||e.fut)h+='<h3 class="gl">'+(e.nj?'시행일':'적용 판단')+'</h3>'+(jr.st==='unk'?unkCard(function(p){return judgeArt(e,p);},artSzNote(e),e.lnk?e.lnk.id:'',/^(OSH|SD|SR|SAPA|SAPAD)$/.test(e.l)):(jNeed(jr,/^(OSH|SD|SR|SAPA|SAPAD)$/.test(e.l))?condCard(jr,jNeed(jr,true),e.lnk?e.lnk.id:''):whyCard(jr,'',e.lnk?e.lnk.id:'')));   // 2026-10-03: 인원 미입력이면 규모별 요약 + 바로 입력
     if(pd)h+=pendBlock(e,pd);
     h+=prevNext(e);
     en.el.innerHTML=h;
@@ -2840,7 +2848,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     h+='</div>';
     h+='<h3 class="gl">조문</h3>'+refCards(it,en);
     h+=sancSections(it.s,itemCtx(it),lk,'');
-    h+='<h3 class="gl">적용 판단</h3>'+(j.st==='unk'?unkCard(function(p){return judgeItem(it,p,today);},ruleSzNote(it.rule),'',it.f==='osh'):whyCard(j,''));
+    h+='<h3 class="gl">적용 판단</h3>'+(j.st==='unk'?unkCard(function(p){return judgeItem(it,p,today);},ruleSzNote(it.rule),'',it.f==='osh'):(jNeed(j,it.f==='osh')?condCard(j,jNeed(j,true),''):whyCard(j,'')));
     h+=hcCard(it);
     var bx='<p class="why sm">'+esc(it.basis)+'</p>'+(it.note?'<p class="why sm">'+esc(it.note)+'</p>':'')+indNote()+(GRADE[it.g]?'<p class="why sm">근거 확인: '+esc(GRADE[it.g])+'</p>':'');
     var blong=bx.replace(/<[^>]+>/g,'').length>200, bfull=!!en.bfull;   // 2026-10-03: 길면 앞부분만 보이고 '전체 보기'(조문 전문 보기와 같은 방식)
@@ -3315,7 +3323,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   $('iq').addEventListener('input',renderIList);
   document.addEventListener('click',function(ev){ var b=ev.target.closest('[data-jin],[data-japply]'); if(!b)return; var c=b.closest('.jsz'); if(!c)return;   // 2026-10-03 적용 판단 카드 안 입력
     if(b.hasAttribute('data-japply')){ jApply(c); return; }
-    var f=c.querySelector('.jin'), op=f.hidden; f.hidden=!op; b.setAttribute('aria-expanded',String(op)); if(op){ var i=c.querySelector('[data-jf="n"]'); if(i)i.focus(); } });
+    var f=c.querySelector('.jin'), op=f.hidden; f.hidden=!op; b.setAttribute('aria-expanded',String(op)); if(op){ var i=c.querySelector('[data-jf="'+(b.getAttribute('data-jin')||'n')+'"]')||c.querySelector('[data-jf="n"]'); if(i)i.focus(); } });
   document.addEventListener('change',function(ev){ var t=ev.target; if(!t.matches||!t.matches('.jsz [data-jf="ind"]'))return; var a=t.closest('.jsz').querySelector('.fld.amt'); if(a)a.hidden=(indOf(t.value)||{}).g!=='const'; });
   document.addEventListener('keydown',function(ev){ var t=ev.target; if(ev.key==='Enter'&&t.matches&&t.matches('.jsz [data-jf]')){ ev.preventDefault(); jApply(t.closest('.jsz')); } });
   document.addEventListener('click',function(ev){ var t=ev.target.closest('[data-xr],[data-xclose],[data-wks]'); if(!t)return;   // 인용 조문 창(2026-09-29) · 작업 기준 창(2026-10-17)
