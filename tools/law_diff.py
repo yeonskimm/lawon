@@ -5,6 +5,9 @@
 # - 발견·보고만 한다. 앱 데이터(index.html)는 고치지 않는다(반영은 원문 확인 후 사람이 한다).
 # - 사용: python3 tools/law_diff.py diff            → 주간 대조(보고서: law_diff_report.md)
 #         python3 tools/law_diff.py base all|GK,OSH → 기준본 갱신(반영을 마친 법령만). all이면 앱 대조표도 만든다
+#         python3 tools/law_diff.py audit [all|GK,OSH] [--snapshot] → 앱 조문 ↔ 법제처 현행 전체 대조(2026-10-18 신설, 매월).
+#             기준본은 건드리지 않는다. 의도된 차이는 tools/audit_ignore.json(법제처·앱 문구 해시가 같을 때만 제외).
+#             --snapshot: 법제처 대신 기준본(law_snapshot)을 현행으로 보고 대조(인증키 없이 로컬 점검용)
 # - 표준 라이브러리만 사용. 인증키는 어떤 파일·출력에도 남기지 않는다.
 import datetime, difflib, hashlib, json, os, re, sys, time
 import urllib.error, urllib.parse, urllib.request
@@ -544,6 +547,104 @@ def cmd_base(codes, metas, app, do_audit):
     print(rep)
 
 
+# ───────── 앱 ↔ 법제처 전체 대조(2026-10-18) ─────────
+IGN_PATH = os.path.join(HERE, 'audit_ignore.json')
+
+
+def app_text_now(a):
+    """앱 조문의 오늘 기준 본문 — 시행일이 지난 개정 단계(chg·chg.nx)는 반영(audit()와 같은 규칙)"""
+    x = a['x']
+    c = a.get('chg')
+    for st in ([c] + list(c.get('nx') or [])) if c else []:
+        if st.get('date', '9') <= NOW.strftime('%Y-%m-%d'):
+            x = st.get('x', x)
+    return x
+
+
+def audit_rows(code, cur, app):
+    mine = {k[1]: a for k, a in app.items() if k[0] == code}
+    same, diffs, only_app = 0, [], []
+    for no, a in sorted(mine.items(), key=lambda x: sortkey(x[0])):
+        if a.get('fut'):
+            continue
+        x = app_text_now(a)
+        n = cur['arts'].get(no)
+        if n is None:
+            only_app.append(no)
+        elif norm(x) == norm(n['x']):
+            same += 1
+        else:
+            diffs.append((no, n.get('t', ''), x, n['x']))
+    only_api = [k for k in cur['arts'] if k not in mine and cur['arts'][k]['x'].strip() and not re.search(r'삭제', cur['arts'][k]['x'][:20])]
+    return same, diffs, only_app, sorted(only_api, key=sortkey)
+
+
+def load_ignore():
+    try:
+        L = json.load(open(IGN_PATH, encoding='utf-8'))
+    except FileNotFoundError:
+        return {}
+    return {(e['code'], e['no']): e for e in L}
+
+
+def cmd_audit(codes, metas, app, offline):
+    ign = load_ignore()
+    secs, fails, excl, info = [], [], [], []
+    tot = [0, 0, 0]
+    for code in codes:
+        meta = metas[code]
+        try:
+            if offline:
+                sn = load_snap(code)
+                if not sn:
+                    raise ApiError('기준본 없음')
+                cur = sn['cur']
+            else:
+                cur = get_state(code, meta)['cur']
+        except ApiError as ex:
+            fails.append('%s(%s): %s' % (meta['name'], code, ex))
+            continue
+        same, diffs, only_app, only_api = audit_rows(code, cur, app)
+        real = []
+        for no, t, ax, lx in diffs:
+            e = ign.get((code, no))
+            if e and e.get('hl') == h(norm(lx)) and e.get('ha') == h(norm(ax)):
+                excl.append('%s %s — %s' % (meta['name'], no, e.get('why', '')))
+            else:
+                real.append((no, t, ax, lx, bool(e)))
+        tot[0] += same; tot[1] += len(real); tot[2] += len(only_app)
+        if real or only_app:
+            s = '### %s (%s)\n' % (meta['name'], code)
+            for no, t, ax, lx, was in real:
+                s += '<details><summary>🔴 %s(%s)%s</summary>\n\n- %s\n\n</details>\n' % (no, t, ' — 예외 목록에 있으나 문구가 바뀜' if was else '', wdiff(ax, lx, ctx=6, limit=900))
+            if only_app:
+                s += '- 🔴 앱에만 있는 조문(법제처 현행에 없음): ' + ', '.join(only_app) + '\n'
+            secs.append(s)
+        if only_api:
+            info.append('%s %d개' % (meta['name'], len(only_api)))
+    body = ''.join(s + '\n' for s in secs)
+    if fails:
+        body += '### 조회 실패\n' + ''.join('- %s\n' % f for f in fails)
+    sig = h(norm(body))
+    n = tot[1] + tot[2]
+    title = '법ON 앱↔법제처 전체 대조 %s — ' % NOW.strftime('%Y. %-m. %-d.') + ('%d건 확인 필요' % n if n else ('조회 실패 %d건' % len(fails) if fails else '이상 없음'))
+    guide = ('- 앱 조문(~~지운 부분~~)과 법제처 현행(**추가된 부분**)이 다름 — 원문 확인 후 앱을 고치거나, 의도된 차이면 tools/audit_ignore.json에 추가\n'
+             '- 주간 대조(law-diff)는 법제처 변화만 보므로, 앱 수록 때부터 틀린 문구는 이 대조에서만 잡힘\n\n') if n else ''
+    tail = ''
+    if excl:
+        tail += '\n<details><summary>의도된 차이 %d건(예외 목록)</summary>\n\n' % len(excl) + ''.join('- %s\n' % x for x in excl) + '\n</details>\n'
+    if info:
+        tail += '\n<details><summary>법제처에만 있는 조문(앱 미수록 — 참고)</summary>\n\n- ' + ' · '.join(info) + '\n\n</details>\n'
+    src = '기준본(law_snapshot) — 로컬 점검' if offline else '법제처 현행(오늘 시행 중인 판)'
+    rep_ = '## ' + title + '\n- 비교: 앱 조문(시행일 지난 개정 반영, 시행 전 조문 제외) ↔ ' + src + '. 띄어쓰기·개정 표시 등은 무시\n- 일치 %d · 확인 필요 %d · 앱에만 %d\n\n' % tuple(tot) + guide + body + tail + '\n<!-- law-audit:%s -->\n' % sig
+    open(os.path.join(ROOT, 'law_audit_report.md'), 'w', encoding='utf-8').write(scrub(rep_))
+    open(os.path.join(ROOT, 'law_audit_issue.md'), 'w', encoding='utf-8').write(scrub(rep_))
+    open(os.path.join(ROOT, 'law_audit_title.txt'), 'w', encoding='utf-8').write(title)
+    out(alert=int(bool(n or fails)), sig=sig, status='error' if fails else 'ok')
+    print(rep_)
+    return tot, fails
+
+
 def out(**kw):
     p = os.environ.get('GITHUB_OUTPUT')
     if p:
@@ -553,12 +654,14 @@ def out(**kw):
 
 
 def main():
-    if not OC:
+    mode = sys.argv[1] if len(sys.argv) > 1 else 'diff'
+    offline = '--snapshot' in sys.argv[2:]
+    args = [a for a in sys.argv[2:] if a != '--snapshot']
+    arg = (args[0] if args else 'all').strip() or 'all'
+    if not OC and not (mode == 'audit' and offline):
         print('LAW_OC 비밀값이 없습니다.')
         out(status='error')
         sys.exit(1)
-    mode = sys.argv[1] if len(sys.argv) > 1 else 'diff'
-    arg = (sys.argv[2] if len(sys.argv) > 2 else 'all').strip() or 'all'
     metas, app = load_app()
     vers = json.load(open(os.path.join(HERE, 'law_versions.json'), encoding='utf-8'))
     allc = list(metas)
@@ -570,6 +673,8 @@ def main():
         sys.exit(1)
     if mode == 'base':
         cmd_base(codes, metas, app, do_audit=(arg.lower() == 'all'))
+    elif mode == 'audit':
+        cmd_audit(codes, metas, app, offline)
     else:
         cmd_diff(codes, metas, app)
 
