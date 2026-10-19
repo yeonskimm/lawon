@@ -842,6 +842,17 @@ a.mrow{color:inherit;text-decoration:none}
 .k9r{cursor:default}
 .k9hit{background:var(--prbg)}
 .k9hit .ttl{font-weight:700;color:var(--pri)}
+/* 2026-10-19 홈 계산 도구 3줄·과태료 직접 입력 창 */
+.tile .tsub{font-size:.72em;font-weight:600;color:var(--ink2);margin-left:1px}
+@media (max-width:374px){.tile .tsub{display:block;margin:1px 0 0;line-height:1.1}}
+html[data-fs="l"] .tile .tsub{display:block;margin:1px 0 0;line-height:1.1}
+#hfsheet .hfbox{margin:2px 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:.78rem;line-height:1.55;color:var(--ink2)}
+#hfsheet .hfbox b{color:var(--ink);font-weight:700}
+#hfsheet .hff .lrow+.lrow{margin-top:10px}
+#hfsheet .lin input{padding-right:52px}
+#hfsheet .hfb{margin-top:12px}
+#hfsheet .hfn1{margin:0 0 10px}
+#hfsheet .hfb .fcnote{font-size:.75rem}
 </style>
 </head>
 <body>
@@ -873,7 +884,7 @@ a.mrow{color:inherit;text-decoration:none}
       <button type="button" class="pick" data-field="osh"><span class="pico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 15.2v-1.7a7.2 7.2 0 0 1 14.4 0v1.7"/><path d="M12 6.3v5.2"/><path d="M9.1 7v3.4M14.9 7v3.4"/><rect x="2.6" y="15.2" width="18.8" height="3.6" rx="1.4"/></svg></span><span class="ptx"><b>산업안전</b><span class="pls"><span class="pl">산업안전보건법</span> <span class="pl">산업안전보건기준에 관한 규칙</span> <span class="pl">중대재해처벌법</span></span></span><i class="chev" aria-hidden="true"></i></button>
       <p class="sn">선택한 분야를 우선 표시합니다. 검색은 수록 법령 전체를 대상으로 하며, 주 업무 분야는 상단에서 변경할 수 있습니다.</p>
       <h2 class="sq tsq">계산 도구</h2>
-      <div class="tools"><button type="button" class="tile" id="calcOpen" data-copen="1"><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2.8" width="14" height="18.4" rx="2.4"/><path d="M8.2 6.4h7.6v3.2H8.2z"/><path d="M8.6 13.3h.01M12 13.3h.01M15.4 13.3h.01M8.6 16.9h.01M12 16.9h.01M15.4 16.9h.01" stroke-width="2.4"/></svg></span><b>상시근로자</b></button><button type="button" class="tile" id="wageOpen" data-wopen="1"><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M7.4 8.2l2.2 7.6L12 9.4l2.4 6.4 2.2-7.6"/><path d="M6.6 11.4h10.8"/></svg></span><b>임금·주휴</b></button><button type="button" class="tile" id="leaveOpen" data-aopen="1"><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.8" y="5" width="16.4" height="15.4" rx="2.2"/><path d="M8 3v4M16 3v4M3.8 9.8h16.4"/><path d="M9 14.6l2.1 2.1 4-4"/></svg></span><b>연차</b></button><button type="button" class="tile" id="sevOpen" data-ropen="1"><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="7" width="17.6" height="12.6" rx="2.2"/><path d="M8.6 7V5.4A1.4 1.4 0 0 1 10 4h4a1.4 1.4 0 0 1 1.4 1.4V7"/><path d="M3.2 12.2h17.6"/><path d="M10.6 12.2v1.8h2.8v-1.8"/></svg></span><b>퇴직금</b></button></div>
+      <div class="tools"><button type="button" class="tile" id="calcOpen" data-copen="1"><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2.8" width="14" height="18.4" rx="2.4"/><path d="M8.2 6.4h7.6v3.2H8.2z"/><path d="M8.6 13.3h.01M12 13.3h.01M15.4 13.3h.01M8.6 16.9h.01M12 16.9h.01M15.4 16.9h.01" stroke-width="2.4"/></svg></span><b>상시근로자</b></button><button type="button" class="tile" id="wageOpen" data-wopen="1"><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M7.4 8.2l2.2 7.6L12 9.4l2.4 6.4 2.2-7.6"/><path d="M6.6 11.4h10.8"/></svg></span><b>임금·주휴</b></button><button type="button" class="tile" id="leaveOpen" data-aopen="1"><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.8" y="5" width="16.4" height="15.4" rx="2.2"/><path d="M8 3v4M16 3v4M3.8 9.8h16.4"/><path d="M9 14.6l2.1 2.1 4-4"/></svg></span><b>연차</b></button><button type="button" class="tile" id="sevOpen" data-ropen="1"><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="7" width="17.6" height="12.6" rx="2.2"/><path d="M8.6 7V5.4A1.4 1.4 0 0 1 10 4h4a1.4 1.4 0 0 1 1.4 1.4V7"/><path d="M3.2 12.2h17.6"/><path d="M10.6 12.2v1.8h2.8v-1.8"/></svg></span><b>퇴직금</b></button><button type="button" class="tile" id="fineOpen" data-hfopen="1"><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2.8h12v18.4l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4-2 1.4z"/><path d="M9 8h6M9 11.5h6M9 15h3.5"/></svg></span><b>과태료<small class="tsub">(산업안전)</small></b></button><button type="button" class="tile" id="scOpenH" data-sopen="1"><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 15.5V14a7.5 7.5 0 0 1 15 0v1.5"/><path d="M12 6.5v5M8.4 7.6l1.1 3.6M15.6 7.6l-1.1 3.6"/><path d="M2.6 15.5h18.8v2.8H2.6z"/></svg></span><b>관리비 계상</b></button></div>
       <button type="button" class="btn sec" id="instStart" data-install="1" hidden>홈 화면에 앱 설치</button>
     </div>
   </section>
@@ -1162,6 +1173,24 @@ a.mrow{color:inherit;text-decoration:none}
     <div class="cres" id="scres" aria-live="polite"></div>
     <button type="button" class="rtog" id="scclr">입력 지우기</button>
     <details class="about lawk" data-lawk="CSC:제3조,CSC:제4조,OSH:제72조"><summary>관련 조문</summary><div class="lawbox"></div></details>
+  </div>
+</div>
+<div class="sheet tsheet" id="hfsheet" hidden role="dialog" aria-modal="true" aria-labelledby="hfsheetT">
+  <div class="shbg" data-hfclose="1"></div>
+  <div class="shcard">
+    <div class="shh"><h2 id="hfsheetT">과태료 금액 계산(산업안전)</h2><button type="button" data-hfclose="1">닫기</button></div>
+    <div class="hfbox">산업안전보건법 과태료(시행령 별표 35) · 위반 조항 1개씩 계산합니다.<br>조문 화면 과태료 칸의 <b>금액 계산 ›</b>을 쓰면 금액·인원 단위·차수가 자동으로 들어갑니다.</div>
+    <div class="cfl hff">
+      <div class="lrow"><label for="hfa">개별기준 금액<small>1명·1대·1개소당 등</small></label><span class="lin"><input id="hfa" type="text" inputmode="decimal" autocomplete="off" placeholder="예: 50"><em>만원</em></span></div>
+      <div class="lrow"><label for="hfn">수량<small>명·대·개소 — 단위는 별표 기준</small></label><span class="lin"><input id="hfn" type="text" inputmode="numeric" autocomplete="off" value="1"><em>×</em></span></div>
+    </div>
+    <div class="fcb hfb">
+      <p class="fcnote hfn1">차수(1·2·3차)는 금액을 고를 때 반영 · 중대재해·중대산업사고 발생 사업장 감독 적발은 3차 금액(별표&nbsp;35&nbsp;제2호)</p>
+      <div class="fcres" aria-live="polite"><small>부과 예정</small><b id="hfo">—</b><span id="hfw"></span></div>
+      <p class="fct">규모 기준</p><div class="fcr fcbs"><button type="button" data-hfb="n">상시근로자 수</button><button type="button" data-hfb="amt">건설공사 금액</button></div>
+      <p class="fct" id="hfst"></p><div class="fcr s4" id="hfs"></div>
+      <p class="fcnote">100만원 미만이면 감경 없음 · 감경 후 100만원 미만이면 100만원 · 재량 감경(2분의 1 범위)·자진납부 감경은 반영하지 않음</p>
+    </div>
   </div>
 </div>
 <div class="sheet tsheet" id="rsheet" hidden role="dialog" aria-modal="true" aria-labelledby="rsheetT">
@@ -2085,7 +2114,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   function loadUI(){try{var o=JSON.parse(localStorage.getItem('fieldlaw.ui')||'null');if(o){if(o.theme)ui.theme=o.theme;if(o.fs)ui.fs=o.fs;}}catch(e){}}
   function isDark(){return ui.theme==='dark'||(ui.theme==='auto'&&!!(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches));}
   function setHdrH(){document.documentElement.style.setProperty('--hdrh',$('hdr').offsetHeight+'px');}
-  function applyUI(){var r=document.documentElement; if(ui.theme==='auto')r.removeAttribute('data-theme'); else r.setAttribute('data-theme',ui.theme); r.setAttribute('data-fs',ui.fs);
+  function applyUI(){var r=document.documentElement; if(ui.theme==='auto')r.removeAttribute('data-theme'); else r.setAttribute('data-theme',ui.theme); r.setAttribute('data-fs',ui.fs); if(typeof fitStart==='function')requestAnimationFrame(fitStart);
     var m=document.querySelector('meta[name="theme-color"]'); if(m)m.setAttribute('content',isDark()?'#0F1A2C':'#14284A'); setHdrH(); syncSheet();}
 
   // ── 법령명·조항 표기 ──
@@ -3242,7 +3271,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   // 2026-09-27 뒤로 버튼(안드로이드)·뒤로 스와이프(아이폰) = 앱 안 '← 뒤로'와 같게: 창 닫기 → 쌓인 화면 → 탭 첫 화면 → 분야 선택 → (안드로이드만) '한 번 더 누르면 종료'
   // 기록: [맨 아래 b=분야 선택][g=종료 안내용, 안드로이드만][탭 첫 화면 d:0][d:1…][창 sh]
   var ANDR=/Android/i.test(navigator.userAgent||''), guardOn=false, rootH=false, shH=false, shPend=false, shSkip=false;
-  var SHEETS=['sheet','isheet','csheet','wsheet','asheet','rsheet','adm','xsheet','ssheet'];
+  var SHEETS=['sheet','isheet','csheet','wsheet','asheet','rsheet','adm','xsheet','ssheet','hfsheet'];
   function anySheet(){ return SHEETS.some(function(id){ var el=$(id); return !!el&&!el.hidden; }); }
   function shOpen(){ if(!HIST||shH)return; if(shPend){ shPend=false; shH=true; return; }   // 창을 닫자마자 다른 창을 열면 기록 하나를 이어 씀
     var s=history.state||{}, c={fl:1,sh:1}; if(typeof s.d==='number')c.d=s.d;
@@ -3267,7 +3296,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     ['vStart','vFind','vSite','vBook'].forEach(function(id){$(id).hidden=true;});
     Object.keys(stacks).forEach(function(k){stacks[k].forEach(function(en){en.el.hidden=true;});});
     var start=nav==='start'; $('tabbar').hidden=start; document.body.className=start?'nobar':'';
-    if(start){ $('vStart').hidden=false; $('foot').hidden=true; paintHeader(); save(); return; }
+    if(start){ $('vStart').hidden=false; $('foot').hidden=true; paintHeader(); save(); requestAnimationFrame(fitStart); return; }
     var t=topOf(nav);
     if(t){ if(t.ver!==ver)renderSub(t); t.el.hidden=false; } else { if(rootVer[nav]!==ver)renderRoot(nav); ROOT[nav].hidden=false; }
     $('foot').hidden=!!t&&!/^(art|item|wk)$/.test(t.spec.type); $('fdt').hidden=!!t;   // 2026-10-01: 조문·주요 의무 상세에도 고지
@@ -3756,6 +3785,46 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     if(t.id==='scmtog')sc.m=!sc.m;
     scPaint(); });
   each('#ssheet input',function(x){ x.addEventListener('input',function(){ var d=x.value.replace(/[^0-9]/g,'').replace(/^0+(?=\d)/,'').slice(0,15); x.value=d?Number(d).toLocaleString('ko-KR'):''; if(x.id==='sctot'||x.id==='sctgt'){ sc.hmu=false; } scRun(); }); });
+
+  // ── 2026-10-19 홈 과태료 금액 계산(산업안전): 개별기준 금액을 직접 넣음 — 계산 규칙은 조문 화면과 같은 fineCalc ──
+  var HF={b:'n',r:null};
+  function hfSizes(){ return HF.b==='amt'?[[1,'40억원 이상'],[0.9,'10~40억원 90%'],[0.8,'3~10억원 80%'],[0.7,'3억원 미만 70%']]:[[1,'100명 이상'],[0.9,'50~99명 90%'],[0.8,'10~49명 80%'],[0.7,'10명 미만 70%']]; }
+  function hfPaint(){ $('hfst').textContent='규모 ('+(HF.b==='amt'?'건설공사 금액':'상시근로자 수')+')';
+    $('hfs').innerHTML=hfSizes().map(function(x){return '<button type="button" data-hfs="'+x[0]+'" aria-pressed="'+(HF.r===x[0])+'">'+x[1]+'</button>';}).join('');
+    each('#hfsheet [data-hfb]',function(x){ x.setAttribute('aria-pressed',String(x.getAttribute('data-hfb')===HF.b)); }); hfRun(); }
+  function hfRun(){ var A=num($('hfa').value), nv=$('hfn').value.replace(/[^0-9]/g,''), N=nv===''?null:+nv, o=$('hfo'), w=$('hfw');
+    if(A==null||!(A>0)){ o.textContent='—'; w.textContent='금액을 넣으면 계산합니다'; return; }
+    if(N==null||N<1){ o.textContent='—'; w.textContent='수량은 1 이상의 정수를 넣으세요'; return; }
+    var r=fineCalc({a:[A,A,A],c:0,u:['x'],n:[N],r:HF.r});
+    if(r.err){ o.textContent='—'; w.textContent=r.err==='r'?'규모를 고르면 계산합니다':''; return; }
+    var t=fineWon(A)+(N>1?' × '+N+' = '+fineWon(r.base):'');
+    if(r.r<1&&!r.cut)t+=' · 100만원 미만이라 규모 감경 없음';
+    if(r.cut)t+=' × '+Math.round(r.r*100)+'%'+(r.floor?' → 100만원 미만이라 100만원':'');
+    o.textContent=fineWon(r.out); w.textContent=t; }
+  function openHf(){ closeSheet(); hfPaint(); $('hfsheet').hidden=false; shOpen(); $('hfsheet').querySelector('.shcard').scrollTop=0; }
+  function closeHf(){ $('hfsheet').hidden=true; shClose(); }
+  document.addEventListener('click',function(ev){ var t=ev.target.closest('[data-hfopen],[data-hfclose],[data-hfb],[data-hfs]'); if(!t)return;
+    if(t.hasAttribute('data-hfopen'))return openHf(); if(t.hasAttribute('data-hfclose'))return closeHf();
+    if(t.hasAttribute('data-hfb')){ var b=t.getAttribute('data-hfb'); if(b!==HF.b){ HF.b=b; HF.r=null; } return hfPaint(); }
+    HF.r=+t.getAttribute('data-hfs'); hfPaint(); });
+  $('hfa').addEventListener('input',function(){ var v=this.value.replace(/[^0-9.]/g,''), p=v.indexOf('.'); if(p>=0)v=v.slice(0,p+1)+v.slice(p+1).replace(/\./g,'').slice(0,4); this.value=v.slice(0,12); hfRun(); });
+  $('hfn').addEventListener('input',function(){ this.value=this.value.replace(/[^0-9]/g,'').replace(/^0+(?=\d)/,'').slice(0,6); hfRun(); });
+  // ── 2026-10-19 첫 화면(분야 선택) 한 화면 맞춤: 넘치면 분야 선택 두 칸의 위아래 여백을 똑같이 줄이고, 그래도 넘치면 머리·계산 칸 여백을 줄임 ──
+  function fitStart(){ var V=$('vStart'); if(!V||V.hidden)return;
+    var P=[].slice.call(V.querySelectorAll('.pick')), H=V.querySelector('.hero'), S=V.querySelector('.start'), T=[].slice.call(V.querySelectorAll('.tile'));
+    var N=V.querySelector('.sn');
+    P.concat([H,S]).concat(T).forEach(function(x){ if(x){ x.style.paddingTop=''; x.style.paddingBottom=''; x.style.minHeight=''; } });
+    if(N){ N.style.fontSize=''; N.style.lineHeight=''; } if(H)H.style.removeProperty('--hs');
+    var over=function(){ return (document.scrollingElement||document.documentElement).scrollHeight-window.innerHeight; }, px=function(x,p){ return parseFloat(getComputedStyle(x)[p])||0; };
+    var d=over(); if(d<=0)return;
+    if(P.length){ var each1=Math.min(Math.ceil(d/P.length), Math.min.apply(null,P.map(function(x){ return Math.max(0,px(x,'paddingTop')-7)+Math.max(0,px(x,'paddingBottom')-7); })));   // 두 칸 같은 만큼
+      P.forEach(function(x){ var t=px(x,'paddingTop'), b=px(x,'paddingBottom'), k=each1/2; x.style.paddingTop=Math.max(7,t-k)+'px'; x.style.paddingBottom=Math.max(7,b-(each1-Math.min(k,t-7)))+'px'; }); d=over(); }
+    if(d>0&&H){ var ht=px(H,'paddingTop'), hb=px(H,'paddingBottom'), cut=Math.min(d,Math.max(0,ht-6)+Math.max(0,hb-8)), ct=Math.min(cut/2,Math.max(0,ht-6)); H.style.paddingTop=(ht-ct)+'px'; H.style.paddingBottom=Math.max(8,hb-(cut-ct))+'px'; d=over(); }
+    if(d>0&&S){ var st=px(S,'paddingTop'); S.style.paddingTop=Math.max(8,st-d)+'px'; d=over(); }
+    if(d>0&&T.length){ var mh=px(T[0],'minHeight'), rows=Math.ceil(T.length/2), k2=Math.min(mh-44,Math.ceil(d/rows)); if(k2>0)T.forEach(function(x){ x.style.minHeight=(mh-k2)+'px'; }); d=over(); }
+    if(d>0&&N){ N.style.fontSize='.75rem'; N.style.lineHeight='1.45'; d=over(); }   // 안내 글자 한 단계 작게
+    if(d>0&&H)H.style.setProperty('--hs','calc(min(1vw,4.4px)*.8)'); }   // 그래도 넘치면 머리 그림·이름을 80%로(아주 작은 화면은 조금 스크롤)
+  window.addEventListener('resize',function(){ requestAnimationFrame(fitStart); });
   document.addEventListener('click',function(ev){ var t=ev.target.closest('[data-ropen],[data-rclose]'); if(!t)return; if(t.hasAttribute('data-ropen'))openSev(); else closeSev(); });
 
   // ── 시작 ──
