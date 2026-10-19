@@ -88,6 +88,12 @@ with sync_playwright() as pw:
         ok(tag + " '크레인 검사기준' → 앱 미수록 고시 카드: 안전검사 고시", gl == ['안전검사 고시'], gl)
         p.fill('#q', '지게차'); p.wait_for_timeout(600)
         ok(tag + " '지게차'에는 미수록 고시 카드 없음", not p.evaluate("[...document.querySelectorAll('#results .gl')].some(x=>x.textContent.trim().startsWith('고시(앱 미수록)'))"))
+        # 2026-10-19(5-41): 대상 이름 + 성능 → 고시 카드, 맨 '기준'은 카드 없음
+        p.fill('#q', '안전모 성능'); p.wait_for_timeout(700); p.evaluate('scrollTo(0,0)'); shot(p, tag + '_7b_안전모성능_검색')
+        gl = p.evaluate("""(()=>{const g=[...document.querySelectorAll('#results .gl')].find(x=>x.textContent.trim().startsWith('고시(앱 미수록)')); return g?[...g.nextElementSibling.querySelectorAll('a')].map(a=>a.querySelector('b').textContent):null;})()""")
+        ok(tag + " '안전모 성능' → 보호구 안전인증·자율안전확인 고시 카드", gl == ['보호구 안전인증 고시', '보호구 자율안전확인 고시'], gl)
+        p.fill('#q', '안전화 지급 기준'); p.wait_for_timeout(600)
+        ok(tag + " '안전화 지급 기준'에는 미수록 고시 카드 없음", not p.evaluate("[...document.querySelectorAll('#results .gl')].some(x=>x.textContent.trim().startsWith('고시(앱 미수록)'))"))
         # 7. 근골격계 고시 제4조: 원문 2 + 작업 기준 링크가 한 줄에(넘침 없음)
         art(p, '근골격계 고시 유해요인조사', 'MSD:제4조')
         T = title_links(p)

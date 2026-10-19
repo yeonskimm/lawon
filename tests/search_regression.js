@@ -100,7 +100,7 @@ for(const [q,f,exp,one] of [['영 제16조',OSHF,'SD:제16조',1],['영 16조',O
 { const r=C.search(D,'법 제16조','',null,null), okk=r.total>1; if(!okk)fail++; console.log((okk?'PASS':'FAIL')+'  분야 없으면 약칭 해석 안 함('+r.total+'건)'); }
 { const r=C.search(D,'영 제999조','',OSHF,OSHF), okk=r.total===0; if(!okk)fail++; console.log((okk?'PASS':'FAIL')+'  없는 조문 → 0건'); }
 // 현장 약어(용어사전 2026-10-16) → 대표 조문 1순위
-for(const [q,exp] of [['관감','OSH:제16조'],['산안비','OSH:제72조'],['일검','OSH:제129조'],['배검','OSH:제130조'],['작측','OSH:제125조'],['유위','OSH:제42조'],['유위계','OSH:제42조'],['산보위','OSH:제24조'],['명감','OSH:제23조'],['근감','OSH:제155조'],['위평','OSH:제36조'],['안보교육','OSH:제29조'],['물안자','OSH:제114조'],['보관자','OSH:제18조'],['안관','OSH:제17조']]){
+for(const [q,exp] of [['관감','OSH:제16조'],['산안비','OSH:제72조'],['일검','OSH:제129조'],['배검','OSH:제130조'],['작측','OSH:제125조'],['유위','OSH:제42조'],['유위계','OSH:제42조'],['산보위','OSH:제24조'],['명감','OSH:제23조'],['명산감','OSH:제23조'],['근감','OSH:제155조'],['위평','OSH:제36조'],['안보교육','OSH:제29조'],['물안자','OSH:제114조'],['보관자','OSH:제18조'],['안관','OSH:제17조']]){
   const r=C.search(D,q,'',OSHF,OSHF), k=r.arts.map(e=>e.l+':'+e.no), okk=k[0]===exp; if(!okk)fail++;
   console.log((okk?'PASS':'FAIL')+'  현장 약어 '+q+' → '+k.slice(0,2).join(', ')); }
 { const r=C.search(D,'근감','',LABF,LABF), okk=r.arts[0]&&r.arts[0].l+':'+r.arts[0].no==='GK:제102조'; if(!okk)fail++; console.log((okk?'PASS':'FAIL')+'  근로기준 분야 근감 → 근기법 제102조'); }
