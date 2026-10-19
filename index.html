@@ -1162,6 +1162,7 @@ html[data-fs="l"] .tile .tsub{display:block;margin:1px 0 0;line-height:1.1}
     <div class="cfl scf">
       <div class="lrow"><label for="sctot">총공사금액<small>도급계약서 금액</small></label><span class="lin"><input id="sctot" type="text" inputmode="numeric" autocomplete="off" placeholder="원 단위로 입력"><em>원</em></span><span class="kr" id="sctot_kr"></span></div>
     </div>
+    <p class="chint">단가계약 공사는 총계약금액 기준(관리비 고시 제3조 단서)</p>
     <div class="sclab"><span>대상액</span><small>재료비 + 직접노무비</small></div>
     <div class="seg" id="sctm"><button type="button" data-sct="d">금액 입력</button><button type="button" data-sct="x">모름 · 70%</button></div>
     <p class="chint" id="sctmh"></p>
@@ -1230,7 +1231,7 @@ html[data-fs="l"] .tile .tsub{display:block;margin:1px 0 0;line-height:1.1}
       <p class="chint">상여금·연차수당은 3/12을 더합니다. 퇴직으로 비로소 받는 미사용 연차수당은 넣지 않습니다.</p>
       <button type="button" class="rtog" id="rxtog">+ 평균임금 제외기간</button>
       <div class="rbox" id="rxb" hidden>
-        <p class="chint">출산전후휴가·육아휴직·업무상 부상·질병 요양·사용자 귀책 휴업·수습(3개월 이내) 등. 기간과 그 기간에 받은 임금을 모두 뺍니다(근로기준법 시행령 제2조). 한 기간만 입력</p>
+        <p class="chint">근로기준법 시행령 제2조: 수습 시작 후 3개월 이내 · 사용자 귀책 휴업 · 출산전후휴가·유산·사산 휴가 · 업무상 부상·질병 요양 휴업 · 육아휴직 · 쟁의행위 기간 · 병역·예비군·민방위 의무 이행(그 기간 임금을 받았으면 빼지 않음) · 업무 외 부상·질병 등 사용자 승인 휴업. 기간과 그 기간에 받은 임금을 모두 뺍니다. 한 기간만 입력</p>
         <div class="cfl">
           <div class="lrow"><label for="rxs">시작일</label><span class="lin ld"><input id="rxs" type="date" min="1950-01-01" max="2100-12-31"></span></div>
           <div class="lrow"><label for="rxe">끝날</label><span class="lin ld"><input id="rxe" type="date" min="1950-01-01" max="2100-12-31"></span></div>
@@ -3784,7 +3785,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     if(sc.per==null||sc.k==null){ o.innerHTML='<p class="cn">계약 체결일과 공사 종류를 고르세요.</p>'; return; }
     if(tot==null||(sc.tm==='d'&&tg==null)){ o.innerHTML='<p class="cn">금액을 입력하세요.</p>'; return; }
     var r=csCalc({per:sc.per,k:sc.k,tot:tot,tgt:sc.tm==='d'?tg:null,mat:sc.m?(scNum('scmat')||0):0,hm:sc.hm,plan:scNum('scplan')});
-    if(r.na){ o.innerHTML='<p class="cv">적용 대상 아님</p><p class="cs">총공사금액 2천만원 미만(관리비 고시 제3조)</p>'; return; }
+    if(r.na){ o.innerHTML='<p class="cv">적용 대상 아님</p><p class="cs">총공사금액 2천만원 미만(관리비 고시 제3조 — 단가계약은 총계약금액)</p>'; return; }
     if(r.err==='hm'){ o.innerHTML='<p class="cn">보건관리자 선임 대상 여부를 고르세요.</p><p class="cs">총공사금액 800억원~1천억원은 토목공사업 공사인지에 따라 다릅니다.</p>'; return; }
     if(r.err==='mat'){ o.innerHTML='<p class="cn">재료비·완제품 가액이 대상액보다 큽니다.</p>'; return; }
     if(r.err){ o.innerHTML='<p class="cn">금액을 확인하세요.</p>'; return; }
@@ -3796,7 +3797,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
       if(r.sh<=0)h+='<p class="cv">적정 — 기준 이상 계상'+(r.sh<0?' ('+scW(-r.sh)+' 많음)':'')+'</p>';
       else { h+='<p class="cv">부족 — '+scW(r.sh)+' 미계상 ('+(Math.floor(r.sh/r.min*1000)/10)+'%)</p>';
         h+='<p class="cx">과태료 · 산안법 제175조제4항제3호</p><p class="ct">'+esc(CSF[r.row][0])+' — 미계상액(최고 '+CSF[r.row][1].map(function(c,i){return (i+1)+'차 '+c.toLocaleString('ko-KR')+'만원';}).join(' · ')+')<br>'
-          +r.fine.map(function(v,i){return '<span>'+(i+1)+'차 '+scW(v)+'</span>';}).join(' · ')+'<br>대상: 건설공사발주자·자기공사자(법 제72조제1항) · 시행령 별표 35</p>'; } }
+          +r.fine.map(function(v,i){return '<span>'+(i+1)+'차 '+scW(v)+'</span>';}).join(' · ')+'<br>규모 감경(별표 35 제3호)·100만원 규칙(일반기준 마목) 반영 전 금액<br>대상: 건설공사발주자·자기공사자(법 제72조제1항) · 시행령 별표 35</p>'; } }
     o.innerHTML=h; }
   function scClear(){ ['sctot','sctgt','scmat','scplan'].forEach(function(id){$(id).value='';}); sc.hm=null; sc.hmu=false; scPaint(); }
   function openSc(){ closeSheet(); scPaint(); $('ssheet').hidden=false; shOpen(); $('ssheet').querySelector('.shcard').scrollTop=0; }
