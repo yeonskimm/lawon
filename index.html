@@ -251,6 +251,10 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 .edu li:last-child{padding-bottom:0}
 .edu small{display:block;font-size:.8125rem;color:var(--ink2)}
 .edu b{font-size:.9375rem}
+.edh{margin:12px 0 6px;font-size:.75rem;font-weight:700;color:var(--ink3)}
+.edh:first-child{margin-top:0}
+.bwrap.clip.ed{max-height:17em}
+.edn span{display:block;font-size:.8125rem;line-height:1.55;color:var(--ink3)}
 .upl{margin:0;padding-left:18px;font-size:.9375rem;line-height:1.6}
 .fut summary{min-height:44px;display:flex;align-items:center;font-size:.9375rem;font-weight:700;cursor:pointer}
 .acts{display:grid;gap:8px;margin-top:16px}
@@ -1848,6 +1852,15 @@ function k9Of(D,q){ var K=D.k9; if(!K)return []; var k=norm(joinPhrase(q||'')); 
   var out=[]; K.g.forEach(function(g){ g[2].forEach(function(r){ var on=r[3]?(/^7차 \d+ (.+?)(?: —|$)/.exec(r[3])||[])[1]:'';   // 2026-10-18: 제7차 옛 이름(건물 경비원 등)으로도
     var a=!/^그 외/.test(r[1])&&m(r[1]), b=!!on&&m(on); if(a||b)out.push({c:r[0],n:r[1],s:r[2],g:g[1],o:r[3]||'',old:b&&!a}); }); });
   return out; }
+// 2026-10-19 조문 화면 교육시간(5-44): 조문 → 시행규칙 별표4 구획(s)·줄(r), ex 제외 줄, via 근거 조문이 다를 때(관리감독자 → 법 제29조)
+// 근거: 별표4 각 호 '(제26조제1항, 제28조제1항 관련)' 등 — 시행규칙 조문과 그 모법(up)
+var EDU_ART={'OSH:제29조':{s:[0,1],ex:['S4.12']},'SR:제26조':{s:[0,1],ex:['S4.12']},'OSH:제31조':{r:['S4.12']},'SR:제28조':{r:['S4.12']},
+  'OSH:제32조':{s:[2]},'SR:제29조':{s:[2]},'OSH:제77조':{s:[3]},'SR:제95조':{s:[3]},'SR:제131조':{s:[4]},'OSH:제16조':{s:[1],via:'OSH:제29조'}};
+function eduOf(D,k){ var m=EDU_ART[k], B=D.bt; if(!m||!B||!B.tabById)return null; var T=B.tabById.S4; if(!T)return null;
+  var secs=m.r?[{h:'',rows:m.r}]:m.s.map(function(i){ var S=T.secs[i]; return S?{h:S.h.replace(/^[\d의]+\.\s*/,''),rows:S.rows.filter(function(id){return (m.ex||[]).indexOf(id)<0;})}:null; });
+  if(secs.some(function(S){return !S;}))return null;
+  secs=secs.map(function(S){ return {h:S.h,rows:S.rows.map(function(id){return B.byId[id];}).filter(Boolean)}; });
+  return {via:m.via||'',secs:secs}; }
 /*CORE_END*/
 /*CALC_START*/
 // ── 계산 도구 산식(임금 환산·연차 발생일수). 화면과 떼어 tests/calc_test.js에서 법령 기준 기대값으로 검사 ──
@@ -2846,6 +2859,16 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     var an=ART_NOTE[e.l+':'+e.no]; if(an)return '<h3 class="gl">부칙 참고</h3><div class="card"><p class="why">'+esc(an)+'</p></div>';
     if(e.l!=='MW'||e.no!=='제6조')return '';
     return '<h3 class="gl">부칙 참고</h3><div class="card"><p class="why">제4항 단서 제2호(상여금 등 25%)·제3호나목(현금 복리후생비 7%)의 비율은 부칙으로 해마다 낮아져 <b>2024년부터 0</b>입니다. 매월 1회 이상 정기적으로 주는 상여금 등과 현금 복리후생비는 전액 산입하고, 제1호 임금과 현물 복리후생비(제3호가목)는 계속 산입하지 않습니다.</p><div class="law fm">'+fmtLaw(MW6NOTE)+'</div></div>'; }
+  function artEdu(e,en){   // 2026-10-19(5-44): 교육시간 카드 — CORE eduOf. 7줄 넘으면 접고 '전체 보기'
+    var E=eduOf(D,e.l+':'+e.no); if(!E)return ''; var n=0;
+    var body=E.secs.map(function(S){ return ((E.secs.length>1||E.via)&&S.h?'<p class="edh">'+esc(S.h)+'</p>':'')+'<ul class="edu">'+S.rows.map(function(r){ n++;
+      if(r.t==='비고')return '<li class="edn"><small>비고</small><span>'+esc((r.x||'').replace(/^비고:?\s*/,'').replace(/\n\s*/g,'\n').trim()).replace(/\n/g,'<br>')+'</span></li>';
+      var w=(r.up?r.up.replace(/^[가-힣]\.\s*/,'')+' · ':'')+r.t.replace(/^[가-힣]\.\s*/,'').replace(/^\d+\)\s*/,'').replace(/\s*›\s*[가-힣]\)\s*/,' · ').replace(/:\s*별표 5 제1호라목(.*?)에 해당하는 작업에 종사하는 근로자에 한정한다\./,' — 별표5 제1호라목$1 작업');
+      return '<li><small>'+esc(w)+'</small><b>'+esc((r.v||'').replace(/^신규교육 - · (.*)$/,'$1 (신규교육 없음)')).replace(/\n/g,'<br>')+'</b></li>'; }).join('')+'</ul>'; }).join('');
+    var lng=n>7, full=!!en.efull, vk=E.via?E.via.split(':'):null;
+    return '<h3 class="gl">교육시간 <span>'+(vk?'근거 '+esc(D.meta.laws[vk[0]].short+' '+vk[1])+' · ':'')+'시행규칙 별표 4</span></h3><div class="card edc"><div class="bwrap'+(lng&&!full?' clip ed':'')+'">'+body+'</div>'
+      +(lng?'<button type="button" class="fullbtn" data-efull="1" aria-expanded="'+full+'">'+(full?'접기':'전체 보기')+'</button>':'')
+      +'<button type="button" class="lnk" data-bt="S4">별표 4 전체 보기</button></div>'; }
   function renderArt(en){
     var e=D.byKey[en.spec.key]; if(!e){en.title='조문';en.el.innerHTML='<div class="note"><p>조문을 찾지 못했습니다.</p></div>';return;}
     var L=D.meta.laws[e.l], j=judgeArt(e,pf), rs=ruleSanc(D,e), sanc=e.s||(rs?rs.list:[]), pd=pend(e);
@@ -2859,6 +2882,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     var xl=xrefLink(e), cl=calcLink(e), wl=wkLink(e,!!(ml||cl)); if(cl&&xl&&(ml||wl))cl=calcLink(e,1);
     h+='<h3 class="gl">조문'+xl+ml+wl+cl+'</h3><div class="card"><div class="law fm'+(long&&!full?' clip':'')+'">'+fmtLaw(e.x)+'</div>'+(long?'<button type="button" class="fullbtn" data-full="1" aria-expanded="'+full+'">'+(full?'조문 접기':'조문 전문 보기')+'</button>':'')+'</div>';
     h+=artNote(e);   // 조문만으로 오해할 수 있는 부칙 특례(최임법 제6조)
+    h+=artEdu(e,en);   // 2026-10-19: 교육시간(별표4 줄 그대로)
     if(e.l==='MWS'&&D.k9)h+=k9Block();   // 2026-10-18: 단순노무직종 고시 → 한국표준직업분류 대분류 9 분류 항목
     h+=subLawCards(e);   // 법 → 시행령 → 시행규칙 (근거 법 조문 / 하위 규정)
     h+=artBt(e);   // 조문이 '별표 N'으로 넘기는 내용(대상 작업·물질 목록 등)
@@ -3378,7 +3402,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
 
   // ── 이벤트 ──
   document.addEventListener('click',function(ev){
-    var t=ev.target.closest('[data-rfull],[data-bfull],[data-art],[data-item],[data-q],[data-law],[data-clear],[data-bk],[data-bkg],[data-more],[data-morelaw],[data-full],[data-rul],[data-tick],[data-jump],[data-field],[data-field-set],[data-theme-set],[data-fs-set],[data-close],[data-nav],[data-swap],[data-gofind],[data-home],[data-clearprof],[data-bt],[data-br],[data-btl],[data-bkp],[data-brswap],[data-wk]'); if(!t)return;
+    var t=ev.target.closest('[data-rfull],[data-bfull],[data-efull],[data-art],[data-item],[data-q],[data-law],[data-clear],[data-bk],[data-bkg],[data-more],[data-morelaw],[data-full],[data-rul],[data-tick],[data-jump],[data-field],[data-field-set],[data-theme-set],[data-fs-set],[data-close],[data-nav],[data-swap],[data-gofind],[data-home],[data-clearprof],[data-bt],[data-br],[data-btl],[data-bkp],[data-brswap],[data-wk]'); if(!t)return;
     var a=function(n){return t.getAttribute(n);}, has=function(n){return t.hasAttribute(n);};
     var fromSearch=nav==='find'&&!topOf('find')&&!!st.q.trim();
     if(has('data-art')){ if(fromSearch)addRecent(st.q); push({type:'art',key:a('data-art')}); }
@@ -3403,6 +3427,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     else if(has('data-rfull')){ var e4=topOf(nav); if(e4){ e4.rfull=e4.rfull||{}; var ri=a('data-rfull'); e4.rfull[ri]=!e4.rfull[ri]; renderSub(e4); } }
     else if(has('data-full')){ var e2=topOf(nav); if(e2){ e2.full=!e2.full; renderSub(e2); } }
     else if(has('data-bfull')){ var e5=topOf(nav); if(e5){ e5.bfull=!e5.bfull; renderSub(e5); } }
+    else if(has('data-efull')){ var e6=topOf(nav); if(e6){ e6.efull=!e6.efull; renderSub(e6); } }
     else if(has('data-rul')){ st.rul=!st.rul; refresh(); }
     else if(has('data-tick')){ var tp=a('data-tick').split(':'); st.tick[tp[0]]=+tp[1]; refresh(); }
     else if(has('data-jump')){ var el=document.querySelector('#lists [data-sec="'+a('data-jump')+'"]'); if(el)window.scrollTo(0,el.getBoundingClientRect().top+(window.pageYOffset||0)-$('hdr').offsetHeight+1); }
