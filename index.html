@@ -2827,7 +2827,8 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     h+='</div>';
     var long=e.x.length>360||e.x.split('\n').length>8, full=!!en.full;   // 긴 조문은 몇 줄만 보이고 펼치기(벌칙·과태료가 너무 아래로 밀리지 않게)
     var ml=missLink(e);   // 2026-10-18: 원문 링크가 있으면 작업 기준 링크는 짧게('작업 기준 1' → 아래 창) — 좁은 화면에서 제목 줄이 넘치지 않게
-    h+='<h3 class="gl">조문'+xrefLink(e)+ml+wkLink(e,!!ml)+'</h3><div class="card"><div class="law fm'+(long&&!full?' clip':'')+'">'+fmtLaw(e.x)+'</div>'+(long?'<button type="button" class="fullbtn" data-full="1" aria-expanded="'+full+'">'+(full?'조문 접기':'조문 전문 보기')+'</button>':'')+'</div>';
+    var xl=xrefLink(e), cl=calcLink(e), wl=wkLink(e,!!(ml||cl)); if(cl&&xl&&(ml||wl))cl=calcLink(e,1);
+    h+='<h3 class="gl">조문'+xl+ml+wl+cl+'</h3><div class="card"><div class="law fm'+(long&&!full?' clip':'')+'">'+fmtLaw(e.x)+'</div>'+(long?'<button type="button" class="fullbtn" data-full="1" aria-expanded="'+full+'">'+(full?'조문 접기':'조문 전문 보기')+'</button>':'')+'</div>';
     h+=artNote(e);   // 조문만으로 오해할 수 있는 부칙 특례(최임법 제6조)
     if(e.l==='MWS'&&D.k9)h+=k9Block();   // 2026-10-18: 단순노무직종 고시 → 한국표준직업분류 대분류 9 분류 항목
     h+=subLawCards(e);   // 법 → 시행령 → 시행규칙 (근거 법 조문 / 하위 규정)
@@ -3094,6 +3095,11 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     h+='<div class="pn">'+b(pv,'이전','pp')+b(nx,'다음','nx')+'</div>';
     en.el.innerHTML=h; }
   // 인용 조문(2026-09-29): '조문' 제목 줄 오른쪽 링크 → 아래 창(xsheet) 목록. 앱 수록 법령은 앱 조문으로, 그 밖은 국가법령정보센터로
+  // 2026-10-19: 첫 화면 계산 도구를 관련 조문에서도 — '조문' 제목 줄 오른쪽 작은 링크(인용 조문과 같은 모양)
+  var CALCL={'GK:제11조':['copen','상시근로자 계산'],'GKD:제7조의2':['copen','상시근로자 계산'],'MW:제6조':['wopen','임금·주휴 계산'],'GK:제55조':['wopen','임금·주휴 계산'],
+    'GK:제56조':['wopen','임금·주휴 계산'],'GK:제60조':['aopen','연차 계산'],'RET:제8조':['ropen','퇴직금 계산']};
+  function calcLink(e,short){ var c=CALCL[e.l+':'+e.no]; if(!c)return '';   // 제목 줄 링크가 셋이면 '계산'만(320px 글자 크게에서 넘쳐서)
+    return '<button type="button" class="xrl xcl" data-'+c[0]+'="1" aria-label="'+esc(c[1])+' 열기">'+(short?'계산':esc(c[1]))+'<i class="xrc" aria-hidden="true"></i></button>'; }
   function xrefLink(e){ var L=xrefs(D,e); if(!L.length)return '';   // 2026-09-29: 큰 버튼이 너무 눈에 띈다는 의견 → '조문' 제목 줄 오른쪽 보조 링크
     return '<button type="button" class="xrl" data-xr="'+e.l+':'+esc(e.no)+'" aria-label="인용 조문 '+L.length+'건 보기">인용 조문 '+L.length+'<i class="xrc" aria-hidden="true"></i></button>'; }
 
