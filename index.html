@@ -227,7 +227,7 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 .fcb .fcres{padding:10px 12px;border-radius:6px;background:var(--card);border:1px solid var(--line)}
 .fcb .fcres small{display:block;font-size:.75rem;color:var(--ink3);line-height:1.45}
 .fcb .fcres b{display:block;font-size:1.25rem;font-weight:800;color:var(--fine);white-space:nowrap}
-.fcb .fcres span{display:block;font-size:.8125rem;line-height:1.45}
+.fcb .fcres span{display:block;font-size:.8125rem;line-height:1.45}.fcres .fcsp{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}.fcres .fcsp strong{font-weight:800;color:var(--fine);white-space:nowrap}.fcres .fcsp i{display:block;font-style:normal;font-size:.75rem;color:var(--ink3)}
 .fcb .fcnote{margin:10px 0 0;font-size:.75rem;color:var(--ink3);line-height:1.45}
 .fines.fcon .fr[data-fa]{cursor:pointer}
 .fines.fcon .fr.fsel .fa span.fpk{box-shadow:inset 0 0 0 2px var(--pri);background:var(--hl)}
@@ -1191,10 +1191,10 @@ html[data-fs="l"] .tile .tsub{display:block;margin:1px 0 0;line-height:1.1}
     </div>
     <div class="fcb hfb">
       <p class="fcnote hfn1">차수(1·2·3차)는 금액을 고를 때 반영 · 중대재해·중대산업사고 발생 사업장 감독 적발은 3차 금액(별표&nbsp;35&nbsp;제2호)</p>
-      <div class="fcres" aria-live="polite"><small>부과 예정</small><b id="hfo">—</b><span id="hfw"></span></div>
+      <div class="fcres" aria-live="polite"><small>부과 예정</small><b id="hfo">—</b><span id="hfw"></span><span class="fcsp" id="hfsp" hidden></span></div>
       <p class="fct">규모 기준</p><div class="fcr fcbs"><button type="button" data-hfb="n">상시근로자 수</button><button type="button" data-hfb="amt">건설공사 금액</button></div>
       <p class="fct" id="hfst"></p><div class="fcr s4" id="hfs"></div>
-      <p class="fcnote">100만원 미만이면 감경 없음 · 감경 후 100만원 미만이면 100만원 · 재량 감경(2분의 1 범위)·자진납부 감경은 반영하지 않음</p>
+      <p class="fcnote">100만원 미만이면 감경 없음 · 감경 후 100만원 미만이면 100만원 · 재량 감경(2분의 1 범위)은 반영하지 않음</p>
     </div>
   </div>
 </div>
@@ -2021,7 +2021,9 @@ function hcJudge(o){
 //  - 규모 비율(제3호): 상시근로자 100명 이상 1, 50~99명 0.9, 10~49명 0.8, 10명 미만 0.7 / 건설공사는 공사금액(억원) 40억 이상 1, 10~40억 0.9, 3~10억 0.8, 3억 미만 0.7
 //  - 위반 조항별로 금액 × 인원(1명당·1대당 등)을 먼저 합한 뒤, 합계가 100만원 미만이면 감경하지 않음, 감경 후 100만원 미만이면 100만원(일반기준 마목)
 //  - 중대재해·중대산업사고 발생 사업장의 발생원인 조사·관련 감독 적발: 3차 이상 금액(제2호). 규모 감경은 그대로 적용(제3호에 제외 단서 없음 — 2026-10-15 사용자 확인: 실무도 감경)
-//  - 재량 감경(다목)·자진납부 감경은 반영하지 않음
+//  - 재량 감경(다목)은 반영하지 않음
+//  - 2026-10-20 자진납부(sp): 부과 예정 금액(규모 감경·마목 100만원 적용 후) × 80% — 질서위반행위규제법 제18조·시행령 제5조(100분의 20 이내, 실무 20%).
+//    마목(100만원)은 다목·제3호 감경에만 해당하므로 자진납부 뒤에는 다시 올리지 않음
 function fineRate(o){ var cons=!!o.cons, v=cons?o.amt:o.n;
   if(v==null||isNaN(v)||v<0)return null;
   if(cons)return v>=40?1:v>=10?0.9:v>=3?0.8:0.7;
@@ -2036,12 +2038,15 @@ function fineCalc(o){   // o: {a:[1차,2차,3차], c:0~2, sj:중대재해 사업
   if(o.r==null)return {err:'r',ci:ci,base:base};
   var out=base, cut=false, floor=false;
   if(o.r<1&&base>=100){ out=Math.round(base*o.r*10000)/10000; cut=true; if(out<100){ out=100; floor=true; } }
-  return {ci:ci,base:base,r:o.r,cut:cut,floor:floor,out:out};
+  return {ci:ci,base:base,r:o.r,cut:cut,floor:floor,out:out,sp:Math.round(out*0.8*10000)/10000};
 }
 function fineWon(v){   // 만원 단위 수 → '143만 5,000원'·'400만원'
   var w=Math.round(v*10000), m=Math.floor(w/10000), r=w%10000;
   return (m?m.toLocaleString('ko-KR')+'만':'')+(r?(m?' ':'')+r.toLocaleString('ko-KR'):'')+'원';
 }
+function fineSp(el,o){   // 2026-10-20 자진납부 줄(조문 화면·홈 창 공용)
+ if(!el)return; if(!o||o.err||o.sp==null){ el.hidden=true; el.innerHTML=''; return; }
+ el.hidden=false; el.innerHTML='자진납부 시 <strong>'+fineWon(o.sp)+'</strong><i>의견 제출 기한 내 납부 시 20% 감경(질서위반행위규제법 제18조)</i>'; }
 // ── 건설업 산업안전보건관리비 계상(2026-10-16): 관리비 고시 제3조·제4조·별표 1 ──
 //  - 계약 시기별 별표 1(고시 부칙 적용례: 새로 계약을 체결하는 건설공사부터): p3 2025. 1. 1. 이후(제2024-53호 = 현행 제2025-11호 표), p2 2024. 7. 1.~12. 31.(제2023-49호), p1 2024. 6. 30. 이전(2018. 10. 5. 개정 표)
 //  - 요율은 만분율(정수)로: 3.11% → 311. 대상액 5억 미만·50억 이상은 대상액 × 비율, 5억~50억 미만은 × 비율 + 기초액(제4조제1항제1·2호)
@@ -2200,7 +2205,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   function fcNs(F,us){ return us.map(function(k){ var v=F._fc.nm[k]; return v===undefined?1:v; }); }
   function fcDraw(F){   // 패널 다시 그리기(줄 선택·규모·단위가 바뀔 때)
     var B=F.querySelector('.fcb'), st=F._fc, R=F.querySelector('.fr.fsel'); if(!R||!B)return;
-    var us=fcU(R), sz=fcSize(st), h='<div class="fcres"><small data-fcl></small><b data-fco></b><span data-fcw></span></div>';
+    var us=fcU(R), sz=fcSize(st), h='<div class="fcres"><small data-fcl></small><b data-fco></b><span data-fcw></span><span class="fcsp" data-fcsp hidden></span></div>';
     h+='<p class="fct">위반 차수 (최근 5년)</p><div class="fcr">'+['1차','2차','3차 이상'].map(function(t,i){return '<button type="button" data-fcc="'+i+'">'+t+'</button>';}).join('')+'</div>';
     if(us.length){ h+='<div class="fcns">';   // 2026-10-15 3차: 단위가 둘이면(물질 수·개소 수) 한 줄에 나란히
       us.forEach(function(k){ var L=FCU[k], v=st.nm[k]; h+='<div><p class="fct">'+L[0]+' <small>'+(k==='서류'?'서류당':k==='대상'?'대상별':'1'+k+'당')+'</small></p><div class="fcn"><input type="text" inputmode="numeric" data-fcn="'+k+'" value="'+(v===undefined?1:(isNaN(v)?'':v))+'" aria-label="'+L[0]+'"><span>'+L[1]+'</span></div></div>'; });
@@ -2209,12 +2214,13 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     if(sz.r!=null)h+='<p class="fcsz">규모 <b>'+esc(sz.t)+' → '+(sz.r<1?Math.round(sz.r*100)+'%':'감경 없음')+'</b> (검색 조건)</p>';
     else h+='<p class="fct">규모 ('+(sz.cons?'건설공사 금액':'상시근로자 수')+')</p><div class="fcr s4">'+(sz.cons?[[1,'40억원 이상'],[0.9,'10~40억원 90%'],[0.8,'3~10억원 80%'],[0.7,'3억원 미만 70%']]:[[1,'100명 이상'],[0.9,'50~99명 90%'],[0.8,'10~49명 80%'],[0.7,'10명 미만 70%']]).map(function(x){return '<button type="button" data-fcs="'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div>';
     h+='<label class="fck"><input type="checkbox" data-fcj'+(st.sj?' checked':'')+'><span>중대재해·중대산업사고 발생 사업장<small>원인조사·관련 감독 적발 시 3차 금액(별표&nbsp;35&nbsp;제2호)</small></span></label>';
-    h+='<p class="fcnote">재량 감경(2분의 1 범위)·자진납부 감경은 반영하지 않음</p>';
+    h+='<p class="fcnote">재량 감경(2분의 1 범위)은 반영하지 않음</p>';
     B.innerHTML=h; fcUpd(F); }
   function fcUpd(F){   // 결과·선택 표시만 바꿈(입력 중 커서 유지)
     var B=F.querySelector('.fcb'), st=F._fc, R=F.querySelector('.fr.fsel'); if(!R||!B)return;
     var a=R.getAttribute('data-fa').split(',').map(Number), us=fcU(R), ns=fcNs(F,us), sz=fcSize(st), r=sz.r!=null?sz.r:st.r;
     var o=fineCalc({a:a,c:st.c,sj:st.sj,u:us,n:ns,r:r}), ci=o.ci==null?(st.sj?2:st.c):o.ci;
+    fineSp(B.querySelector('[data-fcsp]'),o);
     each('.fa span.fpk',function(x){ if(F.contains(x))x.classList.remove('fpk'); });
     var cells=R.querySelectorAll('.fa span'); if(cells.length)(cells.length===1?cells[0]:cells[ci]).classList.add('fpk');
     Array.prototype.forEach.call(B.querySelectorAll('[data-fcc]'),function(x){ var i=+x.getAttribute('data-fcc'); x.setAttribute('aria-pressed',String(!st.sj&&i===st.c)); x.disabled=!!st.sj; });
@@ -3818,7 +3824,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   function hfPaint(){ $('hfst').textContent='규모 ('+(HF.b==='amt'?'건설공사 금액':'상시근로자 수')+')';
     $('hfs').innerHTML=hfSizes().map(function(x){return '<button type="button" data-hfs="'+x[0]+'" aria-pressed="'+(HF.r===x[0])+'">'+x[1]+'</button>';}).join('');
     each('#hfsheet [data-hfb]',function(x){ x.setAttribute('aria-pressed',String(x.getAttribute('data-hfb')===HF.b)); }); hfRun(); }
-  function hfRun(){ var A=num($('hfa').value), nv=$('hfn').value.replace(/[^0-9]/g,''), N=nv===''?null:+nv, o=$('hfo'), w=$('hfw');
+  function hfRun(){ var A=num($('hfa').value), nv=$('hfn').value.replace(/[^0-9]/g,''), N=nv===''?null:+nv, o=$('hfo'), w=$('hfw'); fineSp($('hfsp'),null);
     if(A==null||!(A>0)){ o.textContent='—'; w.textContent='금액을 넣으면 계산합니다'; return; }
     if(N==null||N<1){ o.textContent='—'; w.textContent='수량은 1 이상의 정수를 넣으세요'; return; }
     var r=fineCalc({a:[A,A,A],c:0,u:['x'],n:[N],r:HF.r});
@@ -3826,7 +3832,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     var t=fineWon(A)+(N>1?' × '+N+' = '+fineWon(r.base):'');
     if(r.r<1&&!r.cut)t+=' · 100만원 미만이라 규모 감경 없음';
     if(r.cut)t+=' × '+Math.round(r.r*100)+'%'+(r.floor?' → 100만원 미만이라 100만원':'');
-    o.textContent=fineWon(r.out); w.textContent=t; }
+    o.textContent=fineWon(r.out); w.textContent=t; fineSp($('hfsp'),r); }
   function openHf(){ closeSheet(); hfPaint(); $('hfsheet').hidden=false; shOpen(); $('hfsheet').querySelector('.shcard').scrollTop=0; }
   function closeHf(){ $('hfsheet').hidden=true; shClose(); }
   document.addEventListener('click',function(ev){ var t=ev.target.closest('[data-hfopen],[data-hfclose],[data-hfb],[data-hfs]'); if(!t)return;
