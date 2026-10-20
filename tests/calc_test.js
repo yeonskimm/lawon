@@ -7,7 +7,7 @@ const fs=require('fs'),vm=require('vm');
 const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const a=html.indexOf('/*CALC_START*/'), b=html.indexOf('/*CALC_END*/');
 if(a<0||b<0){console.log('FAIL  CALC 표시를 찾지 못함');process.exit(1);}
-const C=vm.runInNewContext(html.slice(a,b)+'\n;({wgConv,wgHours,alCalc,MWT,hrNum,amtNum,wkCalc,mHrs,judgeM,unitTable,wgDue,sevCalc,hcJudge,fineRate,fineCalc,fineWon,csCalc,CSR,CSF,wonKr})',{});
+const C=vm.runInNewContext(html.slice(a,b)+'\n;({wgConv,wgHours,alCalc,MWT,hrNum,amtNum,wkCalc,mHrs,judgeM,unitTable,wgDue,sevCalc,hcJudge,fineRate,fineCalc,fineWon,fineCapOf,fineCapMsg,csCalc,CSR,CSF,wonKr})',{});
 let fail=0,cnt=0;
 const chk=(name,got,exp)=>{cnt++; const ok=JSON.stringify(got)===JSON.stringify(exp); if(!ok)fail++; if(!ok||process.env.VERBOSE)console.log((ok?'PASS':'FAIL')+'  '+name+'  기대 '+JSON.stringify(exp)+' / 실제 '+JSON.stringify(got));};
 
@@ -252,6 +252,20 @@ chk('자진납부: 오류(인원 0) → 값 없음',SP({a:[10,20,50],c:0,u:'명'
   chk('자진납부 줄 문구 — 의견 제출 기한·20%·제18조',fs.includes('자진납부 시')&&fs.includes('의견 제출 기한 내 납부 시 20% 감경(질서위반행위규제법 제18조)'),true);
   chk('자진납부 줄 — 조문 화면·홈 창 두 곳',html.includes('data-fcsp')&&html.includes('id="hfsp"'),true);
   chk('안내 줄 — 자진납부 감경 미반영 문구 없음',html.includes('자진납부 감경은 반영하지 않음'),false); }
+
+// 법 제175조 항별 상한 경고(2026-10-20): 법 제175조 원문(현행·2027. 1. 8. 시행판 같음) 제1~6항 5천만·3천만·1천500만·1천만·500만·300만원. 금액은 바꾸지 않고 경고만
+{ const CO=b=>(x=>x&&[x.h,x.cap,x.t])(C.fineCapOf(b));
+  chk('상한 제1항',CO('산업안전보건법 제175조제1항제1호'),[1,5000,'5천만원']); chk('상한 제2항',CO('제175조제2항제1호'),[2,3000,'3천만원']);
+  chk('상한 제3항',CO('제175조제3항제2호의2'),[3,1500,'1천500만원']); chk('상한 제4항',CO('제175조 제4항 제3호'),[4,1000,'1천만원']);
+  chk('상한 제5항',CO('제175조제5항제1호'),[5,500,'500만원']); chk('상한 제6항',CO('제175조제6항제18호'),[6,300,'300만원']);
+  chk('제175조 아니면 상한 없음',C.fineCapOf('제170조제4호'),null);
+  const M=(b,base)=>C.fineCapMsg(C.fineCapOf(b),base);
+  chk('안전검사 200 × 6대 = 1,200 > 제4항 1천만원 → 경고',M('제175조제4항제3호',1200),'법 제175조제4항 상한 1천만원 초과');
+  chk('정확히 상한(1,000)은 경고 없음',M('제175조제4항제3호',1000),'');
+  chk('교육 10 × 51명 = 510 > 제5항 → 경고',M('제175조제5항제1호',510),'법 제175조제5항 상한 500만원 초과');
+  chk('서류 30 × 11 = 330 > 제6항 → 경고',M('제175조제6항제18호',330),'법 제175조제6항 상한 300만원 초과');
+  chk('상한 넘어도 계산 금액은 그대로(200 × 6 × 0.8 = 960)',F({a:[200,600,1000],c:0,u:['대'],n:[6],r:0.8}).out,960);
+  chk('홈 창 안내 문구',html.includes('해당 조항 상한(법 제175조 각 항) 확인'),true); }
 
 // ── 건설업 산업안전보건관리비 계상(2026-10-16): 관리비 고시 제3조·제4조·별표 1(계약 시기별 3개 판) ──
 //  기대값은 파이썬 분수 계산으로 따로 구함(대상액 × 비율, 원 미만 버림, 5억~50억은 기초액 더함)
