@@ -316,6 +316,7 @@ body.nobar .brand{visibility:hidden}
 .about{margin-top:20px;font-size:.8125rem;line-height:1.6;color:var(--ink2)}
 .about summary{min-height:44px;display:flex;align-items:center;font-size:.9375rem;font-weight:700;color:var(--ink);cursor:pointer}
 .about p{margin:6px 0}
+.aurl{display:flex;align-items:center;gap:8px;min-height:50px;padding:4px 4px 4px 14px;background:var(--card);border:1px solid var(--line);border-radius:8px}.aurl .aut{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:min(.9375rem,4.2vw);color:var(--ink);-webkit-user-select:all;user-select:all}.aurl button{flex:none;min-width:64px;min-height:40px;padding:0 14px;border-radius:6px;background:var(--prbg);color:var(--prink);font-size:.9375rem;font-weight:700}
 .asof{margin:0 2px;font-size:.875rem;line-height:1.6;color:var(--ink2);font-variant-numeric:tabular-nums}
 .about.verd{margin-top:4px}
 .about.verd summary{min-height:40px;font-size:.875rem;color:var(--pri);gap:6px;list-style:none}
@@ -963,6 +964,8 @@ html[data-fs="l"] .tile .tsub{display:block;margin:1px 0 0;line-height:1.1}
   <div class="shbg" data-close="1"></div>
   <div class="shcard">
     <div class="shh"><h2 id="sheetT">설정</h2><button type="button" data-close="1">닫기</button></div>
+    <p class="slb">앱 주소</p>
+    <div class="aurl"><span class="aut" id="appUrl">yeonskimm.github.io/lawon</span><button type="button" data-copyurl="1">복사</button></div>
     <p class="slb">화면</p>
     <div class="seg s3"><button type="button" data-theme-set="light">밝게</button><button type="button" data-theme-set="dark">어둡게</button><button type="button" data-theme-set="auto">기기 설정</button></div>
     <p class="slb">글자 크기</p>
@@ -3927,6 +3930,15 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   if(HIST){ try{ history.replaceState({fl:1,b:1},''); }catch(e){ HIST=false; } }   // 맨 아래 기록 = 분야 선택
   nav=(!FIELD[st.field]||st.nav==='start')?'start':(ROOT[st.nav]?st.nav:FIELD[st.field].home);
   paint();
+  // ── 앱 주소 복사(2026-10-20) ──
+  var APP_URL='https://yeonskimm.github.io/lawon/';
+  function copyTxt(t){
+    if(navigator.clipboard&&navigator.clipboard.writeText&&window.isSecureContext)return navigator.clipboard.writeText(t);
+    return new Promise(function(ok,no){ var x=document.createElement('textarea'); x.value=t; x.setAttribute('readonly',''); x.style.cssText='position:fixed;top:0;left:0;opacity:0';
+      document.body.appendChild(x); x.select(); x.setSelectionRange(0,t.length); var r=false; try{ r=document.execCommand('copy'); }catch(e){} document.body.removeChild(x); r?ok():no(); }); }
+  document.addEventListener('click',function(ev){ var b=ev.target.closest('[data-copyurl]'); if(!b)return;
+    var done=function(m){ b.textContent=m; clearTimeout(b._t); b._t=setTimeout(function(){ b.textContent='복사'; },1800); };
+    copyTxt(APP_URL).then(function(){ done('복사됨'); },function(){ done('길게 눌러 복사'); }); });
   // ── 앱 설치: 안드로이드 Chrome·삼성 인터넷은 설치 창, 아이폰은 Safari 공유 → 홈 화면에 추가 ──
   var instEv=null;
   function isApp(){ try{ return (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true; }catch(e){ return false; } }
