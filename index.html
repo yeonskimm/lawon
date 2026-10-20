@@ -227,7 +227,7 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 .fcb .fcres{padding:10px 12px;border-radius:6px;background:var(--card);border:1px solid var(--line)}
 .fcb .fcres small{display:block;font-size:.75rem;color:var(--ink3);line-height:1.45}
 .fcb .fcres b{display:block;font-size:1.25rem;font-weight:800;color:var(--fine);white-space:nowrap}
-.fcb .fcres span{display:block;font-size:.8125rem;line-height:1.45}.fcres .fcsp{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}.fcres .fcsp strong{font-weight:800;color:var(--fine);white-space:nowrap}.fcres .fcsp i{display:block;font-style:normal;font-size:.75rem;color:var(--ink3)}
+.fcb .fcres span{display:block;font-size:.8125rem;line-height:1.45}.fcres.fcres2{margin-top:14px}.fcres .fcsp{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}.fcres .fcsp strong{font-weight:800;color:var(--fine);white-space:nowrap}.fcres .fcsp i{display:block;font-style:normal;font-size:.75rem;color:var(--ink3)}
 .fcb .fcnote{margin:10px 0 0;font-size:.75rem;color:var(--ink3);line-height:1.45}
 .fines.fcon .fr[data-fa]{cursor:pointer}
 .fines.fcon .fr.fsel .fa span.fpk{box-shadow:inset 0 0 0 2px var(--pri);background:var(--hl)}
@@ -2205,11 +2205,12 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   function fcNs(F,us){ return us.map(function(k){ var v=F._fc.nm[k]; return v===undefined?1:v; }); }
   function fcDraw(F){   // 패널 다시 그리기(줄 선택·규모·단위가 바뀔 때)
     var B=F.querySelector('.fcb'), st=F._fc, R=F.querySelector('.fr.fsel'); if(!R||!B)return;
-    var us=fcU(R), sz=fcSize(st), h='<div class="fcres"><small data-fcl></small><b data-fco></b><span data-fcw></span><span class="fcsp" data-fcsp hidden></span></div>';
+    var us=fcU(R), sz=fcSize(st), RES='<div class="fcres fcres2"><small data-fcl></small><b data-fco></b><span data-fcw></span><span class="fcsp" data-fcsp hidden></span></div>', h='';   // 2026-10-20 결과는 입력(차수·인원) 바로 아래 — 인원을 넣을 때 키보드 위에서 결과가 보이게(전에는 맨 위라 화면 밖)
     h+='<p class="fct">위반 차수 (최근 5년)</p><div class="fcr">'+['1차','2차','3차 이상'].map(function(t,i){return '<button type="button" data-fcc="'+i+'">'+t+'</button>';}).join('')+'</div>';
     if(us.length){ h+='<div class="fcns">';   // 2026-10-15 3차: 단위가 둘이면(물질 수·개소 수) 한 줄에 나란히
       us.forEach(function(k){ var L=FCU[k], v=st.nm[k]; h+='<div><p class="fct">'+L[0]+' <small>'+(k==='서류'?'서류당':k==='대상'?'대상별':'1'+k+'당')+'</small></p><div class="fcn"><input type="text" inputmode="numeric" data-fcn="'+k+'" value="'+(v===undefined?1:(isNaN(v)?'':v))+'" aria-label="'+L[0]+'"><span>'+L[1]+'</span></div></div>'; });
       h+='</div><p class="fcerr" data-fce hidden>1 이상의 정수를 넣으세요</p>'; }
+    h+=RES;
     if(sz.tog)h+='<p class="fct">규모 기준</p><div class="fcr fcbs">'+[['n','상시근로자 수'],['amt','건설공사 금액']].map(function(x){return '<button type="button" data-fcbs="'+x[0]+'" aria-pressed="'+((sz.cons?'amt':'n')===x[0])+'">'+x[1]+'</button>';}).join('')+'</div>';
     if(sz.r!=null)h+='<p class="fcsz">규모 <b>'+esc(sz.t)+' → '+(sz.r<1?Math.round(sz.r*100)+'%':'감경 없음')+'</b> (검색 조건)</p>';
     else h+='<p class="fct">규모 ('+(sz.cons?'건설공사 금액':'상시근로자 수')+')</p><div class="fcr s4">'+(sz.cons?[[1,'40억원 이상'],[0.9,'10~40억원 90%'],[0.8,'3~10억원 80%'],[0.7,'3억원 미만 70%']]:[[1,'100명 이상'],[0.9,'50~99명 90%'],[0.8,'10~49명 80%'],[0.7,'10명 미만 70%']]).map(function(x){return '<button type="button" data-fcs="'+x[0]+'">'+x[1]+'</button>';}).join('')+'</div>';

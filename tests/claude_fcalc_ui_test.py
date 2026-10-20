@@ -70,6 +70,7 @@ def run(w, big):
         r = F.locator('.fcres').inner_text()
         ok(tag + ' 10만원 × 12명 → 하한 100만원', '100만원' in r and '12명' in r and '100만원 미만이라 100만원' in r, r)
         ok(tag + ' 자진납부 하한 뒤 80만원', '자진납부 시 80만원' in r, r)
+        ok(tag + ' 결과 칸은 인원 입력 바로 아래(차수·인원 → 결과 → 규모)', p.evaluate("(s)=>{const b=document.querySelector(s+' .fines.fcon .fcb'); const kids=[...b.children]; const iN=kids.findIndex(x=>x.classList.contains('fcns')), iR=kids.findIndex(x=>x.classList.contains('fcres')), iC=kids.findIndex(x=>x.querySelector&&x.querySelector('[data-fcc]')), iS=kids.findIndex(x=>x.querySelector&&x.querySelector('[data-fcs],[data-fcbs]')||x.classList.contains('fcsz')); return iC<iN&&iN<iR&&(iS<0||iR<iS);}", SEC))
         F.locator('[data-fcn]').fill('8'); p.wait_for_timeout(150)
         r = F.locator('.fcres').inner_text()
         ok(tag + ' 10만원 × 8명 → 감경 없음 80만원', '80만원' in r and '감경 없음' in r, r)
