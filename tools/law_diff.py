@@ -8,6 +8,9 @@
 #         python3 tools/law_diff.py audit [all|GK,OSH] [--snapshot] → 앱 조문 ↔ 법제처 현행 전체 대조(2026-10-18 신설, 매월).
 #             기준본은 건드리지 않는다. 의도된 차이는 tools/audit_ignore.json(법제처·앱 문구 해시가 같을 때만 제외).
 #             --snapshot: 법제처 대신 기준본(law_snapshot)을 현행으로 보고 대조(인증키 없이 로컬 점검용)
+# - 2026-10-21: 기준본에 편·장·절 경로(paths)·조문별 늦은 시행일(aef)·서식 목록(fms)·시행 예정판의 바뀐 조문(pend[].arts·rm)을 함께 저장.
+#             앱 수록 전 새 법령은 law_versions.json에 넣고 base에 코드를 직접 적으면 받음 — Claude 작업 환경은 법제처 접속이 막혀
+#             새 법령 원문을 이 기준본으로 받아 수록한다. 대조(diff·audit)는 종전처럼 arts·bts만 비교
 # - 표준 라이브러리만 사용. 인증키는 어떤 파일·출력에도 남기지 않는다.
 import datetime, difflib, hashlib, json, os, re, sys, time
 import urllib.error, urllib.parse, urllib.request
@@ -103,6 +106,7 @@ def h(s):
 
 
 HEAD = re.compile(r'^\s*제\d+조(?:의\d+)?\s*(?:\((?:[^()]|\([^()]*\))*\))?\s*')
+LVL = {'편': 0, '장': 1, '절': 2, '관': 3}
 
 
 def art_key(no, br):
@@ -143,22 +147,39 @@ def parse_law(j):
     L = j.get('법령') if isinstance(j, dict) else None
     if not isinstance(L, dict):
         raise ApiError('법령 본문 없음(응답 키: %s)' % ','.join(list(j)[:5]) if isinstance(j, dict) else '법령 본문 없음')
-    arts = {}
+    arts, paths, aef, stack = {}, {}, {}, ['', '', '', '']
     for u in listify((L.get('조문') or {}).get('조문단위')):
+        if isinstance(u, dict) and u.get('조문여부') == '전문':   # 2026-10-21: 편·장·절·관 제목 → 조문별 경로(새 법령 수록용 — 비교에는 쓰지 않음)
+            s = re.sub(r'\s+', ' ', TAG.sub('', flat(u.get('조문내용')))).strip()
+            m = re.match(r'^제\d+(?:의\d+)?\s*(편|장|절|관)', s)
+            if m:
+                lv = LVL[m.group(1)]
+                stack[lv:] = [s] + [''] * (3 - lv)
+            continue
         if not isinstance(u, dict) or u.get('조문여부') != '조문' or not str(u.get('조문번호', '')).strip():
             continue
         k = art_key(u.get('조문번호'), u.get('조문가지번호'))
         arts[k] = {'t': flat(u.get('조문제목')).strip(), 'x': compose(u)}
-    bts = {}
+        paths[k] = [x for x in stack if x]
+        ae = re.sub(r'\D', '', str(u.get('조문시행일자', '')))
+        if len(ae) == 8 and ae > TODAY:   # 조문 단위로 시행일이 늦은 조문(분리 시행)
+            aef[k] = ae
+    bts, fms = {}, []
     for b in listify((L.get('별표') or {}).get('별표단위')):
-        if not isinstance(b, dict) or (b.get('별표구분') or '별표') != '별표':
+        if not isinstance(b, dict):
             continue
         n, g = str(b.get('별표번호', '')).lstrip('0') or '0', str(b.get('별표가지번호', '')).lstrip('0')
+        if (b.get('별표구분') or '별표') == '서식':   # 2026-10-21: 서식 목록(번호·제목·원문 파일) — 앱 '서식(앱 미수록)' 연결용, 비교에는 쓰지 않음
+            fms.append({'n': n + ('의%s' % g if g else ''), 't': flat(b.get('별표제목')).strip(),
+                        'pdf': str(b.get('별표서식PDF파일링크') or ''), 'hwp': str(b.get('별표서식파일링크') or '')})
+            continue
+        if (b.get('별표구분') or '별표') != '별표':
+            continue
         k = '별표 %s' % n + ('의%s' % g if g else '')
         body = flat(b.get('별표내용'))
         bts[k] = {'t': flat(b.get('별표제목')).strip(), 'h': h(norm(body)) if body else ''}
     info = L.get('기본정보') or {}
-    return {'arts': arts, 'bts': bts,
+    return {'arts': arts, 'bts': bts, 'paths': paths, 'aef': aef, 'fms': fms,
             'pno': str(info.get('공포번호', '')), 'ef': str(info.get('시행일자', ''))}
 
 
@@ -515,6 +536,20 @@ def audit(code, meta, cur, app):
     return s + '\n'.join(rows) + '\n', (same, diff)
 
 
+def pend_delta(c, p):
+    """2026-10-21: 시행 예정판에서 현행과 달라지는 조문만(본문·제목·경로) — 개정 예정 수록(chg·fut)을 원문 그대로 하려고 기준본에 둠. 비교(h)는 그대로"""
+    ch = {k: v for k, v in p['arts'].items()
+          if k not in c['arts'] or norm(v['x']) != norm(c['arts'][k]['x']) or norm(v['t']) != norm(c['arts'][k]['t'])}
+    d = {}
+    if ch:
+        d['arts'] = ch
+        d['paths'] = {k: p.get('paths', {}).get(k, []) for k in ch}
+    rm = [k for k in c['arts'] if k not in p['arts']]
+    if rm:
+        d['rm'] = rm
+    return d
+
+
 def cmd_base(codes, metas, app, do_audit):
     os.makedirs(SNAP, exist_ok=True)
     done, fails, aud, tot = [], [], [], [0, 0]
@@ -527,8 +562,8 @@ def cmd_base(codes, metas, app, do_audit):
             continue
         c = st['cur']
         snap = {'code': code, 'name': meta['name'], 'updated': NOW.strftime('%Y-%m-%d'),
-                'cur': {k: c.get(k) for k in ('mst', 'id', 'pno', 'ef', 'arts', 'bts', 'pending_as_cur') if c.get(k) is not None},
-                'pend': [{'mst': p['mst'], 'pno': p['pno'], 'ef': p['ef'], 'h': whole(p)} for p in st['pend']]}
+                'cur': {k: c.get(k) for k in ('mst', 'id', 'pno', 'ef', 'arts', 'bts', 'paths', 'aef', 'fms', 'pending_as_cur') if c.get(k) is not None},
+                'pend': [dict({'mst': p['mst'], 'pno': p['pno'], 'ef': p['ef'], 'h': whole(p)}, **pend_delta(c, p)) for p in st['pend']]}
         with open(snap_path(code), 'w', encoding='utf-8') as f:
             f.write(scrub(json.dumps(snap, ensure_ascii=False, indent=0, sort_keys=True)))
         done.append('%s(%s) 조문 %d · 별표 %d · 시행예정 %d' % (meta['name'], code, len(c['arts']), len(c['bts']), len(st['pend'])))
@@ -670,6 +705,10 @@ def main():
     vers = json.load(open(os.path.join(HERE, 'law_versions.json'), encoding='utf-8'))
     allc = list(metas)
     codes = allc if arg.lower() == 'all' else [c.strip().upper() for c in arg.split(',') if c.strip()]
+    if mode == 'base':   # 2026-10-21: 앱 수록 전 새 법령(기준표 law_versions.json에만 있음)도 코드를 직접 적으면 원문 기준본을 받음(수록 원문용). all에는 넣지 않음
+        for x in vers.get('laws', []):
+            if x.get('code') in codes and x['code'] not in metas and x.get('kind') == '앱 조문':
+                metas[x['code']] = {'name': x['name']}
     bad = [c for c in codes if c not in metas]
     if bad:
         print('모르는 코드:', ', '.join(bad), '/ 가능한 코드:', ', '.join(allc))
