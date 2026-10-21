@@ -47,6 +47,8 @@ jobs:
         run: node tests/gosi2_check.js index.html
       - name: 조문 화면 교육시간 (시행규칙 별표4 원문·조문 연결·사본 일치)
         run: node tests/edu_art_check.js index.html
+      - name: 수사 법령 (조문 수·원문·개정 예정·수사준칙 준용·서식 연결·검색)
+        run: node tests/sasu_check.js index.html
       - name: 캐시 삭제 범위 (오늘의안전 저장본 보존)
         run: node tests/check_sw_scope.js service-worker.js
       - name: 배포 정보 자리 (관리자 화면 커밋 번호·최종 업데이트)
