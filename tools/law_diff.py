@@ -314,10 +314,12 @@ def load_app():
     return D['meta']['laws'], idx
 
 
-def app_note(code, key, new_x, app):
+def app_note(code, key, new_x, app, new_t=None):
     a = app.get((code, key))
     if not a:
         return '앱 미수록'
+    tn = norm(new_t) if new_t is not None else None   # 2026-10-22(5-53): 제목도 비교 — 개정 예정 제목(chg.t) 누락을 못 잡았음
+    tbad = lambda t: tn is not None and norm(t) != tn
     tags = []
     if a.get('s') or a.get('fn') or a.get('sn'):
         tags.append('벌칙·과태료 연결')
@@ -327,15 +329,25 @@ def app_note(code, key, new_x, app):
         # (근기법 제105조 — 12. 8. '삭제' 예정은 비교할 문구가 없어 늘 🔵로 나왔음)
         stg = [a['chg']] + list(a['chg'].get('nx') or [])
         tags.append('앱 조문 이미 일치 · 개정 예정(%s) 수록' % ' · '.join(c.get('date', '') for c in stg))
+        if tbad(a.get('t', '')):
+            tags.append('🔴 제목 다름(앱: %s)' % a.get('t', ''))
     elif a.get('chg'):
         stg = [a['chg']] + list(a['chg'].get('nx') or [])   # 2026-10-02: 여러 단계 개정(chg.nx)
-        hit = [c.get('date', '') for c in stg if c.get('x') and norm(c['x']) == target]
+        hit, tt, ht = [], a.get('t', ''), {}
+        for c in stg:
+            tt = c.get('t') or tt   # 단계별 제목(chg.t) — 없으면 앞 단계 제목 그대로
+            if c.get('x') and norm(c['x']) == target:
+                hit.append(c.get('date', '')); ht[c.get('date', '')] = tt
         tags.append('앱에 개정 예정(%s) 수록 — %s' % (' · '.join(c.get('date', '') for c in stg),
                     ('신 조문과 일치(%s 단계)' % hit[0]) if hit else '🔵 신 조문과 다름'))
+        if hit and tbad(ht[hit[0]]):
+            tags.append('🔵 개정 예정 제목 다름(앱: %s → 법제처: %s)' % (ht[hit[0]], new_t))
     elif a.get('fut'):
-        tags.append('앱에 시행 예정 조문 수록 — ' + ('일치' if norm(a.get('x', '')) == target else '🔵 다름'))
+        tags.append('앱에 시행 예정 조문 수록 — ' + ('일치' if norm(a.get('x', '')) == target and not tbad(a.get('t', '')) else '🔵 다름'))
     else:
         tags.append('앱 조문 ' + ('이미 일치' if norm(a.get('x', '')) == target else '🔴 수정 필요'))
+        if tbad(a.get('t', '')):
+            tags.append('🔴 제목 다름(앱: %s)' % a.get('t', ''))
     return ' · '.join(tags)
 
 
@@ -398,13 +410,13 @@ def section(code, name, label, old, new, app):
          '- 조문: 변경 %d · 신설 %d · 삭제 %d / 별표: %d' % (len(ch), len(add), len(rm), len(bch))]
     for k in sorted(ch, key=sortkey):
         o, n = old['arts'][k], new['arts'][k]
-        L += ['<details><summary>%s(%s) — %s</summary>' % (k, n['t'] or o['t'], app_note(code, k, n['x'], app)), '']
+        L += ['<details><summary>%s(%s) — %s</summary>' % (k, n['t'] or o['t'], app_note(code, k, n['x'], app, n['t'])), '']
         if norm(o['t']) != norm(n['t']):
             L.append('- 제목: ~~%s~~ → **%s**' % (o['t'], n['t']))
         L += ['- ' + wdiff(o['x'], n['x']), '', '</details>']
     for k in sorted(add, key=sortkey):
         n = new['arts'][k]
-        L += ['<details><summary>%s(%s) 신설 — %s</summary>' % (k, n['t'], app_note(code, k, n['x'], app)), '',
+        L += ['<details><summary>%s(%s) 신설 — %s</summary>' % (k, n['t'], app_note(code, k, n['x'], app, n['t'])), '',
               '- ' + (n['x'][:800] + (' …' if len(n['x']) > 800 else '')), '', '</details>']
     for k in sorted(rm, key=sortkey):
         L.append('- %s(%s) 조문 없어짐 — %s' % (k, old['arts'][k]['t'], '앱 수록' if (code, k) in app else '앱 미수록'))
@@ -600,6 +612,16 @@ def app_text_now(a):
     return x
 
 
+def app_title_now(a):
+    """2026-10-22(5-53): 앱 조문의 오늘 기준 제목 — 시행일이 지난 단계의 제목 변경(chg.t) 반영"""
+    t = a.get('t', '')
+    c = a.get('chg')
+    for st in ([c] + list(c.get('nx') or [])) if c else []:
+        if st.get('date', '9') <= NOW.strftime('%Y-%m-%d') and st.get('t'):
+            t = st['t']
+    return t
+
+
 def audit_rows(code, cur, app):
     mine = {k[1]: a for k, a in app.items() if k[0] == code}
     same, diffs, only_app = 0, [], []
@@ -610,10 +632,10 @@ def audit_rows(code, cur, app):
         n = cur['arts'].get(no)
         if n is None:
             only_app.append(no)
-        elif norm(x) == norm(n['x']):
+        elif norm(x) == norm(n['x']) and norm(app_title_now(a)) == norm(n.get('t', '')):
             same += 1
         else:
-            diffs.append((no, n.get('t', ''), x, n['x']))
+            diffs.append((no, n.get('t', ''), x, n['x'], app_title_now(a)))
     only_api = [k for k in cur['arts'] if k not in mine and cur['arts'][k]['x'].strip() and not re.search(r'삭\s*제', cur['arts'][k]['x'][:20])]   # 2026-10-18: '<삭 제>'(띄어 쓴 삭제)도
     return same, diffs, only_app, sorted(only_api, key=sortkey)
 
@@ -645,17 +667,18 @@ def cmd_audit(codes, metas, app, offline):
             continue
         same, diffs, only_app, only_api = audit_rows(code, cur, app)
         real = []
-        for no, t, ax, lx in diffs:
+        for no, t, ax, lx, at in diffs:
             e = ign.get((code, no))
-            if e and e.get('hl') == h(norm(lx)) and e.get('ha') == h(norm(ax)):
+            if e and e.get('hl') == h(norm(lx)) and e.get('ha') == h(norm(ax)) and norm(at) == norm(t):
                 excl.append('%s %s — %s' % (meta['name'], no, e.get('why', '')))
             else:
-                real.append((no, t, ax, lx, bool(e)))
+                real.append((no, t, ax, lx, bool(e), at))
         tot[0] += same; tot[1] += len(real); tot[2] += len(only_app)
         if real or only_app:
             s = '### %s (%s)\n' % (meta['name'], code)
-            for no, t, ax, lx, was in real:
-                s += '<details><summary>🔴 %s(%s)%s</summary>\n\n- %s\n\n</details>\n' % (no, t, ' — 예외 목록에 있으나 문구가 바뀜' if was else '', wdiff(ax, lx, ctx=6, limit=900))
+            for no, t, ax, lx, was, at in real:
+                tl = ('- 제목: 앱 %s → 법제처 %s\n' % (at, t)) if norm(at) != norm(t) else ''   # 2026-10-22(5-53)
+                s += '<details><summary>🔴 %s(%s)%s</summary>\n\n%s%s\n\n</details>\n' % (no, t, ' — 예외 목록에 있으나 문구가 바뀜' if was else '', tl, ('- ' + wdiff(ax, lx, ctx=6, limit=900)) if norm(ax) != norm(lx) else '')
             if only_app:
                 s += '- 🔴 앱에만 있는 조문(법제처 현행에 없음): ' + ', '.join(only_app) + '\n'
             secs.append(s)

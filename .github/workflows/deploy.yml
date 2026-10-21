@@ -15,10 +15,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5   # 2026-10-22: Node 20 actions 지원 종료(GitHub 안내) → v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
       - name: 경계값 판정 (4→5명, 49→50명 등)
         run: node tests/judge_boundary.js index.html
       - name: 안전·보건관리자 인원 판정
@@ -60,7 +60,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0   # 앱 파일 마지막 변경일을 커밋 기록에서 구하려고 전체 기록을 받음
       - name: 배포 파일만 모으기 (tests·tools·.github 제외)

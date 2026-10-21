@@ -3,6 +3,8 @@
 # - 주간 대조(law-diff)는 '기준본 ↔ 법제처' 변화만 보므로 앱 수록 때부터 틀린 문구는 이 대조에서만 잡힌다.
 # - 기준본(tools/law_snapshot)은 건드리지 않는다. 의도된 차이는 tools/audit_ignore.json(문구가 바뀌면 다시 보고).
 # - 수동 실행: Actions → 앱 전체 대조 → Run workflow
+# - 2026-10-22(5-53): 정기 실행마다 tools/law_audit_last.txt에 한 줄 기록·커밋. 공개 저장소는 60일 동안 활동이 없으면 예약 실행이
+#   자동으로 꺼지고(GitHub 안내), 법령 점검 3종은 문제가 있을 때만 알리므로 '알림 없음'이 '이상 없음'인지 '점검 멈춤'인지 이 파일 날짜로 확인
 name: 앱 전체 대조
 
 on:
@@ -15,7 +17,7 @@ on:
         default: all
 
 permissions:
-  contents: read
+  contents: write   # 2026-10-22: 실행 기록(tools/law_audit_last.txt) 저장
   issues: write
 
 concurrency:
@@ -67,6 +69,18 @@ jobs:
           else
             gh issue create --title "$(cat law_audit_title.txt)" --body-file law_audit_issue.md --label law-audit
           fi
+
+      - name: 실행 기록 저장(예약 실행 유지)
+        if: always() && steps.gate.outputs.go == '1' && github.event_name == 'schedule'
+        run: |
+          f=tools/law_audit_last.txt
+          { cat "$f" 2>/dev/null; printf '%s · %s\n' "$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')" "$(cat law_audit_title.txt 2>/dev/null || echo '대조 실패(Actions 확인)')"; } | tail -n 24 > _last && mv _last "$f"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$f"
+          git commit -m "앱 전체 대조 실행 기록 $(TZ=Asia/Seoul date +%Y-%m-%d)" || exit 0
+          git pull --rebase --autostash
+          git push
 
       - name: 실패 표시
         if: steps.gate.outputs.go == '1' && steps.audit.outputs.status == 'error'

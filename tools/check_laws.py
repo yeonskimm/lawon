@@ -10,6 +10,9 @@
 # - 2026-10-12: 공공데이터포털(apis.data.go.kr) 접속이 GitHub에서 시간 초과로 막혀 점검 전체가 멈춘 일이 있었음
 #   → 접속 실패 시 법제처 Open API(law.go.kr DRF, 비밀값 LAW_OC — 법령 본문 대조와 같은 키)로 같은 목록을 받아 계속 점검.
 #   한 번 대체로 바뀌면 나머지 법령도 대체로 조회(법령마다 2분씩 기다리지 않게). 보고서 오류 문구의 <…>는 이스케이프.
+# - 2026-10-22(5-53): 앱 계산기의 최저임금 연도표(index.html MWT)에 올해 금액이 없거나, 8월 10일 이후인데 다음 해 금액이 없으면 알림
+#   (다음 해 최저임금은 매년 8월 5일까지 고시 — 최저임금법 제8조). 기준표에 아직 공포 전인 하위법령(eff·known 비어 있음)을 넣어 두면
+#   공포 즉시 '기준 공포번호 등록 필요'로 알림(노동감독관 직무집행법 시행령·시행규칙).
 import html, json, os, sys, time, datetime, urllib.error, urllib.parse, urllib.request
 import xml.etree.ElementTree as ET
 
@@ -110,6 +113,25 @@ def parse(raw):
     return [], ''
 
 
+def mw_check():
+    """2026-10-22: 계산기 최저임금 연도표(index.html의 var MWT=[{y:2026,v:10320},…]) 확인"""
+    import re
+    try:
+        s = open(os.path.join(HERE, '..', 'index.html'), encoding='utf-8').read()
+    except Exception as ex:
+        return ['index.html을 읽지 못함: %s' % ex]
+    m = re.search(r'var MWT=\[(.*?)\];', s)
+    if not m:
+        return ['index.html에서 최저임금 연도표(var MWT)를 찾지 못함']
+    ys = {int(y) for y in re.findall(r'y:(\d{4})', m.group(1))}
+    y = int(TODAY[:4]); out = []
+    if y not in ys:
+        out.append('%d년 최저임금 금액이 계산기 연도표에 없음' % y)
+    if TODAY[4:] >= '0810' and y + 1 not in ys:
+        out.append('%d년 적용 최저임금 고시(매년 8월 5일까지) 금액을 계산기 연도표(MWT)에 넣어야 함' % (y + 1))
+    return out
+
+
 def main():
     key = os.environ.get('LAW_API_KEY', '').strip()
     oc = os.environ.get('LAW_OC', '').strip()
@@ -172,6 +194,7 @@ def main():
             (reg if not known else ok if no in known else new).append((L, line))
         time.sleep(0.3)   # 초당 호출 한도 여유
 
+    mwm = mw_check()
     title, body = '', []
     if new:
         title = '법령 개정 확인 필요 (%d건)' % len(new)
@@ -186,6 +209,10 @@ def main():
         title = title or '법령 점검: 법령명 확인 필요'
         body.append('\n## 조회되지 않은 법령명\n')
         body += ['- %s (법령명 변경·폐지 여부 확인)' % n for n in miss]
+    if mwm:
+        title = title or '법령 점검: 최저임금 금액 확인 필요'
+        body.append('\n## 최저임금(계산기 연도표)\n')
+        body += ['- %s' % m for m in mwm]
     if err:
         title = '법령 점검 실패' if not new else title
         body.append('\n## 점검 오류\n')

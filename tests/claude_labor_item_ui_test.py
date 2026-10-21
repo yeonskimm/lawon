@@ -3,6 +3,8 @@
 #       검색 결과 맨 위 항목 기준 카드(분야별), 조문 화면 '항목 기준' 링크(하나면 바로, 여럿이면 아래 창), 넘침·스크립트 오류
 import sys, os, threading, functools, http.server, socketserver
 from playwright.sync_api import sync_playwright
+# 2026-10-22(5-53): 화면의 '개정 예정'·'시행 예정' 표시는 오늘 날짜로 바뀜 → 이 검사를 만든 날로 시계를 고정(12. 8. 이후 거짓 실패 방지)
+FIX = """(()=>{const T=new Date('%sT10:00:00').getTime(); const R=Date; class F extends R{constructor(...a){ if(a.length) super(...a); else super(T);} static now(){return T;}} window.Date=F; })();"""
 class Q(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *a): pass
 socketserver.TCPServer.allow_reuse_address = True
@@ -24,6 +26,7 @@ def run(w, big):
     tag = '%dpx%s' % (w, ' 크게' if big else '')
     with sync_playwright() as pw:
         b = pw.chromium.launch(); p = b.new_page(viewport={'width': w, 'height': 800}, device_scale_factor=2)
+        p.add_init_script(FIX % '2026-10-18')
         errs = []; p.on('pageerror', lambda e: errs.append(str(e)))
         p.goto(URL); p.wait_for_timeout(1200)
         if big: p.evaluate("()=>{document.documentElement.setAttribute('data-fs','l');}")

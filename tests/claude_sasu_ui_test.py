@@ -3,6 +3,8 @@
 # 법령집 4줄(협력규칙은 협력규정 하위 줄)·수사준칙 준용 카드·목록 표시·하단 고지(절차 규정은 현행)·개정 예정 제목 변경·
 # 협력규칙 서식 원문(PDF) 링크·창·법령집 서식 탭·집무규정 옛 수사준칙 인용 → 새 조문·그 밖의 수사 법령 조문(접힘)·넘침
 import sys, os, threading, functools, http.server, socketserver
+# 2026-10-22(5-53): 화면의 '개정 예정'·'시행 예정' 표시는 오늘 날짜로 바뀜 → 이 검사를 만든 날로 시계를 고정(12. 8. 이후 거짓 실패 방지)
+FIX = """(()=>{const T=new Date('%sT10:00:00').getTime(); const R=Date; class F extends R{constructor(...a){ if(a.length) super(...a); else super(T);} static now(){return T;}} window.Date=F; })();"""
 from playwright.sync_api import sync_playwright
 
 class Q(http.server.SimpleHTTPRequestHandler):
@@ -41,6 +43,7 @@ with sync_playwright() as pw:
     br = pw.chromium.launch()
     for w, big, dark, tag in [(390, False, False, '390'), (320, True, False, '320크게'), (430, False, True, '430어둡게')]:
         c = br.new_context(viewport={'width': w, 'height': 844}, device_scale_factor=2, service_workers='block')
+        c.add_init_script(FIX % '2026-10-21')
         errs = []
         p = c.new_page(); p.on('pageerror', lambda e: errs.append(str(e)))
         p.goto(URL); p.wait_for_selector('#vStart:not([hidden])')
