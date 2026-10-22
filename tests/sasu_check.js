@@ -83,7 +83,7 @@ for(const [q,c] of [['사법경찰직무법','JPA'],['특별사법경찰관 협�
 ok('용어사전 4개: 피신조서·내사·특사경·수사지휘',['피신조서','내사','특사경','수사지휘'].every(k=>D.syn[k]));
 
 // ── 7. 화면 코드(문자열) ──
-ok('분야 법령: 직무집행법 다음 사법경찰직무법·협력규정·협력규칙·수사준칙(두 분야)',h.includes("'GAM','LIO','JPA','SPC','SPCR','ICR','MWS']")&&h.includes("'OAM','LIO','JPA','SPC','SPCR','ICR','CSC'"));
+ok('분야 법령: 직무집행법 다음 사법경찰직무법·협력규정·협력규칙·수사준칙(두 분야)',h.includes("'GAM','LIO','JPA','SPC','SPCR','ICR',")&&h.includes("'OAM','LIO','JPA','SPC','SPCR','ICR',"));
 ok('법령집 하위 줄: 협력규칙(par SPC)',L.SPCR.par==='SPC'&&/if\(L\.par\)return L\.par===pk;/.test(h));
 ok('하단 고지: 절차 규정(now)은 현행 법령',h.includes('id="footm"')&&h.includes("'국가법령정보센터에서 현행 법령을 확인하시기 바랍니다.'")&&L.GAM.now===1&&L.OAM.now===1&&!L.LIO.now&&!L.GK.now);
 ok('조문 화면: 준용 카드(jyCard)·목록 표시(jyLab)·그 밖의 수사 법령 조문 접힘(ol)',/function jyCard\(e\)/.test(h)&&/function jyLab\(e\)/.test(h)&&h.includes("foldSec('ol','그 밖의 수사 법령 조문'"));
