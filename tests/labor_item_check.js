@@ -19,7 +19,7 @@ const EXP={lb_contract:['근로계약',12],lb_rules:['취업규칙',8],lb_docs:[
   lb_hours:['근로시간·가산수당',20],lb_rest:['휴게·주휴',4],lb_leave:['연차',5],lb_dismiss:['해고',13],lb_ft:['기간제·단시간',10],lb_harass:['괴롭힘·성희롱',8],lb_mat:['모성·육아',18],lb_minor:['연소자·임산부',15]};
 chk('근로기준 항목 14개',L.length===14,L.length);
 chk('항목 순서(검색어 우선순위 — 최저임금이 임금 지급 앞)',L.map(w=>w.id).join()===Object.keys(EXP).join(),L.map(w=>w.id));
-chk('산업안전 작업 뒤에 붙음(산업안전 34개 그대로)',(D.work||[]).slice(0,34).every(w=>!w.f)&&(D.work||[]).slice(34).every(w=>w.f==='labor'));
+chk('산업안전 작업 뒤에 붙음(산업안전 37개 — 2026-10-22 5차 3개 추가)',(D.work||[]).slice(0,37).every(w=>!w.f)&&(D.work||[]).slice(37).every(w=>w.f==='labor'));
 L.forEach(w=>{ const e=EXP[w.id], n=w.sec.reduce((a,s)=>a+(s.a||[]).length,0); chk(w.n+' 이름·조문 수',!!e&&e[0]===w.n&&e[1]===n,[w.n,n]); });
 
 // 2. 조문·별표 실재, 같은 항목 안 중복 없음

@@ -15,9 +15,10 @@ const W=(D.work||[]).filter(w=>(w.f||'osh')==='osh')/* 2026-10-18: 산업안전 
 const lines=(x)=>String(x||'').split('\n').map(l=>l.trim());
 
 // 1. 작업 목록·조문 수(1차 10개)
-const EXP={forklift:['지게차',23],aerial:['고소작업대',15],crane:['크레인',36],lift:['리프트·곤돌라·승강기',32],cart:['구내운반차',18],truck:['화물취급·화물자동차',27],heavy:['중량물',10],scaffold:['비계',19],ladder:['사다리',3],fall:['추락 방지',11],excav:['굴착',30],formwork:['거푸집·동바리',12],steel:['철골',4],asbestos:['석면',20],demol:['해체',8],pile:['항타기·항발기',17],confined:['밀폐공간',30],hotwork:['화기작업',27],electric:['전기작업',27],hazmat:['위험물·화학설비',49],conveyor:['컨베이어',15],press:['프레스·전단기',10],robot:['산업용 로봇',7],injection:['사출성형기',8],roller:['롤러기',9],grinder:['연삭기',5],wood:['목재가공용 기계',13],boiler:['보일러·압력용기',15],chem:['관리대상 유해물질',36],permit:['허가대상 유해물질',29],dust:['분진',13],noise:['소음·진동',10],heat:['폭염·한랭',11],msd:['근골격계부담작업',15]};
+const EXP={forklift:['지게차',23],aerial:['고소작업대',15],crane:['크레인',36],lift:['리프트·곤돌라·승강기',32],cart:['구내운반차',18],truck:['화물취급·화물자동차',27],heavy:['중량물',10],scaffold:['비계',19],ladder:['사다리',3],fall:['추락 방지',11],excav:['굴착',30],formwork:['거푸집·동바리',12],steel:['철골',4],asbestos:['석면',20],demol:['해체',8],pile:['항타기·항발기',17],confined:['밀폐공간',30],hotwork:['화기작업',27],electric:['전기작업',27],hazmat:['위험물·화학설비',49],conveyor:['컨베이어',15],press:['프레스·전단기',10],robot:['산업용 로봇',7],injection:['사출성형기',8],roller:['롤러기',9],grinder:['연삭기',5],wood:['목재가공용 기계',13],boiler:['보일러·압력용기',15],chem:['관리대상 유해물질',36],permit:['허가대상 유해물질',29],dust:['분진',13],noise:['소음·진동',10],heat:['폭염·한랭',11],msd:['근골격계부담작업',15],dryer:['건조설비·호퍼',9],foundry:['주물·단조',13],logging:['벌목',7]};
 // 4차 손 계산: 위험물 = 제225~238(14) + 제255~279(25) + 제296~300(5) + 제20조 + 제38조 + 제35조 + 법 제44조 + 영 제43조 = 49 / 허가대상 = 법 제118조 + 영 제88조 + 제452~476(25) + 제35조 + 영 제74조 = 29 / 폭염·한랭 = 제558·559 + 제560·561 + 제562·567·571 + 제563·569·572 + 제566 = 11
-chk('작업 34개',W.length===34,W.length);
+// 5차 손 계산(2026-10-22): 건조설비·호퍼 = 제280~284(5) + 제243조 + 제48조 + 제35조 + 법 제42조 = 9 / 주물·단조 = 제247~254(8) + 제559·562·566조 + 제605조 + 법 제42조 = 13 / 벌목 = 제405·406조 + 제20조 + 제512·518·519·521조 = 7
+chk('작업 37개',W.length===37,W.length);
 chk('작업 순서(검색어 우선순위 — 석면은 해체 앞)',W.map(w=>w.id).join()===Object.keys(EXP).join(),W.map(w=>w.id));
 const ids=W.map(w=>w.id); chk('작업 id 겹침 없음',new Set(ids).size===ids.length,ids);
 W.forEach(w=>{ const e=EXP[w.id], n=w.sec.reduce((a,s)=>a+(s.a||[]).filter(i=>i.k).length,0);
@@ -68,7 +69,7 @@ chk('역연결 규칙 제38조 → 제1항제1호 크레인',has('RULE:제38조'
 chk('역연결 규칙 제38조 → 중량물 제1항제11호',has('RULE:제38조','heavy','제1항제11호'));
 chk('역연결 규칙 제38조 → 위험물 제1항제4호',has('RULE:제38조','hazmat','제1항제4호'));
 chk('역연결 규칙 제38조 → 11개 작업(항타기 제3항 포함)',(I['RULE:제38조']||[]).length===11&&has('RULE:제38조','pile','제3항')&&has('RULE:제38조','demol','제1항제10호'),(I['RULE:제38조']||[]).map(x=>x.n));
-chk('역연결 규칙 제35조 → 24개 작업',(I['RULE:제35조']||[]).length===24,(I['RULE:제35조']||[]).map(x=>x.n));
+chk('역연결 규칙 제35조 → 25개 작업(5차 건조설비 별표2 제5호)',(I['RULE:제35조']||[]).length===25,(I['RULE:제35조']||[]).map(x=>x.n));
 chk('역연결 시행령 제78조 → 9개 작업(리프트·곤돌라 분리, 압력용기)',['crane','lift','aerial','conveyor','press','robot','injection','roller','boiler'].every(w=>has('SD:제78조',w))&&(I['SD:제78조']||[]).length===9);
 chk('역연결 시행령 제77조 → 리프트(자동차정비용)·화기·컨베이어·로봇·롤러기·연삭기·목재가공',['lift','hotwork','conveyor','robot','roller','grinder','wood'].every(w=>has('SD:제77조',w))&&(I['SD:제77조']||[]).length===7);
 chk('역연결 영 제88조(허가대상 물질) → 허가대상',has('SD:제88조','permit'));
@@ -97,6 +98,21 @@ chk('크레인에 리프트·곤돌라·승강기 조문(제151~162조) 없음',
 chk('리프트에 크레인·이동식 크레인 조문(제136~150조) 없음',!keysOf('lift').some(k=>/^RULE:제1(3[6-9]|4\d|50)조$/.test(k)),keysOf('lift'));
 chk('크레인 별표3 슬링(제18호 R3.19) 없음',btOf('crane').indexOf('R3.19')<0);
 const eduOf=id=>{ const w=W.find(x=>x.id===id), s=w&&w.sec.find(x=>x.h==='특별교육'); return s?JSON.stringify(s.bt):null; };
+// 5차(2026-10-22) 역연결·발췌
+chk('역연결 규칙 제20조 → 벌목 제16호',has('RULE:제20조','logging','제16호'));
+chk('역연결 규칙 제559조 → 폭염·주물단조',has('RULE:제559조','heat')&&has('RULE:제559조','foundry'));
+chk('역연결 규칙 제512조 → 소음·진동·벌목(제4호 진동작업)',has('RULE:제512조','noise')&&has('RULE:제512조','logging','제4호 진동작업(체인톱)'));
+chk('역연결 규칙 제280조(건조설비) → 건조설비·호퍼만',(I['RULE:제280조']||[]).length===1&&has('RULE:제280조','dryer'));
+chk('역연결 규칙 제253조(용해로) → 주물단조만',(I['RULE:제253조']||[]).length===1&&has('RULE:제253조','foundry'));
+chk('역연결 법 제42조(유해위험방지계획서) → 건조설비·주물단조',has('OSH:제42조','dryer')&&has('OSH:제42조','foundry'));
+chk('역연결 규칙 제405조 → 벌목만',(I['RULE:제405조']||[]).length===1&&has('RULE:제405조','logging'));
+chk('주물단조 제559조 발췌 4줄(용광로·용선로·가열된 금속·녹인 금속)',C.workLines(D.byKey['RULE:제559조'].x,['1. 용광로','2. 용선로','6. 가열된 금속','7. 녹인 금속']).length===4);
+chk('벌목 제20조 발췌 = 제16호 한 줄',C.workLines(D.byKey['RULE:제20조'].x,['16. 벌목']).length===1);
+chk('벌목 제512조 발췌 = 제4호 진동작업 + 다목 체인톱 2줄',C.workLines(D.byKey['RULE:제512조'].x,['4. "진동작업"','다. 체인톱']).length===2&&/체인톱/.test(C.workLines(D.byKey['RULE:제512조'].x,['4. "진동작업"','다. 체인톱']).join('')));
+chk('건조설비 특별교육 = 별표5 제8호(호퍼)·제9호(가열·건조)',eduOf('dryer')==='["S5.11","S5.12"]',eduOf('dryer'));
+chk('주물단조 특별교육 = 별표5 제16호',eduOf('foundry')==='["S5.19"]',eduOf('foundry'));
+chk('벌목 특별교육 = 별표5 제10호(집재장치)',eduOf('logging')==='["S5.13"]',eduOf('logging'));
+
 chk('리프트 특별교육 = 별표5 제15호(건설용 리프트·곤돌라)만',eduOf('lift')==='["S5.18"]',eduOf('lift'));
 chk('크레인 특별교육 = 제14·30·39호(제15호 없음)',eduOf('crane')==='["S5.17","S5.33","S5.42"]',eduOf('crane'));
 chk('구내운반차·화물자동차 작업계획서 제38조제1항제2호 발췌에 도로상 주행작업 제외 문구',/화물자동차를 사용하는 도로상의 주행작업은 제외/.test(C.workLines(D.byKey['RULE:제38조'].x,['2. 차량계 하역운반기계등']).join('')));
@@ -108,6 +124,7 @@ chk('작업환경측정 묶음 근거 = 법 제125조, 특수건강진단 = 법 
 
 // 6. 검색어 → 작업
 const Q=[['둥근톱','wood'],['목공','wood'],['보일러','boiler'],['공기압축기','boiler'],['콤프레샤','boiler'],['안전밸브','boiler'],['위험물','hazmat'],['인화성 액체','hazmat'],['공정안전보고서','hazmat'],['PSM','hazmat'],['베릴륨','permit'],['염화비닐','permit'],['근골격계','msd'],['유해요인조사','msd'],['한랭','heat'],['동상','heat'],['냉동창고','heat'],['리프트','lift'],['곤돌라','lift'],['승강기','lift'],['사다리차','lift'],['호이스트','crane'],['양중기','crane'],['구내운반차','cart'],['화물차','truck'],['상하차','truck'],['하역','truck'],['중량물','heavy'],['드럼통','heavy'],['석면','asbestos'],['석면 해체','asbestos'],['석면 철거','asbestos'],['슬레이트','asbestos'],['유기용제','chem'],['톨루엔','chem'],['국소배기장치','chem'],['분진','dust'],['용접흄','dust'],['소음','noise'],['귀마개','noise'],['진동','noise'],['폭염','heat'],['열사병','heat'],['체감온도','heat'],['고열','heat'],['지게차','forklift'],['지게차 작업계획서','forklift'],['아시바','scaffold'],['말비계','scaffold'],['밀폐공간','confined'],['질식','confined'],['타워크레인','crane'],['카고크레인','crane'],['고소작업대','aerial'],['포클레인','excav'],['흙막이','excav'],['용접','hotwork'],['화재감시자','hotwork'],['동바리','formwork'],['감전','electric'],['컨베이어','conveyor'],['사다리','ladder'],['이동식 사다리','ladder'],['추락','fall'],['개구부','fall'],['철골','steel'],['철거','demol'],['해체','demol'],['비계 해체','scaffold'],['거푸집 해체','formwork'],['항타기','pile'],['프레스','press'],['로봇','robot'],['사출기','injection'],['롤러기','roller'],['그라인더','grinder'],['연삭숫돌','grinder']];
+Q.push(['건조설비','dryer'],['호퍼','dryer'],['사일로','dryer'],['주물','foundry'],['단조','foundry'],['용해로','foundry'],['쇳물','foundry'],['벌목','logging'],['체인톱','logging'],['집재','logging']);   // 5차
 Q.forEach(([q,w])=>{ const r=C.workOf(D,q); chk('검색어 "'+q+'" → '+w,!!r&&r.id===w,r&&r.id); });
 ['안전교육','휴게시간','MSDS','위험성평가',''].forEach(q=>chk('검색어 "'+q+'" → 작업 없음(산업안전)',C.workOf(D,q,'osh')===null));
 
@@ -129,8 +146,8 @@ if(C.workGroups){ const G=C.workGroups(D), all=G.flatMap(g=>g.list.map(w=>w.id))
   chk('모든 작업이 묶음에 한 번씩(기타 없음)',all.length===W.length&&new Set(all).size===W.length&&!G.some(g=>g.h==='기타'),all);
   chk('하역·양중 = 지게차·크레인·리프트·고소작업대·구내운반차·화물·중량물',G[0].list.map(w=>w.id).join()==='forklift,crane,lift,aerial,cart,truck,heavy',G[0].list.map(w=>w.id));
   chk('보건 = 석면·관리대상·허가대상·분진·소음·폭염·근골격계',G[4]&&G[4].list.map(w=>w.id).join()==='asbestos,chem,permit,dust,noise,heat,msd',G[4]&&G[4].list.map(w=>w.id));
-  chk('제조 기계 끝 = 목재가공·보일러',G[2].list.slice(-2).map(w=>w.id).join()==='wood,boiler',G[2].list.map(w=>w.id));
-  chk('위험작업 끝 = 위험물',G[3].list.slice(-1)[0].id==='hazmat',G[3].list.map(w=>w.id));
+  chk('제조 기계 끝 = 목재가공·보일러·주물단조(5차)',G[2].list.slice(-3).map(w=>w.id).join()==='wood,boiler,foundry',G[2].list.map(w=>w.id));
+  chk('위험작업 = 밀폐·화기·전기·위험물·건조설비·벌목(5차)',G[3].list.map(w=>w.id).join()==='confined,hotwork,electric,hazmat,dryer,logging',G[3].list.map(w=>w.id));
   chk('묶음에 없는 새 작업은 기타로 표시(빠지지 않음)',C.workGroups({work:W.concat([{id:'zz',n:'새 작업'}])}).slice(-1)[0].h==='기타'); }
 
 console.log(fail?('실패 '+fail+'건 / '+cnt+'건'):('전체 통과 '+cnt+'건')); process.exit(fail?1:0);

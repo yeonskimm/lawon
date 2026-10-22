@@ -36,7 +36,7 @@ def run(w, big):
         # 2) 산업안전 첫 화면: 작업별 기준 칩 10개, 자주 찾는 말 없음
         p.click('.pick[data-field="osh"]'); p.wait_for_timeout(300); p.click('#tabbar [data-nav="find"]'); p.wait_for_timeout(300)
         q = txt(p, '#quick'); n = p.evaluate("()=>document.querySelectorAll('#quick .chip.wchip[data-wk]').length")
-        ok(tag + ' 산업안전 첫 화면 작업별 기준 칩 34개', n == 34, n)
+        ok(tag + ' 산업안전 첫 화면 작업별 기준 칩 37개(5차 건조설비·주물단조·벌목)', n == 37, n)
         ok(tag + ' 산업안전 첫 화면 자주 찾는 말 없음', q is not None and '자주 찾는 말' not in q, q)
         ok(tag + ' 첫 화면 가로 넘침 없음', not wide(p))
         # 2-1) 칩 묶음(2026-10-17): 소제목 4개 순서, 칸 열 수(3열 — 360 미만·글자 크게 440 미만은 2열), 같은 폭, 글자 잘림 없음
@@ -105,13 +105,13 @@ def run(w, big):
         # 7) 조문 → 작업 기준 여럿(제35조) → 아래 창
         p.click(SEC + ' [data-art="RULE:제35조"]'); p.wait_for_timeout(600)
         l = txt(p, SEC + ' h3.gl .xrl[data-wks]')
-        ok(tag + ' 제35조 "작업 기준 24"', l == '작업 기준 24', l)
+        ok(tag + ' 제35조 "작업 기준 25"(5차 건조설비 추가)', l == '작업 기준 25', l)
         gl = p.evaluate("(s)=>{const g=[...document.querySelectorAll(s+' h3.gl')].find(x=>x.textContent.trim().startsWith('조문')); const r=g.getBoundingClientRect(), L=[...g.querySelectorAll('.xrl')].map(x=>x.getBoundingClientRect()); return [r.height, L.every(x=>x.right<=window.innerWidth&&x.left>=0&&x.height<50)];}", SEC)
         ok(tag + ' 제35조 조문 제목 줄(인용 조문과 함께) 한 줄·넘침 없음', gl[0] < 60 and gl[1], gl)
         p.click(SEC + ' h3.gl .xrl[data-wks]'); p.wait_for_timeout(500)
-        ok(tag + ' 아래 창 제목 "작업 기준 24건"', txt(p, '#xsheetT') == '작업 기준 24건', txt(p, '#xsheetT'))
+        ok(tag + ' 아래 창 제목 "작업 기준 25건"', txt(p, '#xsheetT') == '작업 기준 25건', txt(p, '#xsheetT'))
         rows = p.evaluate("()=>[...document.querySelectorAll('#xlist [data-wk]')].map(x=>x.innerText.replace(/\\s+/g,' ').trim())")
-        ok(tag + ' 창 목록 24줄·항 표시', len(rows) == 24 and rows[0].startswith('제2항 지게차') and any(r.startswith('제1항·제2항 크레인') for r in rows) and any(r.startswith('제2항 리프트·곤돌라·승강기') for r in rows) and any(r.startswith('제1항 석면') for r in rows), rows[:5])
+        ok(tag + ' 창 목록 25줄·항 표시', len(rows) == 25 and rows[0].startswith('제2항 지게차') and any(r.startswith('제1항·제2항 크레인') for r in rows) and any(r.startswith('제2항 리프트·곤돌라·승강기') for r in rows) and any(r.startswith('제1항 석면') for r in rows), rows[:5])
         ok(tag + ' 창 안내 줄 숨김', p.evaluate("()=>document.getElementById('xhint').hidden"))
         p.click('#xlist [data-wk="excav"]'); p.wait_for_timeout(700)
         ok(tag + ' 창 줄 → 굴착 작업 기준·창 닫힘', txt(p, '#htitle') == '굴착 작업 기준' and p.evaluate("()=>document.getElementById('xsheet').hidden"), txt(p, '#htitle'))
