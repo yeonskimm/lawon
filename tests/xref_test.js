@@ -10,7 +10,7 @@ let all=0, arts=0, inapp=0, err=null;
 try{ D.arts.forEach(e=>{ const r=C.xrefs(D,e); if(r.length)arts++; all+=r.length; inapp+=r.filter(x=>x.k).length; }); }catch(x){ err=String(x); }
 ok('전체 조문에서 오류 없이 추출',!err,err); console.log(`  인용 조문이 있는 조문 ${arts}개, 인용 ${all}건(앱 조문 ${inapp}건)`);
 const SASU=['JPA','SPC','SPCR','ICR'], artsS=D.arts.filter(e=>SASU.includes(e.l)&&C.xrefs(D,e).length).length;   // 2026-10-21 수사 법령 4개(5-52)는 따로 셈
-ok('인용 조문 수 범위(전수조사 2026-09-29: 약 300개 조문, 2026-10-18 고시 10종 수록 후 369개)',arts-artsS>250&&arts-artsS<400,arts-artsS);
+ok('인용 조문 수 범위(전수조사 2026-09-29: 약 300개 조문, 2026-10-18 고시 10종 수록 후 369개, 2026-10-22 질서위반행위규제법·임금채권보장법 수록 후 433개)',arts-artsS>250&&arts-artsS<480,arts-artsS);
 ok('수사 법령 인용 조문 수 범위(2026-10-21 수록 때 127개 — 형사소송법 \'법 제N조\' 인용 포함)',artsS>100&&artsS<160,artsS);
 let r=X('SD:제86조'); ok('산안법 시행령 제86조 → 16건, 첫째 건강기능식품법 제3조',r.length===16&&r[0].n==='건강기능식품에 관한 법률'&&r[0].no==='제3조',S(r));
 r=X('FT:제4조'); ok('기간제법 제4조 옛 이름 「고령자고용촉진법」 → 현행 법령 제2조',S(r).includes('고용상 연령차별금지 및 고령자고용촉진에 관한 법률 제2조'),S(r));
