@@ -59,6 +59,8 @@ jobs:
         run: node tests/cw_check.js index.html
       - name: 가사근로자법 수록 (조문·벌칙·과태료 금액·적용 범위 안내·개정 예정·별표 1·모법 연결·서식·검색)
         run: node tests/dw_check.js index.html
+      - name: 사용자 입장 점검 정비 (적용 확인 법별 목록·첫 화면 법 이름·검색 칩 순서·짧은 이름)
+        run: node tests/ux_check.js index.html
       - name: 캐시 삭제 범위 (오늘의안전 저장본 보존)
         run: node tests/check_sw_scope.js service-worker.js
       - name: 배포 정보 자리 (관리자 화면 커밋 번호·최종 업데이트)
