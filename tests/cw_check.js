@@ -68,7 +68,8 @@ ok('시행령 별표 1·2(앱 미수록)',JSON.stringify(M.CWD)==='[["1","건설
 ok('시행규칙 서식 24(PDF)',(M.CWR||[]).length===24&&M.CWR.every(x=>x[3]==='f'&&/flSeq=\d+$/.test(x[4])));
 ok('bt.laws 시행령·시행규칙',R.bt.laws.CWD&&R.bt.laws.CWD.typ==='영'&&R.bt.laws.CWR.typ==='규'&&R.bt.laws.CWR.par==='CW');
 ok('벌칙·과태료 줄 법령 이름: 손으로 적은 표에 없는 법령은 법령집 짧은 이름(건설근로자법 등 — 정식 이름이 잘리던 것, 5-61)',html.includes("if(L.short&&L.short!==L.name&&!SHORT[L.name])SHORT[L.name]=L.short;"));
-// 8) 검색
+// 8) 검색 — 5-62: 적용 대상이 좁은 법(minor)은 법령 이름 없이 찾으면 점수 × 0.4(같은 정도로 맞으면 근기법 등 뒤로)
+ok('minor 표시·점수 배수 코드',['CW','CWD','CWR'].every(c=>L[c].minor===1)&&html.includes("if(!hint&&D.meta.laws[e.l].minor)sc*=0.4;"));
 const LAB=['GK','GKD','GKR','MW','MWD','MWR','RET','RETD','RETR','WG','WGD','WGR','EQ','EQD','EQR','AG','AGD','AGR','FT','FTD','FTR','DISP','DISPD','DISPR','LMC','LMCD','FW','FWD','TU','TUD','TUR','CW','CWD','CWR','GAM','LIO','JPA','SPC','SPCR','ICR','QV','QVD','MWS'];
 const K=q=>C.search(D,q,'',LAB,LAB).arts.map(e=>e.l+':'+e.no);
 ok('퇴직공제·건퇴 → 이 법 조문 1위',/^CW:/.test(K('퇴직공제')[0])&&K('건퇴')[0]==='CW:제10조');
@@ -80,4 +81,7 @@ ok('기존 1위 유지: 하수급인·도급인 → 근기법 제44조, 원수�
 ok('하청·원청 → 시행령 제12조의3(도급인의 공제부금) 제목으로 앞에 오지 않음',K('하청').slice(0,3).every(k=>k!=='CWD:제12조의3')&&K('원청').slice(0,3).every(k=>k!=='CWD:제12조의3'));
 ok('이탈신고 → 외국인고용법 제17조·시행령 제23조 다음에 고용관리 책임자 조문 안 섞임',K('이탈신고').slice(0,5).every(k=>!/^CW/.test(k)),K('이탈신고').slice(0,5));
 ok('건설 → 근기법 제44조의2 1위 그대로',K('건설')[0]==='GK:제44조의2');
+ok('근기법 등 먼저(5-62): 책임자 → 파견법 제28조, 사망 → 근기령 제50조, 화장실 → 근기령 제55조',K('책임자')[0]==='DISP:제28조'&&K('사망')[0]==='GKD:제50조'&&K('화장실')[0]==='GKD:제55조',[K('책임자')[0],K('사망')[0],K('화장실')[0]]);
+ok('이 법 말은 그대로 이 법 먼저: 퇴직공제·건퇴·건설근로자·전자카드·편의시설',['퇴직공제','건퇴','건설근로자','전자카드','편의시설'].every(q=>/^CW/.test(K(q)[0])));
+ok('법령 이름을 넣으면 배수 없음: 건설근로자법 사망 → 제19조의2',K('건설근로자법 사망')[0]==='CW:제19조의2');
 console.log(fail?('실패 '+fail+'건 / '+n+'건'):'전체 통과 '+n+'건'); process.exit(fail?1:0);
