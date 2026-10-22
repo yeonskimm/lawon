@@ -79,9 +79,9 @@ jobs:
           APP_SHA=$(git log -1 --format=%H -- $F)
           APP_AT=$(TZ=Asia/Seoul git log -1 --date=format-local:%Y-%m-%dT%H:%M --format=%cd -- $F)
           python3 tools/stamp_build.py _site/index.html "$APP_SHA" "$APP_AT"
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6   # 2026-10-22: Node 24판(v6·v5·v5)
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

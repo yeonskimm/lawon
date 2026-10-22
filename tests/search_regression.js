@@ -117,4 +117,9 @@ for(const [q,exp] of [['관감','OSH:제16조'],['산안비','OSH:제72조'],['�
   for(const q of ['안전교육','휴게시설','건강진단','도급인','안전보건관리책임자','육아휴직']){
     const r=C.search(D,q,'',OSHF.concat(LABF),OSHF), miss=r.items.filter(it=>!host(r,it)).map(it=>it.id), okk=r.items.length>0&&miss.length===0; if(!okk)fail++;
     console.log((okk?'PASS':'FAIL')+'  '+q+' → 주요 의무 '+r.items.length+'건 모두 근거 조문이 결과에'+(miss.length?' (없음: '+miss.join(',')+')':'')); } }
+// 2026-10-22: 용어사전 not — '환풍기'(add 환기)가 '상환기간'·'열교환기' 속 '환기'로 잡히지 않음
+{ const LW=['GK','GKD','GKR','MW','MWD','MWR','RET','RETD','RETR','WG','WGD','WGR','EQ','EQD','EQR','FT','FTD','FTR','DISP','DISPD','DISPR','LMC','LMCD','FW','FWD','TU','TUD','TUR','GAM'];
+  const kk=C.search(D,'환풍기','',LW,LW).arts.map(e=>e.l+':'+e.no), ko=C.search(D,'환풍기','',OSH,OSH).arts.map(e=>e.l+':'+e.no);
+  const okk=kk.length>0&&!kk.includes('WGR:제8조의10')&&!ko.includes('RULE:제261조')&&ko[0]==='RULE:제77조'&&kk.includes('GKD:제55조');
+  if(!okk)fail++; console.log((okk?'PASS':'FAIL')+' 환풍기 → 상환기간·열교환기 제외, 산업안전 1위 규칙 제77조, 기숙사(근기령 제55조) 유지',okk?'':JSON.stringify([kk.slice(0,4),ko.slice(0,4)])); }
 console.log(fail?('실패 '+fail+'건'):'전체 통과'); process.exit(fail?1:0);
