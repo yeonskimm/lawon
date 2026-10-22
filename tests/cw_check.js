@@ -67,6 +67,7 @@ const M=R.bt.miss||{};
 ok('시행령 별표 1·2(앱 미수록)',JSON.stringify(M.CWD)==='[["1","건설근로자의 기능등급별 구분ㆍ관리 대상 통합 직종","제4조의3제2항 관련"],["2","과태료의 부과기준","제20조 관련"]]');
 ok('시행규칙 서식 24(PDF)',(M.CWR||[]).length===24&&M.CWR.every(x=>x[3]==='f'&&/flSeq=\d+$/.test(x[4])));
 ok('bt.laws 시행령·시행규칙',R.bt.laws.CWD&&R.bt.laws.CWD.typ==='영'&&R.bt.laws.CWR.typ==='규'&&R.bt.laws.CWR.par==='CW');
+ok('벌칙·과태료 줄 법령 이름: 손으로 적은 표에 없는 법령은 법령집 짧은 이름(건설근로자법 등 — 정식 이름이 잘리던 것, 5-61)',html.includes("if(L.short&&L.short!==L.name&&!SHORT[L.name])SHORT[L.name]=L.short;"));
 // 8) 검색
 const LAB=['GK','GKD','GKR','MW','MWD','MWR','RET','RETD','RETR','WG','WGD','WGR','EQ','EQD','EQR','AG','AGD','AGR','FT','FTD','FTR','DISP','DISPD','DISPR','LMC','LMCD','FW','FWD','TU','TUD','TUR','CW','CWD','CWR','GAM','LIO','JPA','SPC','SPCR','ICR','QV','QVD','MWS'];
 const K=q=>C.search(D,q,'',LAB,LAB).arts.map(e=>e.l+':'+e.no);
