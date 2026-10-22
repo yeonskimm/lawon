@@ -93,4 +93,14 @@ if(process.argv[3]){ const O=load(process.argv[3]); const qs=new Set(['지게차
   const wk=n=>RAW.work.find(w=>w.n===n), itm=(w,k)=>w.sec.flatMap(S=>(S.a||[]).filter(i=>i.k===k));
   ok('작업별 기준 석면: 제490조에 표지 502',JSON.stringify(itm(wk('석면'),'RULE:제490조').map(i=>i.bt))===JSON.stringify([want['RULE:제490조']]),itm(wk('석면'),'RULE:제490조'));
   ok('작업별 기준 허가대상 유해물질: 제457조에 표지 501·502',JSON.stringify(itm(wk('허가대상 유해물질'),'RULE:제457조').map(i=>i.bt))===JSON.stringify([want['RULE:제457조']]),itm(wk('허가대상 유해물질'),'RULE:제457조')); }
+// ── 2026-10-22(5-60): 띄어 쓴 정식 법령 이름 → 그 법(법률 이름은 시행령·시행규칙 포함, 시행령·시행규칙 이름은 그것만) ──
+{ const fam=c=>[c].concat(Object.keys(D.meta.laws).filter(k=>D.meta.laws[k].name===D.meta.laws[c].name+' 시행령'||D.meta.laws[k].name===D.meta.laws[c].name+' 시행규칙'));
+  const FULL=[['기간제 및 단시간근로자 보호 등에 관한 법률','FT'],['파견근로자 보호 등에 관한 법률','DISP'],['남녀고용평등과 일ㆍ가정 양립 지원에 관한 법률','EQ'],['남녀고용평등과 일·가정 양립 지원에 관한 법률','EQ'],
+    ['근로자퇴직급여 보장법','RET'],['건설근로자의 고용개선 등에 관한 법률','CW'],['가사근로자의 고용개선 등에 관한 법률','DW'],['고용상 연령차별금지 및 고령자고용촉진에 관한 법률','AG']];
+  for(const [q,c] of FULL){ r=C.search(D,q,'',LAB); ok(q+' → '+c+' 법·시행령·시행규칙 조문 전부',r.total===fam(c).reduce((a,k)=>a+CNT(k),0)&&laws(r).every(k=>fam(c).includes(k))&&arts(r)[0]===c+':제1조',[r.total,laws(r)]); }
+  r=C.search(D,'파견근로자 보호 등에 관한 법률 시행령','',LAB); ok('파견근로자 보호 등에 관한 법률 시행령 → 시행령 조문만',r.total===CNT('DISPD')&&laws(r).join()==='DISPD',[r.total,laws(r)]);
+  r=C.search(D,'산업안전보건기준에 관한 규칙 추락','',OSH); ok('산업안전보건기준에 관한 규칙 추락 → 안전보건규칙 제42조 1위·그 규칙만',arts(r)[0]==='RULE:제42조'&&laws(r).join()==='RULE',arts(r).slice(0,3));
+  r=C.search(D,'고용상 연령차별금지 및 고령자고용촉진에 관한 법률 19조','',LAB); ok('정식 이름 + 19조 → 그 조문만',arts(r).join()==='AG:제19조',arts(r));
+  r=C.search(D,'근로자퇴직급여 보장법 퇴직금','',LAB); ok('근로자퇴직급여 보장법 퇴직금 → 퇴직급여법 제9조 1위·그 법만',arts(r)[0]==='RET:제9조'&&laws(r).every(k=>/^RET/.test(k)),arts(r).slice(0,3));
+  ok('정식 이름 낱말이 법령 이름 밖에서 쓰이면 그대로(보호 등 → AND 검색)',C.search(D,'파견근로자 보호','',LAB).arts.length>0&&!C.splitQuery('파견근로자 보호').hint); }
 console.log(fail?'실패 '+fail+'건':'전체 통과'); process.exit(fail?1:0);

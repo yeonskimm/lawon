@@ -1387,7 +1387,7 @@ function ruleSanc(D,e){ if(e.ns)return null; if(e.rs)return e.rs; if(e.l!=='RULE
  var V=D.ruleVia||[]; for(var i=0;i<V.length;i++){ if(cmpNo(e.no,V[i].a)>=0&&cmpNo(e.no,V[i].b)<=0)return V[i]; }   // 2026-10-16: 장·절 단위로 법 제38조·제39조 항·호 연결(앞의 범위가 우선, rs·ns가 먼저)
  var k=((e.p||[])[0]||'').slice(0,3); return D.ruleSanction[k]||null; }
 var LAWHINT=[[/^(산안법|산업안전보건법|산안)$/,['OSH','SD','SR','RULE']],[/^(근기법|근로기준법)$/,['GK','GKD','GKR']],[/^(규칙|안전보건규칙)$/,['RULE']],[/^(고평법|남녀고용평등법)$/,['EQ','EQD','EQR']],[/^(기간제법)$/,['FT','FTD','FTR']],[/^(퇴직급여법|퇴직급여보장법|근퇴법)$/,['RET','RETD','RETR']],[/^(최임법|최저임금법)$/,['MW','MWD','MWR']],[/^(파견법)$/,['DISP','DISPD','DISPR']],[/^(근참법|근로자참여법)$/,['LMC','LMCD']],[/^(외국인고용법|외고법|외국인근로자고용법|고용허가제법)$/,['FW','FWD']],[/^(노조법|노동조합법|노조및노동관계조정법)$/,['TU','TUD','TUR']],[/^(취업제한규칙)$/,['LIC']],[/^(중처법|중대법|중대재해처벌법)$/,['SAPA','SAPAD']],[/^(직무집행법|노동감독관직무집행법|노동감독관법)$/,['LIO']],[/^(집무규정|근로감독관집무규정)$/,['GAM','OAM']],[/^(관리비고시|산안비고시|산업안전보건관리비고시)$/,['CSC']],[/^(위평지침|위험성평가지침)$/,['RAG']],[/^(교육규정|안전보건교육규정)$/,['EDU']],[/^(안전보건대장고시|건설공사안전보건대장고시)$/,['CSL']],[/^(자체심사고시|자체심사업체고시)$/,['HRS']],[/^(계획서지도사고시)$/,['HRC']],[/^(계획서고시|제조업계획서고시|유해위험방지계획서고시)$/,['HRP']],[/^(psm규정|psm고시|공정안전보고서규정|공정안전보고서고시|공정안전규정)$/i,['PSM']],[/^(방호조치기준|방호조치고시)$/,['GRD']],[/^(인증절차고시|안전인증절차고시)$/,['SCP']],[/^(검사절차고시|안전검사절차고시)$/,['SIP']],[/^(근골격계고시|근골격계부담작업고시)$/,['MSD']],[/^(단순노무직종고시|단순노무고시)$/,['MWS']],[/^(사법경찰직무법|사경직무법)$/,['JPA']],[/^(수사준칙)$/,['ICR']],[/^(협력규정|특별사법경찰관협력규정|특사경협력규정)$/,['SPC']],[/^(협력규칙|특별사법경찰관협력규칙|특사경협력규칙)$/,['SPCR']],[/^(질서위반행위규제법|질서법)$/,['QV','QVD']],[/^(임금채권보장법|임채법)$/,['WG','WGD','WGR']],[/^(고령자고용법|고령자고용촉진법|연령차별금지법|고령자법)$/,['AG','AGD','AGR']],[/^(건설근로자법|건설근로자고용개선법)$/,['CW','CWD','CWR']],[/^(가사근로자법|가사근로자고용개선법)$/,['DW','DWD','DWR']]];   // 2026-10-22 고령자고용법(정식 이름이 길어 검색용 이름)   // 2026-10-22 임금채권보장법   // 2026-10-22 질서위반행위규제법   // 2026-10-21 수사 법령   // 2026-10-18 고시 10종
-var LAWSUB={}, LAWTYP={};   // 2026-09-24: '근로기준법시행령' 같은 시행령·시행규칙 이름 / '시행령'·'시행규칙'만 → {arts:조문 법령, bt:별표 법령}. prepareBT에서 채움
+var LAWSUB={}, LAWTYP={}, FULLN=[];   // FULLN(2026-10-22): 띄어 쓴 정식 법령 이름 → 붙인 이름([정규식, 붙인 이름]) — prepareBT에서 채움   // 2026-09-24: '근로기준법시행령' 같은 시행령·시행규칙 이름 / '시행령'·'시행규칙'만 → {arts:조문 법령, bt:별표 법령}. prepareBT에서 채움
 var QSEP=/[\s,，、;+&\/]+/;   // 검색어 구분: 띄어쓰기·쉼표 등. 나뉜 검색어는 모두 포함해야 함(AND)
 var PHR=[[/위험성\s*평가\s+지침/g,'위험성평가지침'],[/제조업\s+계획서/g,'제조업계획서'],[/(안전보건대장|자체심사업체|자체심사|근골격계부담작업|근골격계|단순노무직종|단순노무|방호조치|제조업계획서)\s+(고시)/g,'$1$2'],[/(^|[\s,])계획서\s+고시/g,'$1계획서고시'],[/(PSM|psm|공정안전보고서|공정안전)\s+(규정|고시)/g,'$1$2'],[/(안전인증|안전검사|인증|검사)\s+절차\s*고시/g,'$1절차고시'],[/방호조치\s+기준/g,'방호조치기준'],[/위평\s+지침/g,'위평지침'],[/(관리비|산안비)\s+고시/g,'$1고시'],[/안전보건\s*교육\s+규정/g,'안전보건교육규정'],[/(^|[\s,])교육\s+규정/g,'$1교육규정'],[/((?:면|목|반?코팅)장갑)(?:\s*(?:착용|사용|금지))+/g,'$1'],[/(^|[\s,])(?:정기|채용\s*시|작업\s*내용\s*변경\s*시|특별)?\s*교육\s*시간/g,'$1교육시간'],[/채용\s*시\s*교육/g,'채용시교육'],[/불이익\s+변경/g,'불이익변경'],[/최저임금\s+고지/g,'최저임금고지'],[/목적\s*외\s+사용/g,'목적외사용'],[/(^|[\s,])주\s+(\d+)\s*시간/g,'$1주$2시간'],[/(\d+)\s*(인|명|세)\s+(미만|이하|이상|초과)/g,'$1$2$3'],[/(\d+)\s+(인|명|세|시간|일)(?=[\s,]|$)/g,'$1$2'],
   [/해고\s+예고/g,'해고예고'],[/예고\s+수당/g,'예고수당'],[/연차\s+수당/g,'연차수당'],[/연장\s*근로\s+한도/g,'연장근로한도'],[/이동식\s+사다리/g,'이동식사다리'],[/(연장|야간|휴일)\s+근로/g,'$1근로'],[/직장\s+내/g,'직장내'],[/(중처법|중대법|중대재해처벌법|산안법|산업안전보건법|근기법|근로기준법|고평법|남녀고용평등법|기간제법|근퇴법|퇴직급여법|퇴직급여보장법|최임법|최저임금법|파견법|근참법|근로자참여법|노조법|노동조합법)\s+(시행령|시행규칙)/g,'$1$2'],[/(근로감독관)\s+(집무규정)/g,'$1$2'],[/(취업)\s+(제한)\s*(규칙)/g,'$1$2$3'],[/(노동감독관)\s+(직무집행법)/g,'$1$2'],[/(특별사법경찰관|특사경)\s+(협력규정|협력규칙)/g,'$1$2'],[/사법경찰\s+직무법/g,'사법경찰직무법'],[/수사\s+준칙/g,'수사준칙'],[/질서위반행위\s+규제법/g,'질서위반행위규제법'],[/임금채권\s+보장법/g,'임금채권보장법'],[/고령자\s+고용법/g,'고령자고용법'],[/건설\s+근로자법/g,'건설근로자법'],[/가사\s+근로자법/g,'가사근로자법'],[/연령\s*차별\s*금지법/g,'연령차별금지법'],[/사업장\s+밖/g,'사업장밖'],[/산재\s+(미보고|은폐)/g,'산재$1'],[/임금\s+미지급/g,'임금미지급'],[/서면\s+명시/g,'서면명시'],[/간주\s+근로/g,'간주근로'],[/(출퇴근|근로시간|근태)\s+기록/g,'$1기록'],[/해고\s+(서면|통보)/g,'해고$1'],[/연차\s+미사용\s*수당/g,'연차미사용수당'],[/물\s*[,·ㆍ]?\s*그늘\s*[,·ㆍ]?\s*휴식/g,'물그늘휴식'],[/폭염\s+휴식/g,'폭염휴식'],[/연차\s+사용\s+촉진/g,'연차사용촉진'],[/(고용변동|이탈)\s+신고/g,'$1신고'],[/사업장\s+변경\s+(방해|신청)/g,'사업장변경 $1']];   // 2026-09-30 추가   // 띄어 쓰면 뜻이 갈라지는 표현은 한 단어로
@@ -1412,7 +1412,8 @@ function ptVars(t){ var n=norm(t), out=[]; if(!/^[가-힣]{4,10}$/.test(n))retur
 function ptRe(t){ var n=norm(t), ps=[]; if(!/^[가-힣]{4,10}$/.test(n))return null;   // 본문 강조용: '출입을 금지'·'출입 금지'(띄어쓰기 포함)
   for(var i=2;i<=n.length-2;i++)ps.push(n.slice(0,i)+'\\s*(?:'+PTCL.join('|')+')?\\s*'+n.slice(i)); return new RegExp(ps.join('|'),'g'); }
 var SPELL=[[/밸트/g,'벨트'],[/휀스/g,'펜스'],[/크래인/g,'크레인'],[/(콘베이어|콘베어|컨베어|컨테이어)/g,'컨베이어'],[/후크/g,'훅'],[/섀클/g,'샤클'],[/메뉴얼/g,'매뉴얼'],[/밧데리|바테리/g,'배터리'],[/그라인다/g,'그라인더'],[/호이스터/g,'호이스트'],[/콤프레샤|콤프레셔|콤프레서|컴프레샤|컴프레셔/g,'컴프레서'],[/포크리프트/g,'지게차'],[/곤도라/g,'곤돌라'],[/렌털/g,'렌탈']];   // 2026-09-30: 현장에서 흔한 외래어 표기 흔들림(원문에 없는 조각만)
-function joinPhrase(q){ var s=q||''; SPELL.forEach(function(p){ s=s.replace(p[0],p[1]); }); PHR.forEach(function(p){ s=s.replace(p[0],p[1]); }); return s; }
+function joinPhrase(q){ var s=q||''; FULLN.forEach(function(p){ s=s.replace(p[0],p[1]); });   // 2026-10-22: '기간제 및 단시간근로자 보호 등에 관한 법률' → 한 낱말(법령 이름 표로 그 법만)
+  SPELL.forEach(function(p){ s=s.replace(p[0],p[1]); }); PHR.forEach(function(p){ s=s.replace(p[0],p[1]); }); return s; }
 function splitQuery(q){   // "산안법상 지게차, 헤드가드" → 검색어 ['지게차','헤드가드'] + 법령 필터 ['OSH','RULE']
   q=joinPhrase(q); var hint=null, btl=null, typ=null, main=null, lawToks=[], seen={}, add=function(a,xs){ xs.forEach(function(x){if(a.indexOf(x)<0)a.push(x);}); return a; };
   var toks=(q||'').trim().split(QSEP).filter(function(t){ if(!t||!norm(t))return false;
@@ -1420,7 +1421,7 @@ function splitQuery(q){   // "산안법상 지게차, 헤드가드" → 검색�
     LAWHINT.forEach(function(h){if(!hit&&(h[0].test(t)||h[0].test(b)))hit=h[1];});
     if(hit){ if(!main)main=hit[0]; hint=add(hint||[],hit); lawToks.push(t); return false; }   // 법령 이름이 둘 이상이면 합쳐서 거름
     var sub=LAWSUB[norm(t)]||LAWSUB[norm(b)];   // '고평법 시행규칙'·'근로기준법 시행령' → 그 법령의 조문·별표(법령 이름처럼 합쳐서 거름)
-    if(sub){ if(!main&&sub.arts.length===1)main=sub.arts[0]; hint=add(hint||[],sub.arts); btl=add(btl||[],sub.bt); lawToks.push(t); return false; }
+    if(sub){ if(!main&&(sub.main||sub.arts.length===1))main=sub.main||sub.arts[0]; hint=add(hint||[],sub.arts); btl=add(btl||[],sub.bt); lawToks.push(t); return false; }
     var ty=LAWTYP[norm(t)]||LAWTYP[norm(b)];   // '시행령'·'시행규칙'만 → 그 종류로 좁힘
     if(ty){ typ=typ?{arts:add(typ.arts.slice(),ty.arts),bt:add(typ.bt.slice(),ty.bt)}:ty; lawToks.push(t); return false; }
     var k=norm(t); if(seen[k])return false; seen[k]=1; return true;});
@@ -1687,6 +1688,14 @@ function prepareBT(D){
   Object.keys(B.laws).forEach(function(k){ var L=B.laws[k]; (L.tok||[]).forEach(function(n){ put(LAWSUB,norm(n),k); }); if(L.typ==='영')put(LAWTYP,'시행령',k); else if(L.typ==='규')put(LAWTYP,'시행규칙',k); });
   Object.keys(AL).forEach(function(k){ var m=/ (시행령|시행규칙)$/.exec(AL[k].name); if(m)put(LAWTYP,m[1],k); });   // 조문을 수록한 시행령·시행규칙(중처법 시행령·고평법 시행규칙)
   put(LAWSUB,'중대법시행령','SAPAD');   // 현장 약칭
+  // 2026-10-22: 정식 이름(띄어쓰기 있는 것) — 법률 이름은 그 법·시행령·시행규칙(조문·별표), 시행령·시행규칙 이름은 그것만. 약칭 표(LAWHINT·tok)에 이미 있으면 덧붙이기만
+  var NM={}; Object.keys(AL).forEach(function(k){ NM[k]=AL[k].name; }); Object.keys(B.laws).forEach(function(k){ if(!NM[k])NM[k]=B.laws[k].name; });
+  var esc=function(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }, fl=[];
+  Object.keys(NM).forEach(function(k){ var nm=NM[k]; if(!nm||!/\s/.test(nm))return;
+    var fam=[k]; if(!/ (시행령|시행규칙)$/.test(nm))Object.keys(NM).forEach(function(c){ if(c!==k&&(NM[c]===nm+' 시행령'||NM[c]===nm+' 시행규칙'||(B.laws[c]&&B.laws[c].par===k)))fam.push(c); });
+    fam.forEach(function(c){ put(LAWSUB,norm(nm),c); }); if(fam.length>1)LAWSUB[norm(nm)].main=k;   // 법률 이름 + 조 번호('… 법률 19조')는 그 법률 조문
+    fl.push([nm, new RegExp(nm.split(/\s+/).map(function(w){ return esc(w).replace(/[ㆍ·]/g,'[ㆍ·・]?'); }).join('\\s*'),'g'), nm.replace(/\s+/g,'')]); });
+  fl.sort(function(a,b){ return b[0].length-a[0].length; }); FULLN=fl.map(function(x){ return [x[1],x[2]]; });
   var S=D.syn; if(!S['특수검진'])S['특수검진']={add:['특수건강진단'],pin:[['OSH','제130조']]}; if(!S['특수건강검진'])S['특수건강검진']={add:['특수건강진단'],pin:[['OSH','제130조']]};
 }
 function docX(T,r){ var b=T.blk[r.bi]; if(!b)return '';   // doc 별표 한 줄의 본문: 문단 구간 또는 표 한 줄
