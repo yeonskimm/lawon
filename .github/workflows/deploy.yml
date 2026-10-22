@@ -53,6 +53,8 @@ jobs:
         run: node tests/qv_check.js index.html
       - name: 임금채권보장법 수록 (조문·벌칙·과태료 금액·모법 연결·서식·검색)
         run: node tests/wg_check.js index.html
+      - name: 고령자고용법 수록 (조문·벌칙·과태료 금액·300명 기준·모법 연결·서식·검색)
+        run: node tests/ag_check.js index.html
       - name: 캐시 삭제 범위 (오늘의안전 저장본 보존)
         run: node tests/check_sw_scope.js service-worker.js
       - name: 배포 정보 자리 (관리자 화면 커밋 번호·최종 업데이트)
