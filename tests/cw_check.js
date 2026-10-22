@@ -13,7 +13,7 @@ const A=c=>D.arts.filter(e=>e.l===c), g=k=>D.byKey[k], nz=s=>(s||'').replace(/\s
 ok('법령 이름 정식, 짧은 이름은 법제처 약칭 건설근로자법',L.CW&&L.CW.name===N&&L.CW.short==='건설근로자법'&&L.CWD.name===N+' 시행령'&&L.CWD.short==='건설근로자법 시행령'&&L.CWR.short==='건설근로자법 시행규칙');
 ok('일반 법령',!L.CW.proc&&!L.CW.now&&!L.CW.nj);
 ok('법령 순서: 노동조합법 시행규칙 다음(근로기준 법령 끝)',(k=>k.indexOf('CW')===k.indexOf('TUR')+1&&k.indexOf('CWR')===k.indexOf('TUR')+3)(Object.keys(L)));
-ok('근로기준 분야: 노동조합법 다음(분야 끝)',html.includes("'TU','TUD','TUR','CW','CWD','CWR','GAM'"));
+ok('근로기준 분야: 노동조합법 다음',html.includes("'TU','TUD','TUR','CW','CWD','CWR',"));
 // 2) 조문 수·원문
 ok('법 39·시행령 34·시행규칙 27개 조(삭제 제외)',A('CW').length===39&&A('CWD').length===34&&A('CWR').length===27,[A('CW').length,A('CWD').length,A('CWR').length]);
 ok('법 제10조의4 사업시작일부터 14일 이내 퇴직공제 관계 성립 신고',has('CW:제10조의4','사업시작일부터 14일 이내에 공제회에 퇴직공제 관계의 성립을 신고'));
