@@ -131,6 +131,7 @@ for(const [q,exp] of [['관감','OSH:제16조'],['산안비','OSH:제72조'],['�
 { const FLD=src=>(new RegExp(src+":\\{[^\\n]*?first:\\[([^\\]]*)\\]").exec(html)[1]).replace(/'/g,'').split(','); const LF=FLD('labor'), OF=FLD('osh');
   const FIX=[['해고 서면통지',LF,'GK:제27조'],['전액불',LF,'GK:제43조'],['통화불',LF,'GK:제43조'],['정리해고',LF,'GK:제24조'],['대기발령',LF,'GK:제23조'],['징계',LF,'GK:제23조'],
     ['노동청 진정',LF,'GAM:제33조'],['진정',LF,'GAM:제33조'],['임금 지급일',LF,'GK:제43조'],['수습기간 최저임금',LF,'MWD:제3조'],['상시근로자수',LF,'GKD:제7조의2'],['차별시정',LF,'FT:제9조'],
-    ['산재',LF,'GK:제78조'],['산재',OF,'OSH:제57조'],['안전방망',OF,'RULE:제42조'],['뇌심혈관',OF,'RULE:제669조']];
+    ['산재',LF,'GK:제78조'],['산재',OF,'OSH:제57조'],['안전방망',OF,'RULE:제42조'],['뇌심혈관',OF,'RULE:제669조'],
+    ['폐업',LF,'FW:제25조'],['보험료',LF,'FW:제13조'],['상시근로자수',OF,'OSH:제3조'],['사회보험',LF,'DW:제18조']];   // 5-64 검색 순위 정리
   for(const [q,f,exp] of FIX){ const a=C.search(D,q,'',f,f).arts[0], k=a&&a.l+':'+a.no; if(k!==exp)fail++; console.log((k===exp?'PASS':'FAIL')+' 현장 말 '+q+' → '+exp,k===exp?'':k); } }
 console.log(fail?('실패 '+fail+'건'):'전체 통과'); process.exit(fail?1:0);
