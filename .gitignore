@@ -1,0 +1,6 @@
+# 화면 검사 부산물(2026-10-22) — 커밋하지 않음
+tests/_t.html
+tests/monkey_*.log
+tests/pn_*.png
+tests/wage_*.png
+__pycache__/
