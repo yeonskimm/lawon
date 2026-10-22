@@ -15,7 +15,7 @@ ok('적용 확인 법별 목록에 근로기준 분야 법률 전부(임금채�
 ok('적용 확인 법별 목록 순서 = 분야 법령 순서',JSON.stringify(list)===JSON.stringify(LF.filter(c=>list.includes(c))),list);
 // ② 첫 화면 근로기준 카드 법 이름
 const card=/data-field="labor">[\s\S]*?<span class="pls">([\s\S]*?)<\/span><\/span>/.exec(html), names=card?[...(card[1]+'</span>').matchAll(/<span class="pl">([^<]*)<\/span>/g)].map(x=>x[1]):[];
-ok('첫 화면 근로기준 카드: 법률 13개(임금채권보장법·고령자고용법·건설근로자법·가사근로자법 포함)',names.length===13&&['임금채권보장법','고령자고용법','건설근로자법','가사근로자법'].every(x=>names.includes(x)),names);
+ok('첫 화면 근로기준 카드: 9개 + 등(사용자 결정 10/22 — 임금채권보장법 올림, 근참법·고령자고용법·건설근로자법·가사근로자법은 등)',JSON.stringify(names)===JSON.stringify(['근로기준법','최저임금법','퇴직급여법','임금채권보장법','남녀고용평등법','기간제법','파견법','외국인고용법','노조법 등']),names);
 // ③ 검색 칩 순서 — 결과에 먼저 나온 법령 순서
 const ord=Object.keys(L);
 { const r=C.search(D,'퇴직금','',LF,LF); ok('퇴직금 → 칩 첫 법령이 결과 1위 법령(퇴직급여법)',r.lawOrd&&r.lawOrd[0]===r.arts[0].l&&r.lawOrd[0]==='RET',r.lawOrd&&r.lawOrd.slice(0,3)); }
