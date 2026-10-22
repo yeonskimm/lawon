@@ -112,6 +112,8 @@ chk('벌목 제512조 발췌 = 제4호 진동작업 + 다목 체인톱 2줄',C.w
 chk('건조설비 특별교육 = 별표5 제8호(호퍼)·제9호(가열·건조)',eduOf('dryer')==='["S5.11","S5.12"]',eduOf('dryer'));
 chk('주물단조 특별교육 = 별표5 제16호',eduOf('foundry')==='["S5.19"]',eduOf('foundry'));
 chk('벌목 특별교육 = 별표5 제10호(집재장치)',eduOf('logging')==='["S5.13"]',eduOf('logging'));
+{ const wl=W.find(x=>x.id==='logging'), se=wl&&wl.sec.find(x=>x.h==='특별교육'), sh=wl&&wl.sec.find(x=>x.h==='특수건강진단');
+  chk('벌목 특별교육·특수건강진단 칸에 조건(벌목 자체는 대상 아님 — 별표5·22 원문)',!!se&&/벌목 자체 아님/.test(se.s||'')&&/집재장치/.test(se.s||'')&&!!sh&&/체인톱/.test(sh.s||''),[se&&se.s,sh&&sh.s]); }
 
 chk('리프트 특별교육 = 별표5 제15호(건설용 리프트·곤돌라)만',eduOf('lift')==='["S5.18"]',eduOf('lift'));
 chk('크레인 특별교육 = 제14·30·39호(제15호 없음)',eduOf('crane')==='["S5.17","S5.33","S5.42"]',eduOf('crane'));
@@ -140,6 +142,7 @@ chk('관리감독자 특별교육 단기간·간헐적 2시간 이상 포함(시
 D.items.forEach(it=>(it.edu||[]).forEach(x=>{ if(x.c==='특별교육')chk('주요 의무 '+it.id+' 특별교육 시간 끝 "이상"',/이상(\))?$/.test(x.t),x.t); }));
 
 // 칩 묶음(2026-10-17): 화면 표시만 묶음 순서, 검색어 우선순위는 데이터 순서 그대로. 작업을 늘리면 WORK_GROUPS에도 넣을 것('기타'가 생기면 실패)
+chk('작업 기준 칸 제목이 줄어들지 않음(320 큰 글자 낱말 중간 꺾임 방지, 5-65)',html.includes('<h3 class="gl wgl"><b class="gh">')&&html.includes('.gl .gh{flex:none;font-weight:inherit}'));
 chk('작업 묶음 함수 있음(workGroups)',!!C.workGroups);
 if(C.workGroups){ const G=C.workGroups(D), all=G.flatMap(g=>g.list.map(w=>w.id));
   chk('묶음 이름·순서',G.map(g=>g.h).join()==='하역·양중,건설·추락,제조 기계,위험작업,보건',G.map(g=>g.h));

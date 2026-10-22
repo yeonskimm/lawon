@@ -136,7 +136,7 @@ def run(w, big):
         p.click('#hhome' if p.query_selector('#hhome') else '[data-home]'); p.wait_for_timeout(400)
         p.click('.pick[data-field="osh"]'); p.wait_for_timeout(300); p.click('#tabbar [data-nav="find"]'); p.wait_for_timeout(300)
         n = p.evaluate("()=>document.querySelectorAll('#quick .chip.wchip[data-wk]').length")
-        ok(tag + ' 산업안전 칩 34개 그대로', n == 34, n)
+        ok(tag + ' 산업안전 칩 37개 그대로(5차 3개 추가)', n == 37, n)
         search(p, '연차'); ok(tag + ' 산업안전 분야 연차 → 카드 없음', p.query_selector('#results .wcard') is None)
         search(p, '지게차'); c = txt(p, '#results .wcard'); ok(tag + ' 산업안전 지게차 카드 그대로', c and c.startswith('지게차 작업 기준'), c)
         ok(tag + ' 스크립트 오류 없음', not errs, errs)
