@@ -122,4 +122,9 @@ for(const [q,exp] of [['관감','OSH:제16조'],['산안비','OSH:제72조'],['�
   const kk=C.search(D,'환풍기','',LW,LW).arts.map(e=>e.l+':'+e.no), ko=C.search(D,'환풍기','',OSH,OSH).arts.map(e=>e.l+':'+e.no);
   const okk=kk.length>0&&!kk.includes('WGR:제8조의10')&&!ko.includes('RULE:제261조')&&ko[0]==='RULE:제77조'&&kk.includes('GKD:제55조');
   if(!okk)fail++; console.log((okk?'PASS':'FAIL')+' 환풍기 → 상환기간·열교환기 제외, 산업안전 1위 규칙 제77조, 기숙사(근기령 제55조) 유지',okk?'':JSON.stringify([kk.slice(0,4),ko.slice(0,4)])); }
+// 2026-10-22: 법 추가 수록(건설근로자법·가사근로자법 — 근로기준, 진폐법 — 산업안전) 전 핵심 검색어 1위 고정 — 새 법 조문이 기존 핵심 조문을 밀어내지 않는지
+{ const FLD=src=>(new RegExp(src+":\\{[^\\n]*?first:\\[([^\\]]*)\\]").exec(html)[1]).replace(/'/g,'').split(','); const LF=FLD('labor'), OF=FLD('osh');
+  const LOCK=[['건강진단',OF,'OSH:제129조'],['특수건강진단',OF,'OSH:제130조'],['배치전 건강진단',OF,'OSH:제130조'],['분진',OF,'RULE:제4조의2'],['분진작업',OF,'RULE:제605조'],['건설업 기초안전보건교육',OF,'OSH:제31조'],
+    ['연대책임',LF,'GK:제44조의2'],['건설업 임금',LF,'GK:제44조의2'],['퇴직금',LF,'RET:제9조'],['건설',LF,'GK:제44조의2'],['하수급인',LF,'GK:제44조'],['직상수급인',LF,'GK:제44조']];
+  for(const [q,f,exp] of LOCK){ const a=C.search(D,q,'',f,f).arts[0], k=a&&a.l+':'+a.no; if(k!==exp)fail++; console.log((k===exp?'PASS':'FAIL')+' 핵심 검색어 고정 '+q+' → '+exp,k===exp?'':k); } }
 console.log(fail?('실패 '+fail+'건'):'전체 통과'); process.exit(fail?1:0);
