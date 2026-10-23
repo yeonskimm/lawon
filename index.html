@@ -1213,12 +1213,11 @@ html[data-fs="l"] .tile .tsub{display:block;margin:1px 0 0;line-height:1.1}
     <div class="cfl">
       <div class="lrow"><label for="rin">입사일</label><span class="lin ld"><input id="rin" type="date" min="1950-01-01" max="2100-12-31"></span></div>
       <div class="lrow"><label for="rend">마지막 근무일</label><span class="lin ld"><input id="rend" type="date" min="1950-01-01" max="2100-12-31"></span></div>
-      <div class="lrow"><label for="rwk">1주 소정근로시간<small>퇴직 전 4주 평균, 연장근로 제외</small></label><span class="lin lh"><input id="rwk" type="text" inputmode="decimal" autocomplete="off" value="40"><em>시간</em></span></div>
     </div>
     <div class="cres" id="rst" aria-live="polite"></div>
-    <button type="button" class="rtog" id="rstog">+ 주 15시간 미만으로 일한 기간</button>
+    <button type="button" class="rtog" id="rstog">+ 근무제외기간</button>
     <div class="rbox" id="rsb" hidden>
-      <p class="chint">재직 중 4주 평균 1주 소정근로시간이 15시간 미만이던 기간은 계속근로기간에서 뺍니다(고용노동부 행정해석). 그 기간이 있어도 근로관계가 이어졌다면 전체를 계속근로기간으로 본 판결도 있습니다. 한 기간만 입력</p>
+      <p class="chint">계속근로기간에서 빼는 기간. 4주 평균 1주 소정근로시간이 15시간 미만인 기간(고용노동부 행정해석) 등. 한 기간만 입력</p>
       <div class="cfl">
         <div class="lrow"><label for="rss">시작일</label><span class="lin ld"><input id="rss" type="date" min="1950-01-01" max="2100-12-31"></span></div>
         <div class="lrow"><label for="rse">끝날</label><span class="lin ld"><input id="rse" type="date" min="1950-01-01" max="2100-12-31"></span></div>
@@ -1236,9 +1235,9 @@ html[data-fs="l"] .tile .tsub{display:block;margin:1px 0 0;line-height:1.1}
         <div class="lrow"><label for="ral">연차수당<small>퇴직 전 1년간 받은 금액</small></label><span class="lin lm"><input id="ral" type="text" inputmode="numeric" autocomplete="off" data-money="1" placeholder="없으면 비움"><em>원</em></span></div>
       </div>
       <p class="chint">상여금·연차수당은 3/12을 더합니다. 퇴직으로 비로소 받는 미사용 연차수당은 넣지 않습니다.</p>
-      <button type="button" class="rtog" id="rxtog">+ 평균임금 제외기간</button>
+      <button type="button" class="rtog" id="rxtog">+ 미산입기간</button>
       <div class="rbox" id="rxb" hidden>
-        <p class="chint">빼는 기간: 수습 3개월 이내, 사용자 귀책 휴업, 출산전후·유산·사산 휴가, 업무상 부상·질병 요양, 육아휴직, 쟁의행위, 사용자가 승인한 개인 사유 휴업, 병역·예비군·민방위(임금을 받았으면 빼지 않음). 기간과 그 기간 임금을 함께 뺍니다(근로기준법 시행령 제2조). 한 기간만 입력</p>
+        <p class="chint">평균임금 산정기간에서 빼는 기간: 수습 3개월 이내, 사용자 귀책 휴업, 출산전후·유산·사산 휴가, 업무상 부상·질병 요양, 육아휴직, 쟁의행위, 사용자가 승인한 개인 사유 휴업, 병역·예비군·민방위(임금을 받았으면 빼지 않음). 기간과 그 기간 임금을 함께 뺍니다(근로기준법 시행령 제2조). 주 15시간 미만 기간도 뺍니다(고용노동부 행정해석). 한 기간만 입력</p>
         <div class="cfl">
           <div class="lrow"><label for="rxs">시작일</label><span class="lin ld"><input id="rxs" type="date" min="1950-01-01" max="2100-12-31"></span></div>
           <div class="lrow"><label for="rxe">끝날</label><span class="lin ld"><input id="rxe" type="date" min="1950-01-01" max="2100-12-31"></span></div>
@@ -1263,19 +1262,19 @@ html[data-fs="l"] .tile .tsub{display:block;margin:1px 0 0;line-height:1.1}
     <div class="frow"><button type="button" class="clr" id="rclr" hidden>지우기</button></div>
     <details class="about"><summary>계산 방법</summary>
       <p>퇴직금 = 1일 평균임금 × 30일 × 계속근로일수 ÷ 365(퇴직급여법 제8조①). 원 미만 버림</p>
-      <p>1일 평균임금 = (3개월 임금 − 제외기간 임금 + 상여금 × 3/12 + 연차수당 × 3/12) ÷ (3개월 달력일수 − 제외 일수)(근로기준법 제2조①6, 시행령 제2조)</p>
+      <p>1일 평균임금 = (3개월 임금 − 미산입기간 임금 + 상여금 × 3/12 + 연차수당 × 3/12) ÷ (3개월 달력일수 − 미산입 일수)(근로기준법 제2조①6, 시행령 제2조)</p>
       <p>3개월: 퇴직일 전날부터 거꾸로 3개월. 달에 따라 89~92일. 퇴직일의 3개월 전 같은 날이 없으면 그 달 말일부터(예: 5. 30. 퇴직 → 2. 28. ~ 5. 29., 민법 제160조③, 고용노동부 퇴직연금복지과-5114, 2008. 12. 19.)</p>
-      <p>제외기간이 3개월을 모두 덮으면 제외기간 첫날을 산정사유 발생일로 보아 그 전 3개월로 산정(고용노동부 해석)</p>
-      <p>상여금: 퇴직 전 12개월 지급액의 3/12. 제외기간 때문에 상여금을 정상보다 덜 받았다면 12개월과 상여금에서 그 기간과 지급분을 각각 빼고 3개월분으로 계산(평균임금 산정상의 상여금 취급 요령, 고용노동부 예규)</p>
-      <p>계속근로일수: 입사일부터 마지막 근무일까지(양 끝 포함). 주 15시간 미만 기간은 뺌. 퇴직금을 미리 정산(중간정산)했다면 계속근로기간은 정산시점부터 새로 계산(퇴직급여법 제8조②)</p>
+      <p>미산입기간이 3개월을 모두 덮으면 미산입기간 첫날을 산정사유 발생일로 보아 그 전 3개월로 산정(고용노동부 해석)</p>
+      <p>상여금: 퇴직 전 12개월 지급액의 3/12. 미산입기간 때문에 상여금을 정상보다 덜 받았다면 12개월과 상여금에서 그 기간과 지급분을 각각 빼고 3개월분으로 계산(평균임금 산정상의 상여금 취급 요령, 고용노동부 예규)</p>
+      <p>계속근로일수: 입사일부터 마지막 근무일까지(양 끝 포함). 근무제외기간은 뺌. 퇴직금을 미리 정산(중간정산)했다면 계속근로기간은 정산시점부터 새로 계산(퇴직급여법 제8조②)</p>
       <p>평균임금이 통상임금보다 적으면 통상임금을 평균임금으로 함(근로기준법 제2조②)</p>
     </details>
     <details class="about"><summary>지급 요건·유의사항</summary>
-      <p>계속근로 1년 이상, 4주 평균 1주 소정근로시간 15시간 이상(퇴직급여법 제4조①). 15시간 여부는 퇴직일 전 4주 평균으로 판단(대법원 2005. 5. 13. 선고 2003도5169 판결)</p>
+      <p>계속근로 1년 이상, 4주 평균 1주 소정근로시간 15시간 이상(퇴직급여법 제4조①). 15시간 여부는 이 계산에서 판단하지 않음</p><p>15시간 이상·미만을 반복하면 퇴직일부터 4주 단위로 거슬러 15시간 미만인 4주를 근무제외기간으로 빼고, 남은 기간이 1년 이상이면 지급 대상. 퇴직 전 3개월에 걸치면 미산입기간으로도 뺌(고용노동부 근로기준정책과-3818, 2021. 11. 25.). 퇴직 전 4주 평균으로 판단한 판결도 있음(대법원 2005. 5. 13. 선고 2003도5169 판결)</p>
       <p>퇴직 후 14일 이내 지급. 특별한 사정이 있으면 당사자 합의로 기일 연장(퇴직급여법 제9조). 위반은 제44조 벌칙</p>
       <p>확정급여형(DB)은 이 금액 이상, 확정기여형(DC)은 연간 임금총액의 12분의 1 이상 부담금 납입 방식이라 따로 확인</p>
       <p>휴업수당은 평균임금 70% 이상, 그 금액이 통상임금보다 많으면 통상임금으로 줄 수 있음(근로기준법 제46조①)</p>
-      <p>임금 항목의 포함 여부와 제외기간 해당 여부는 임금대장·근태 기록 등 원자료로 확인</p>
+      <p>임금 항목의 포함 여부와 근무제외·미산입기간 해당 여부는 임금대장·근태 기록 등 원자료로 확인</p>
     </details>
     <details class="about lawk" data-lawk="RET:제8조,RET:제4조,RET:제9조,GK:제2조,GKD:제2조,GK:제46조,GK:제26조"><summary>관련 조문</summary><div class="lawbox"></div></details>
   </div>
@@ -2013,25 +2012,25 @@ function alCalc(start,end){
 }
 function ordStr(z){ z+=0; var era=Math.floor(z/146097), doe=z-era*146097, yoe=Math.floor((doe-Math.floor(doe/1460)+Math.floor(doe/36524)-Math.floor(doe/146096))/365), y=yoe+era*400, doy=doe-(365*yoe+Math.floor(yoe/4)-Math.floor(yoe/100)), mp=Math.floor((5*doy+2)/153), d=doy-Math.floor((153*mp+2)/5)+1, m=mp+(mp<10?3:-9); return dStr(y+(m<=2?1:0),m,d); }
 // 2026-09-30 퇴직금: 퇴직급여법 제8조①(1일 평균임금 × 30일 × 계속근로일수 ÷ 365), 근로기준법 제2조①6·②, 시행령 제2조(제외기간)
-// o: {hire, last(마지막 근무일), wk(퇴직 전 4주 평균 1주 소정), w(3개월 임금), bonus·al(퇴직 전 1년 지급분), xs·xe·xw(제외기간·그 기간 임금), oh·dh(통상시급·1일 소정), ss·se(주 15시간 미만 기간), paid}
+// o: {hire, last(마지막 근무일), wk(퇴직 전 4주 평균 1주 소정 — 2026-10-23부터 화면은 넘기지 않음: 15시간 요건은 감독관 판단), w(3개월 임금), bonus·al(퇴직 전 1년 지급분), xs·xe·xw(제외기간·그 기간 임금), oh·dh(통상시급·1일 소정), ss·se(주 15시간 미만 기간), paid}
 // 2026-10-01: 주 15시간 미만 기간은 계속근로기간에서 뺌(고용노동부: 4주 평균 1주 15시간 이상인 기간만 합산해 1년 이상이면 지급). 1년 요건은 뺀 일수만큼 입사일을 늦춰 판단
 // 퇴직일 = 마지막 근무일 다음 날(평균임금 산정사유 발생일). 산정기간 = 퇴직일 전날부터 거꾸로 3개월(시작일은 퇴직일의 3개월 전 같은 날, 그날이 없으면 그 달 말일 — 민법 제160조③, 고용노동부 퇴직연금복지과-5114, 2008. 12. 19.: 5. 30. 퇴직 → 2. 28.~5. 29.)
 function back3(p){ var t=p.y*12+(p.m-1)-3, y=Math.floor(t/12), m=t%12+1; return dStr(y,m,Math.min(p.d,dIn(y,m))); }
 function sevCalc(o){
   var sp=dParse(o.hire), lp=dParse(o.last); if(!sp||!lp)return {err:'날짜를 확인해 주세요'}; if(o.last<o.hire)return {err:'마지막 근무일이 입사일보다 앞입니다'};
   var q=dNext(o.last), qp=dParse(q), sd=0;
-  if(o.ss||o.se){ if(!dParse(o.ss)||!dParse(o.se))return {err:'주 15시간 미만 기간 날짜를 확인해 주세요'}; if(o.se<o.ss)return {err:'주 15시간 미만 기간 끝날이 시작일보다 앞입니다'};
+  if(o.ss||o.se){ if(!dParse(o.ss)||!dParse(o.se))return {err:'근무제외기간 날짜를 확인해 주세요'}; if(o.se<o.ss)return {err:'근무제외기간 끝날이 시작일보다 앞입니다'};
     var sa=o.ss>o.hire?o.ss:o.hire, sb=o.se<o.last?o.se:o.last; if(sa<=sb)sd=dOrd(dParse(sb))-dOrd(dParse(sa))+1; }
   var hs=sd?dParse(ordStr(dOrd(sp)+sd)):sp, days=dOrd(qp)-dOrd(hs), M=0; while(arise(hs,M+1)<=q)M++;
   var s3=back3(qp), r={q:q,days:days,dur:{y:Math.floor(M/12),m:M%12,d:dOrd(qp)-dOrd(dParse(arise(hs,M)))},s3:s3,pdays:dOrd(qp)-dOrd(dParse(s3)),one:days>0&&arise(hs,12)<=q,y1:arise(hs,12),sd:sd};
   if(s3<o.hire){ s3=o.hire; r.s3=s3; r.pdays=dOrd(qp)-dOrd(sp); }
   r.segs=[]; for(var c=s3;c<=o.last;){ var p=dParse(c), e=dStr(p.y,p.m,dIn(p.y,p.m)); if(e>o.last)e=o.last; r.segs.push({a:c,b:e,d:dOrd(dParse(e))-dOrd(p)+1}); c=dNext(e); }
   r.h15=!(o.wk<15); if(!r.one||!r.h15){ r.no=true; return r; }
-  var xd=0; if(o.xs||o.xe){ if(!dParse(o.xs)||!dParse(o.xe))return {err:'제외기간 날짜를 확인해 주세요'}; if(o.xe<o.xs)return {err:'제외기간 끝날이 시작일보다 앞입니다'};
+  var xd=0; if(o.xs||o.xe){ if(!dParse(o.xs)||!dParse(o.xe))return {err:'미산입기간 날짜를 확인해 주세요'}; if(o.xe<o.xs)return {err:'미산입기간 끝날이 시작일보다 앞입니다'};
     var a=o.xs>s3?o.xs:s3, b=o.xe<o.last?o.xe:o.last; if(a<=b){ xd=dOrd(dParse(b))-dOrd(dParse(a))+1; r.xa=a; r.xb=b; } r.xOut=!xd; }
   r.xd=xd; if(o.w==null){ r.need=true; return r; }
   if(xd>=r.pdays){ r.allx=true; var xp=dParse(o.xs); r.alt={s3:back3(xp),e:ordStr(dOrd(xp)-1)}; return r; }   // 제외기간이 3개월을 덮으면 제외기간 첫날을 산정사유 발생일로 봄(고용노동부 해석)
-  var xw=o.xw||0; if(xw>o.w)return {err:'제외기간 임금이 3개월 임금보다 많습니다'};
+  var xw=o.xw||0; if(xw>o.w)return {err:'미산입기간 임금이 3개월 임금보다 많습니다'};
   r.w=o.w; r.xw=xw; r.bn3=(o.bonus||0)*3/12; r.al3=(o.al||0)*3/12; r.nd=r.pdays-xd; r.avg=(o.w-xw+r.bn3+r.al3)/r.nd;
   r.ord=o.oh>0?o.oh*(o.dh>0?o.dh:8):0; r.byOrd=r.ord>r.avg; r.use=r.byOrd?r.ord:r.avg;
   r.xBonus=!!(xd&&(o.bonus||o.al));   // 제외기간 때문에 상여금·연차수당을 덜 받았으면 따로 조정 필요(예규 제96호)
@@ -3786,46 +3785,44 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   function openSev(){ closeSheet(); if(!$('rend').value)$('rend').value=today; rsPaint(); $('rsheet').hidden=false; shOpen(); $('rsheet').querySelector('.shcard').scrollTop=0; }
   function closeSev(){ $('rsheet').hidden=true; shClose(); }
   function rsPaint(){ $('rsegb').hidden=!rs.seg; $('rw').disabled=rs.seg; $('rsegtog').textContent=rs.seg?'‹ 3개월 합계로 입력':'월별로 입력 ›';
-    $('rxb').hidden=!rs.x; $('rxtog').textContent=rs.x?'− 제외기간 삭제':'+ 평균임금 제외기간';
+    $('rxb').hidden=!rs.x; $('rxtog').textContent=rs.x?'− 미산입기간 삭제':'+ 미산입기간';
     $('rob').hidden=!rs.o; $('rotog').textContent=rs.o?'− 통상임금 비교 삭제':'+ 통상임금과 비교';
-    $('rsb').hidden=!rs.s; $('rstog').textContent=rs.s?'− 주 15시간 미만 기간 삭제':'+ 주 15시간 미만으로 일한 기간'; rsRun(); }
+    $('rsb').hidden=!rs.s; $('rstog').textContent=rs.s?'− 근무제외기간 삭제':'+ 근무제외기간'; rsRun(); }
   function rdur(d){ return ((d.y?d.y+'년 ':'')+(d.m?d.m+'개월 ':'')+(d.d?d.d+'일':'')).trim()||'0일'; }
   function rsSegs(r){ var box=$('rsegs'), key=r?r.segs.map(function(s){return s.a+s.b;}).join('|'):''; if(box.getAttribute('data-k')===key)return;
     var old={}; each('#rsegs [data-rseg]',function(x){ old[x.getAttribute('data-rseg')]=x.value; });
     box.innerHTML=r?r.segs.map(function(s){ var k=s.a+s.b; return '<div class="lrow"><label for="rs_'+s.a+'">'+esc(s.a)+' ~ '+esc(s.b)+'<small>'+s.d+'일</small></label><span class="lin lm"><input id="rs_'+s.a+'" type="text" inputmode="numeric" autocomplete="off" data-money="1" data-rseg="'+k+'" value="'+escRaw(old[k]||'')+'"><em>원</em></span></div>'; }).join(''):'';
     box.setAttribute('data-k',key); }
   function rsRun(){ var st=$('rst'), el=$('rres'), s=$('rin').value, e=$('rend').value;
-    $('rclr').hidden=!(s||e!==today||$('rw').value||$('rbn').value||$('ral').value||rs.seg||rs.x||rs.o||rs.s||$('rpd').value||$('rwk').value!=='40');
+    $('rclr').hidden=!(s||e!==today||$('rw').value||$('rbn').value||$('ral').value||rs.seg||rs.x||rs.o||rs.s||$('rpd').value);
     $('rchk').hidden=true; $('rwage').hidden=true; el.hidden=true; el.innerHTML='';   // 지급 대상이면 임금 입력칸·결과를 보임
     if(!s||!e){ rsSegs(null); st.innerHTML='<p class="c0">'+(!s?'입사일':'마지막 근무일')+'을 넣으면 지급 대상 여부와 평균임금 산정기간을 보여줍니다.</p>'; return; }
-    var wk=hrNum($('rwk').value); if(wk===null||wk===undefined||wk>168){ st.innerHTML='<p class="ce">1주 소정근로시간을 숫자로 입력(예: 40)</p>'; return; }
-    var o={hire:s,last:e,wk:wk}, bad='';
+    var o={hire:s,last:e}, bad='';   // 2026-10-23(5-70): 주 15시간 요건은 계산에서 판단하지 않음 — 감독관이 근무제외·미산입기간으로 넣음(고용노동부 내부 전산과 같은 방식)
     if(rs.s){ o.ss=$('rss').value; o.se=$('rse').value; if(!o.ss&&!o.se){ delete o.ss; delete o.se; } }
-    var r0=sevCalc({hire:s,last:e,wk:wk,ss:o.ss,se:o.se}); if(r0.err){ st.innerHTML='<p class="ce">'+esc(r0.err)+'</p>'; return; }
-    var dur='<table class="rtb"><tr><td>계속근로<small>'+fmtD(s)+' ~ '+fmtD(e)+(r0.sd?' · 주 15시간 미만 '+won(r0.sd)+'일 제외':'')+'</small></td><td>'+rdur(r0.dur)+' · '+won(r0.days)+'일</td></tr></table>';
+    var r0=sevCalc({hire:s,last:e,ss:o.ss,se:o.se}); if(r0.err){ st.innerHTML='<p class="ce">'+esc(r0.err)+'</p>'; return; }
+    var dur='<table class="rtb"><tr><td>계속근로<small>'+fmtD(s)+' ~ '+fmtD(e)+(r0.sd?' · 근무제외 '+won(r0.sd)+'일':'')+'</small></td><td>'+rdur(r0.dur)+' · '+won(r0.days)+'일</td></tr></table>';
     if(!r0.one){ st.innerHTML='<p class="rst no">퇴직금 지급 대상 아님<small>계속근로 1년 미만(퇴직급여법 제4조①) — '+fmtD(r0.y1)+'까지 근무해야 1년</small></p>'+dur; return; }
-    if(!r0.h15){ st.innerHTML='<p class="rst no">퇴직금 지급 대상 아님<small>4주 평균 1주 소정근로시간 15시간 미만(퇴직급여법 제4조① 단서)</small></p>'+dur; return; }
     rsSegs(r0); $('rwage').hidden=false;
     var mv=function(id,lab){ var v=rMon($(id).value); if(Number.isNaN(v)){ bad=bad||lab; return undefined; } return v; };
     if(rs.seg){ var sum=0,any=false; each('#rsegs [data-rseg]',function(x){ var v=rMon(x.value); if(Number.isNaN(v)){ bad=bad||'월별 임금'; return; } if(v!==undefined){ sum+=v; any=true; } });
       o.w=any?sum:undefined; $('rw').value=any?won(sum):''; }
     else o.w=mv('rw','3개월 임금');
     o.bonus=mv('rbn','상여금'); o.al=mv('ral','연차수당');
-    if(rs.x){ o.xs=$('rxs').value; o.xe=$('rxe').value; o.xw=mv('rxw','제외기간 임금'); if(!o.xs&&!o.xe){ delete o.xs; delete o.xe; } }
+    if(rs.x){ o.xs=$('rxs').value; o.xe=$('rxe').value; o.xw=mv('rxw','미산입기간 임금'); if(!o.xs&&!o.xe){ delete o.xs; delete o.xe; } }
     if(rs.o){ o.oh=mv('roh','통상시급'); var dh=hrNum($('rdh').value); if(dh===null||dh>24){ bad=bad||'1일 소정근로시간'; } else o.dh=dh; }
     var r=bad?null:sevCalc(o);
-    var per=function(r){ return '<table class="rtb"><tr><td>평균임금 산정기간<small>'+fmtD(r.s3)+' ~ '+fmtD(e)+(r.xd?' · 제외 '+fmtD(r.xa)+' ~ '+fmtD(r.xb):'')+'</small></td><td>'+(r.xd?(r.pdays+' − '+r.xd+' = '+(r.pdays-r.xd)):r.pdays)+'일</td></tr></table>'; };
-    st.innerHTML='<p class="rst ok">퇴직금 지급 대상<small>계속근로 1년 이상 · 1주 15시간 이상</small></p>'+dur+per(r&&!r.err?r:r0);
+    var per=function(r){ return '<table class="rtb"><tr><td>평균임금 산정기간<small>'+fmtD(r.s3)+' ~ '+fmtD(e)+(r.xd?' · 미산입 '+fmtD(r.xa)+' ~ '+fmtD(r.xb):'')+'</small></td><td>'+(r.xd?(r.pdays+' − '+r.xd+' = '+(r.pdays-r.xd)):r.pdays)+'일</td></tr></table>'; };
+    st.innerHTML='<p class="rst ok">퇴직금 지급 대상<small>계속근로 1년 이상 · 주 15시간 요건은 따로 판단</small></p>'+dur+per(r&&!r.err?r:r0);
     el.hidden=false;
     if(bad){ el.innerHTML='<p class="ce">'+esc(bad)+'은(는) 원 단위 숫자로 입력(예: 2,200,000)</p>'; return; }
     if(r.err){ el.innerHTML='<p class="ce">'+esc(r.err)+'</p>'; return; }
-    var xo=r.xOut?'<p class="cw">입력한 제외기간이 산정기간 밖이라 빼지 않았습니다.</p>':'';
+    var xo=r.xOut?'<p class="cw">입력한 미산입기간이 산정기간 밖이라 빼지 않았습니다.</p>':'';
     if(r.need){ el.innerHTML=xo+'<p class="c0">3개월 임금 총액을 넣으면 퇴직금을 계산합니다.</p>'; return; }
-    if(r.allx){ el.innerHTML='<p class="ce">산정기간 전체가 제외기간입니다.</p>'+(r.alt?'<p class="cw">제외기간 첫날('+fmtD(o.xs)+')을 산정사유 발생일로 보아 그 전 3개월('+fmtD(r.alt.s3)+' ~ '+fmtD(r.alt.e)+')로 평균임금을 산정합니다(고용노동부 해석). 그 기간 임금으로 따로 계산하세요.</p>':''); return; }
+    if(r.allx){ el.innerHTML='<p class="ce">산정기간 전체가 미산입기간입니다.</p>'+(r.alt?'<p class="cw">미산입기간 첫날('+fmtD(o.xs)+')을 산정사유 발생일로 보아 그 전 3개월('+fmtD(r.alt.s3)+' ~ '+fmtD(r.alt.e)+')로 평균임금을 산정합니다(고용노동부 해석). 그 기간 임금으로 따로 계산하세요.</p>':''); return; }
     var f2=function(x){ return x.toLocaleString('ko-KR',{minimumFractionDigits:2,maximumFractionDigits:2}); };
     var h='<p class="cn"><b>'+won(r.sev)+'</b>원<span class="cnu">예상 법정 퇴직금</span></p>'+xo;
-    if(r.xBonus)h+='<p class="cw">제외기간 때문에 상여금·연차수당을 정상보다 덜 받았다면, 퇴직 전 12개월과 그 금액에서 제외기간과 그 기간 지급분을 각각 빼고 3개월분을 넣습니다(평균임금 산정상의 상여금 취급 요령, 고용노동부 예규). 이 계산은 입력한 금액의 3/12을 그대로 넣었습니다.</p>';
-    h+='<table class="rtb" style="margin-top:10px"><tr><td>3개월 임금'+(r.xw?' − 제외기간 임금':'')+'</td><td>'+won(r.w-r.xw)+'원</td></tr>'
+    if(r.xBonus)h+='<p class="cw">미산입기간 때문에 상여금·연차수당을 정상보다 덜 받았다면, 퇴직 전 12개월과 그 금액에서 미산입기간과 그 기간 지급분을 각각 빼고 3개월분을 넣습니다(평균임금 산정상의 상여금 취급 요령, 고용노동부 예규). 이 계산은 입력한 금액의 3/12을 그대로 넣었습니다.</p>';
+    h+='<table class="rtb" style="margin-top:10px"><tr><td>3개월 임금'+(r.xw?' − 미산입기간 임금':'')+'</td><td>'+won(r.w-r.xw)+'원</td></tr>'
       +(r.bn3?'<tr><td>상여금 × 3/12</td><td>'+won(r.bn3)+'원</td></tr>':'')+(r.al3?'<tr><td>연차수당 × 3/12</td><td>'+won(r.al3)+'원</td></tr>':'')
       +'<tr><td>1일 평균임금<small>÷ '+r.nd+'일</small></td><td>'+f2(r.avg)+'원</td></tr>'
       +(r.ord?'<tr><td>1일 통상임금<small>'+won(o.oh)+'원 × '+fh(o.dh>0?o.dh:8)+'시간</small></td><td>'+f2(r.ord)+'원</td></tr>':'')
@@ -3838,7 +3835,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     if(Number.isNaN(pd))g.innerHTML='<p class="ce" style="margin-top:8px">원 단위 숫자로 입력</p>';
     else if(pd===undefined)g.innerHTML='';
     else { var d=r.sev-pd; g.innerHTML=d>0?'<p class="rgap no">'+won(d)+'원 덜 지급</p>':d<0?'<p class="rgap ok">계산액보다 '+won(-d)+'원 더 지급</p>':'<p class="rgap ok">계산액과 같음</p>'; } }
-  function rsClear(){ ['rin','rw','rbn','ral','rxs','rxe','rxw','roh','rpd','rss','rse'].forEach(function(id){ $(id).value=''; }); $('rend').value=today; $('rwk').value='40'; $('rdh').value='8';
+  function rsClear(){ ['rin','rw','rbn','ral','rxs','rxe','rxw','roh','rpd','rss','rse'].forEach(function(id){ $(id).value=''; }); $('rend').value=today; $('rdh').value='8';
     rs={seg:false,x:false,o:false,s:false}; $('rsegs').innerHTML=''; $('rsegs').removeAttribute('data-k'); rsPaint(); }
   function moneyFmt(x){ var v=x.value, n=v.replace(/[^\d]/g,''); if(!n){ if(v!==''&&!/\d/.test(v))return; x.value=''; return; }
     if(!/^[\d,\s원]*$/.test(v))return;   // 숫자·쉼표 말고 다른 글자가 있으면 그대로 두고 오류 표시
