@@ -96,4 +96,10 @@ const dup=Object.keys(cnt).filter(k=>cnt[k]>1); ok('함수 이름 중복 없음'
   ok('12. 7. 임검 → 근기법 제102조 1위', top(b7,'임검',1)[0]==='GK:제102조', top(b7,'임검',3));
   ok('12. 8. 임검 → 직무집행법 제9조 1위', top(a8,'임검',1)[0]==='LIO:제9조', top(a8,'임검',3));
   ok('산업안전 분야 임검 → 산안법 제155조 1위', C.search(a8,'임검','',['OSH','SD','SR','RULE','OAM'],['OSH','SD','SR','RULE','OAM']).arts[0].no==='제155조'); }
+// 2026-10-23(5-73) 외국인고용법 제22조의3: 부칙(법률 제21786호) 본문 공포 후 6개월 → 2026. 12. 10. 시행(1년 뒤는 제22조의2·제25조만)
+{ const f9=C.prepare(C.applyDue(JSON.parse(raw),'2026-12-09')).byKey['FW:제22조의3'], f10=C.prepare(C.applyDue(JSON.parse(raw),'2026-12-10')).byKey['FW:제22조의3'];
+  ok('12. 9. 외국인고용법 제22조의3 시행 전', !!(f9&&f9.fut&&/^2026-12-10/.test(f9.fut)), f9&&f9.fut);
+  ok('12. 10. 외국인고용법 제22조의3 시행', !!(f10&&!f10.fut), f10&&f10.fut);
+  const g9=C.prepare(C.applyDue(JSON.parse(raw),'2027-06-09')).byKey['FW:제22조의2'];
+  ok('2027. 6. 9. 제22조의2는 아직 개정 전 제목(기숙사)', g9&&g9.t==='기숙사의 제공 등', g9&&g9.t); }
 console.log(fail?('실패 '+fail+'건'):'전체 통과'); process.exit(fail?1:0);
