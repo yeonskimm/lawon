@@ -1,16 +1,15 @@
 // 법ON 서비스워커 (https://yeonskimm.github.io/lawon/)
-// - 앱 화면(index.html): 네트워크 우선. 3초 안에 응답이 없거나 오프라인이면 저장본을 띄우고, 새 화면은 뒤에서 받아 저장
-//   저장본을 띄운 뒤 받은 새 화면이 저장본과 다르면 열려 있는 화면에 알림 → 화면 쪽에서 자동 업데이트
+// - 앱 화면(index.html): 저장본 우선(2026-10-23 — 현장 약한 신호에서 3초 기다림·전체 다시 받기 없애려고). 저장본을 바로 띄우고 새 화면은 뒤에서 받아 저장
+//   받은 새 화면이 저장본과 다르면 열려 있는 화면에 알림 → 화면 쪽에서 업데이트(연 지 5초 안·첫 화면이면 새로고침, 아니면 안내 띠). 저장본이 없으면(첫 설치) 네트워크
 // - 아이콘·manifest: 저장본 우선, 뒤에서 새로 받아 둠
 // - 그 밖의 요청(업데이트 확인, 국가법령정보센터 등)은 건드리지 않음
-// index.html만 바꿀 때는 이 파일을 고칠 필요 없음. 이 파일·아이콘·manifest를 바꿀 때만 CACHE_NAME 숫자를 올림(lawon-v6 → lawon-v7)
+// index.html만 바꿀 때는 이 파일을 고칠 필요 없음. 이 파일·아이콘·manifest를 바꿀 때만 CACHE_NAME 숫자를 올림(lawon-v7 → lawon-v8)
 // 캐시 저장소는 주소(yeonskimm.github.io) 단위로 「오늘의안전」(onul-safety-)과 공유됨 → 삭제는 반드시 내 접두어(lawon-·옛 이름 beopon-)만
-const CACHE_NAME = 'lawon-v7';   // 2026-09-29 manifest 앱 이름(부제) 변경으로 올림
+const CACHE_NAME = 'lawon-v8';   // 2026-10-23 앱 화면 저장본 우선으로 바꿔 올림
 const MY_CACHE = k => k.startsWith('lawon-') || k.startsWith('beopon-');
 const PAGE_KEY = './index.html';
 const ASSETS = ['./manifest.json', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 const ASSET_PATHS = ASSETS.map(a => new URL(a, self.registration.scope).pathname);
-const TIMEOUT_MS = 3000;
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => Promise.allSettled([PAGE_KEY].concat(ASSETS).map(f => cache.add(f)))));
@@ -37,22 +36,16 @@ self.addEventListener('fetch', event => {
 
   if (req.mode === 'navigate') {
     const cachedP = caches.open(CACHE_NAME).then(c => c.match(PAGE_KEY));
-    let servedStale = false;
     const net = fetch(new Request(req.url, { cache: 'no-cache', credentials: 'same-origin' }));   // GitHub Pages의 10분 캐시를 건너뛰고 서버에 확인(바뀌지 않았으면 304로 가볍게)
     const saved = net.then(res => {
       if (!res || !res.ok) return;
       const copy = res.clone();
       return cachedP.then(old => caches.open(CACHE_NAME).then(c => c.put(PAGE_KEY, copy)).then(() => {
-        if (servedStale && tagOf(old) && tagOf(res) && tagOf(old) !== tagOf(res)) return notifyUpdated();
+        if (old && tagOf(old) && tagOf(res) && tagOf(old) !== tagOf(res)) return notifyUpdated();   // 저장본을 띄웠는데 서버 판이 다르면 알림
       }));
     }).catch(() => {});
     event.waitUntil(saved);   // 저장본을 먼저 띄워도 새 화면 저장·알림은 끝까지
-    event.respondWith(cachedP.then(cached => {
-      if (!cached) return net.catch(offline);
-      const late = new Promise(resolve => setTimeout(() => resolve(null), TIMEOUT_MS));
-      return Promise.race([net.then(res => (res && res.ok) ? res : null, () => null), late])
-        .then(res => { if (res) return res; servedStale = true; return cached; });
-    }));
+    event.respondWith(cachedP.then(cached => cached || net.catch(offline)));
     return;
   }
 

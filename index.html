@@ -4025,7 +4025,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   function cachedTag(){ try{ return caches.match('./index.html').then(tagOf,function(){ return ''; }); }catch(e){ return Promise.resolve(''); } }
   function idle(){ var a=document.activeElement; return (nav==='start'||(!topOf(nav)&&!st.q.trim()))&&$('sheet').hidden&&$('isheet').hidden&&$('csheet').hidden&&!(a&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)); }
   function applyUpdate(){ try{ sessionStorage.setItem('lawon.updated','1'); }catch(e){} location.reload(); }
-  function onUpdate(){ UPD.pending=true; if(document.visibilityState!=='hidden'&&idle())applyUpdate(); else $('updbar').hidden=false; }
+  function onUpdate(sw){ UPD.pending=true; if(document.visibilityState!=='hidden'&&idle()&&!(sw&&performance.now()>5000))applyUpdate(); else $('updbar').hidden=false; }   // sw: 저장본으로 연 뒤 서비스워커가 알린 새 판 — 연 지 5초 안일 때만 바로 새로고침(누르려는 순간 화면이 바뀌지 않게), 그 뒤는 안내 띠
   function checkUpdate(force){ var now=Date.now(); if(!force&&now-UPD.last<60000)return; UPD.last=now;
     if(UPD.reg){ try{ UPD.reg.update().catch(function(){}); }catch(e){} }
     serverTag().then(function(tag){ if(!tag)return; if(!UPD.tag){ UPD.tag=tag; return; } if(tag!==UPD.tag){ UPD.tag=tag; onUpdate(); } }); }
@@ -4041,7 +4041,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
 
   // 서비스워커: GitHub Pages(https)에서 등록(오프라인·홈 화면 앱·자동 업데이트)
   if('serviceWorker' in navigator&&(location.protocol==='https:'||/^(localhost|127\.0\.0\.1)$/.test(location.hostname))){
-    navigator.serviceWorker.addEventListener('message',function(ev){ if(ev.data&&ev.data.type==='LAWON_UPDATED')onUpdate(); });   // 느린 신호로 저장본을 띄운 뒤 새 화면을 받은 경우
+    navigator.serviceWorker.addEventListener('message',function(ev){ if(ev.data&&ev.data.type==='LAWON_UPDATED')onUpdate(1); });   // 저장본을 띄운 뒤 새 화면을 받은 경우(2026-10-23 저장본 우선)
     window.addEventListener('load',function(){
       try{ navigator.serviceWorker.register('./service-worker.js').then(function(r){ UPD.reg=r; },function(){}); }catch(e){}
       setTimeout(function(){ serverTag().then(function(tag){ if(tag){ if(!UPD.tag)UPD.tag=tag; } else cachedTag().then(function(c){ if(c&&!UPD.tag)UPD.tag=c; }); }); },1500);   // 지금 화면의 기준값
