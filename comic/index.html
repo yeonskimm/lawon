@@ -52,7 +52,7 @@ var CFG={y:2026,n:344,basis:'2025. 10. 1. 시행 기준',dir:'2026/',pages:{"10"
   function file(n){return CFG.dir+('00'+n).slice(-3)+'.webp';}
   function show(n){
     p=n; var arts=CFG.pages[n]||[], t=arts.indexOf(a)>=0?a:(arts[0]||'');
-    document.getElementById('ttl').textContent=(t?t+' 만화':'만화')+' · '+n+'쪽';
+    document.getElementById('ttl').textContent=(t?t+' · ':'')+n+'쪽';   // 2026-10-23: '제98조 · 67쪽'(만화는 출처 줄에)
     document.title=(t?t+' ':'')+'만화 '+n+'쪽 - 법ON';
     err.hidden=true; img.hidden=false; img.src=file(n);
     img.alt='만화로 보는 산업안전보건기준에 관한 규칙 '+n+'쪽'+(arts.length?' ('+arts.join('·')+')':'');
