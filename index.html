@@ -2475,7 +2475,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   function groupHTML(rows,judge,render){
     var g={apply:[],cond:[],unk:[],future:[],na:[]}; rows.forEach(function(x){g[judge(x).st].push(x);});
     var h=''; ['apply','cond','unk','future','na'].forEach(function(k){ if(!g[k].length)return;
-      h+='<div data-sec="'+k+'"><h3 class="gl">'+(k==='unk'?'전체':(k==='na'?naHead(g.na,judge):STN[k]))+' <span>'+g[k].length+'</span></h3><div class="list">'+g[k].map(render).join('')+'</div></div>'; });
+      h+='<div data-sec="'+k+'"><h3 class="gl">'+(k==='unk'?'인원 미입력':(k==='na'?naHead(g.na,judge):STN[k]))+' <span>'+g[k].length+'</span></h3><div class="list">'+g[k].map(render).join('')+'</div></div>'; });
     return {html:h,count:g};
   }
 

@@ -28,4 +28,6 @@ ok('하위법령 짧은 이름이 모법 짧은 이름으로 시작(모법 짧�
 ok("검색: '근로기준법 시행령'·'근기법 시행령' 모두 시행령 조문",C.search(D,'근로기준법 시행령','',LF,LF).arts.every(e=>e.l==='GKD')&&C.search(D,'근기법 시행령','',LF,LF).arts.every(e=>e.l==='GKD'));
 // ⑤ 주요 의무 줄
 ok("목록 줄: 제재가 있으면 '없음' 항목은 뺌",html.includes("real=list.some(function(z){return z.kind!=='없음';})")&&html.includes("if(seen[k]||(real&&z.kind==='없음'))return;"));
+// 2026-10-23(5-74) 적용 확인 인원 미입력 묶음 이름 — '전체'는 일부(인원을 넣어야 판정되는 것)인데 전부처럼 읽힘 → '인원 미입력'
+ok('적용 확인 인원 미입력 묶음 이름', html.includes("(k==='unk'?'인원 미입력':")&&!html.includes("(k==='unk'?'전체':"));
 console.log(fail?('실패 '+fail+'건 / '+n+'건'):'전체 통과 '+n+'건'); process.exit(fail?1:0);
