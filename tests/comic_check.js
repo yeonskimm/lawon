@@ -29,4 +29,9 @@ if(CF){ const pm={}; Object.entries(CF.pages).forEach(([p,a])=>a.forEach(no=>{ i
 ok('보기 화면: 쪽 넘김은 방문 기록 안 늘림(replaceState)·확대 허용·출처 표시', /history\.replaceState/.test(V)&&!/history\.pushState/.test(V)&&!/user-scalable\s*=\s*no|maximum-scale\s*=\s*1/.test(V)&&/출처: 안전보건공단/.test(V), '');
 const SW=fs.readFileSync(path.join(base,'service-worker.js'),'utf8');
 ok('서비스워커 v9: 페이지 열기는 앱 화면 주소만·버전 응답', /CACHE_NAME = 'lawon-v9'/.test(SW)&&/req\.mode === 'navigate' && APP_PATHS\.indexOf\(url\.pathname\) >= 0/.test(SW)&&/LAWON_VER/.test(SW)&&/SW_VER = 9/.test(SW), '');
+// 2026-10-23: 본문 없이 옮겨진 조문 3개 — 법령집과 같은 이동 표기, 옮겨간 조문 실재, 적용 판단·키워드 검색 제외 코드
+const MV={'제336조':['제333조','[종전 제336조는 제333조로 이동 <2023.11.14.>]'],'제337조':['제331조의3','[종전 제337조를 제331조의3으로 이동 <2023.11.14.>]'],'제610조':['제4조의2','[종전 제610조는 제4조의2로 이동 <개정 2012.3.5.>]']};
+for(const [no,[to,note]] of Object.entries(MV)){ const e=by[no]; ok(no+' 이동 표기 → '+to, e&&e.mv&&e.mv.to===to&&e.mv.note===note&&by[to]&&(by[to].x||'').trim(), e&&JSON.stringify(e.mv)); }
+const mvAll=D.arts.filter(e=>e.mv).map(e=>e.l+':'+e.no); ok('이동 표기 조문은 이 3개뿐', mvAll.join(',')==='RULE:제336조,RULE:제337조,RULE:제610조', mvAll.join(','));
+ok('옮겨진 조문: 적용 판단 없음·조 번호로만 검색·상세 화면 이동 칸', /if\(D\.meta\.laws\[e\.l\]\.nj\|\|e\.mv\)e\.nj=1/.test(html)&&/if\(e\.mv&&!toks\.some/.test(html)&&/옮겨간 조문<\/h3>/.test(html), '');
 console.log(fail?('실패 '+fail+'건'):'전체 통과'); process.exit(fail?1:0);
