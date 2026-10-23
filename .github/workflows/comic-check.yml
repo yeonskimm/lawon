@@ -1,0 +1,98 @@
+# 법ON: 안전보건공단 「만화로 보는 산업안전보건기준에 관한 규칙」 새 판 확인 — 2026. 10. 23. 신설(5-68)
+# - 매월 첫째 월요일 11:00(한국 시간) 공단 e-Book 자료실 목록(comic_rule_list.jsp)에서 책 번호(sdir)를 읽어,
+#   앱에 넣은 판(tools/comic_edition.txt)보다 큰 번호가 있으면 이슈(comic-edition 라벨)로 알린다. 공단은 보통 11월에 다음 해 판, 가끔 7월쯤 개정판을 올림
+# - 알림이 오면: 이슈의 PDF를 받아 Claude에게 첨부 → 쪽 표·쪽 그림(comic/연도/)을 다시 만들고 tools/comic_edition.txt를 새 번호로 바꿈
+# - 공단 목록을 읽지 못하면(3번 시도) 그것도 이슈로 알림(같은 내용이면 다시 알리지 않음)
+# - 수동 실행: Actions → 만화 새 판 확인 → Run workflow
+name: 만화 새 판 확인
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'   # 매주 월요일 11:00(한국 시간) — 아래 단계에서 그달 첫째 월요일만 실행
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: comic-check
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 첫째 월요일인지 확인
+        id: gate
+        run: |
+          d=$(TZ=Asia/Seoul date +%-d)
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$d" -gt 7 ]; then
+            echo "첫째 월요일이 아니라 건너뜀(${d}일)"; echo "go=0" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v5
+        if: steps.gate.outputs.go == '1'
+
+      - name: 공단 자료실 목록 읽기
+        id: chk
+        if: steps.gate.outputs.go == '1'
+        run: |
+          known=$(tr -dc '0-9' < tools/comic_edition.txt)
+          url='https://kosha.or.kr/ebook/fcatalog/include/comic_rule_list.jsp'
+          ok=0
+          for i in 1 2 3; do
+            if curl -sSL --max-time 40 -A 'Mozilla/5.0 (lawon comic-check)' "$url" -o list.html && grep -q 'sdir=' list.html; then ok=1; break; fi
+            sleep 20
+          done
+          if [ "$ok" != 1 ]; then
+            echo "alert=1" >> "$GITHUB_OUTPUT"; echo "sig=fail" >> "$GITHUB_OUTPUT"
+            printf '공단 e-Book 자료실 목록을 읽지 못했습니다(3번 시도).\n\n- 목록: %s\n- 공단 사이트 점검·주소 변경일 수 있음. 다음 달에도 같으면 Claude에게 확인 요청\n\n<!-- comic-edition:fail -->\n' "$url" > issue.md
+            echo "만화 새 판 확인 — 공단 목록을 읽지 못함" > title.txt
+            cat issue.md >> "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          python3 - "$known" <<'PY'
+          import re, sys, html, os
+          known = int(sys.argv[1]); s = open('list.html', encoding='utf-8', errors='replace').read()
+          books = {}
+          for m in re.finditer(r'comic_rule_detail\.jsp\?[^"\']*?sdir=(\d+)', s):
+              n = int(m.group(1)); seg = html.unescape(re.sub(r'<[^>]+>', ' ', s[m.end(): m.end() + 800]))   # 링크 뒤에 오는 책 제목
+              t = re.search(r'(20\d\d\s*만화로[^\n]*?규칙(?:\s*\(개정판\))?)', seg)
+              books.setdefault(n, re.sub(r'\s+', ' ', t.group(1)).strip() if t else '')
+          new = sorted(k for k in books if k > known)
+          out = open(os.environ['GITHUB_OUTPUT'], 'a')
+          summ = open(os.environ['GITHUB_STEP_SUMMARY'], 'a')
+          summ.write('앱에 넣은 판: sdir %d / 목록의 책 번호: %s\n' % (known, ', '.join(map(str, sorted(books)))))
+          if not new:
+              out.write('alert=0\n'); summ.write('\n새 판 없음\n'); sys.exit(0)
+          sig = '-'.join(map(str, new))
+          body = ['공단 e-Book 자료실에 앱에 넣은 판(sdir %d)보다 새 판이 올라왔습니다.\n' % known]
+          for n in new:
+              body.append('- **%s** (sdir %d)\n  - 상세: https://kosha.or.kr/ebook/fcatalog/include/comic_rule_detail.jsp?sdir=%d\n' % (books[n] or '제목 확인 필요', n, n))
+          body.append('\n할 일: 상세 페이지에서 PDF(웹용)를 받아 Claude에게 첨부하고 "만화 새 판 반영해줘"\n\n<!-- comic-edition:%s -->\n' % sig)
+          open('issue.md', 'w', encoding='utf-8').write(''.join(body))
+          open('title.txt', 'w', encoding='utf-8').write('만화로 보는 산업안전보건기준에 관한 규칙 새 판 (%s)' % (books[new[-1]] or 'sdir %d' % new[-1]))
+          out.write('alert=1\nsig=%s\n' % sig); summ.write(''.join(body))
+          PY
+
+      - name: 이슈로 알림
+        if: steps.gate.outputs.go == '1' && steps.chk.outputs.alert == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SIG: ${{ steps.chk.outputs.sig }}
+        run: |
+          gh label create comic-edition --color 0E8A16 --description "공단 만화 새 판" --force || true
+          num=$(gh issue list --label comic-edition --state open --json number --jq '.[0].number // empty')
+          if [ -n "$num" ]; then
+            if gh issue view "$num" --json body,comments --jq '.body, .comments[].body' | grep -q "comic-edition:$SIG"; then
+              echo "지난번과 같은 내용이라 알리지 않음"
+            else
+              gh issue comment "$num" --body-file issue.md
+            fi
+          else
+            gh issue create --title "$(cat title.txt)" --body-file issue.md --label comic-edition
+          fi

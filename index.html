@@ -2943,9 +2943,11 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     return '<h3 class="gl">교육시간 <span>'+(vk?'근거 '+esc(D.meta.laws[vk[0]].short+' '+vk[1])+' · ':'')+'시행규칙 별표 4</span></h3><div class="card edc"><div class="bwrap'+(lng&&!full?' clip ed':'')+'">'+body+'</div>'
       +(lng?'<button type="button" class="fullbtn" data-efull="1" aria-expanded="'+full+'">'+(full?'접기':'전체 보기')+'</button>':'')
       +'<button type="button" class="lnk" data-bt="S4">별표 4 전체 보기</button></div>'; }
-  function comicLink(e){   // 2026-10-23: 안전보건규칙 조문 → 안전보건공단 「만화로 보는 산업안전보건기준에 관한 규칙」 그 조문 첫 쪽(공단 전자책, 새 창)
+  function comicLink(e){   // 2026-10-23: 안전보건규칙 조문 → 안전보건공단 「만화로 보는 산업안전보건기준에 관한 규칙」 그 조문 첫 쪽. 5-68: 공단 전자책(흐림) 대신 우리 사이트 comic/ 쪽 보기(선명한 쪽 그림, 새 창)
     var c=D.comic; if(!c||e.l!=='RULE'||!c.map)return ''; var p=c.map[e.no]; if(!p)return '';
-    return '<a class="cmk" href="https://www.kosha.or.kr/ebook/fcatalog/ecatalog5.jsp?Dir='+encodeURIComponent(c.dir)+'&amp;catimage=&amp;start='+p+'" target="_blank" rel="noopener"><b>만화로 보기</b> <span>안전보건공단 '+esc(String(c.y))+'년판 '+p+'쪽</span>'+EXT+'</a>';
+    var href=window.LAWON_COMIC_OK?'comic/?p='+p+'&amp;a='+encodeURIComponent(e.no)   // 서비스워커 v9 이상(또는 서비스워커 없음)일 때만 — v8은 같은 사이트 다른 페이지를 앱 저장본 자리에 덮어씀
+      :'https://www.kosha.or.kr/ebook/fcatalog/ecatalog5.jsp?Dir='+encodeURIComponent(c.dir)+'&amp;catimage=&amp;start='+p;   // 확인 전: 공단 전자책(5-67 방식)
+    return '<a class="cmk" href="'+href+'" target="_blank" rel="noopener"><b>만화로 보기</b> <span>안전보건공단 '+esc(String(c.y))+'년판 '+p+'쪽</span>'+EXT+'</a>';
   }
   function renderArt(en){
     var e=D.byKey[en.spec.key]; if(!e){en.title='조문';en.el.innerHTML='<div class="note"><p>조문을 찾지 못했습니다.</p></div>';return;}
@@ -4047,10 +4049,21 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   renderInstall();
 
   // 서비스워커: GitHub Pages(https)에서 등록(오프라인·홈 화면 앱·자동 업데이트)
+  function swVer(reg){   // 2026-10-23: 서비스워커 버전 확인 — v9 이상이면 만화 보기를 우리 사이트(comic/)로 연결
+    try{ var w=reg&&reg.active; if(!w)return; var ch=new MessageChannel();
+      ch.port1.onmessage=function(ev){ if(ev.data&&ev.data.v>=9)window.LAWON_COMIC_OK=true; };
+      w.postMessage({type:'LAWON_VER'},[ch.port2]); }catch(e){}
+  }
+  function swCheck(){   // 작동 중인 서비스워커가 없으면 덮어쓸 일이 없으니 연결, 있으면 버전 확인
+    try{ navigator.serviceWorker.getRegistration().then(function(r){ if(!r||!r.active)window.LAWON_COMIC_OK=true; else { window.LAWON_COMIC_OK=false; swVer(r); } },function(){ window.LAWON_COMIC_OK=true; }); }catch(e){ window.LAWON_COMIC_OK=true; }
+  }
+  if(!('serviceWorker' in navigator)||!(location.protocol==='https:'||/^(localhost|127\.0\.0\.1)$/.test(location.hostname)))window.LAWON_COMIC_OK=true;   // 서비스워커가 없으면 덮어쓸 일도 없음
   if('serviceWorker' in navigator&&(location.protocol==='https:'||/^(localhost|127\.0\.0\.1)$/.test(location.hostname))){
     navigator.serviceWorker.addEventListener('message',function(ev){ if(ev.data&&ev.data.type==='LAWON_UPDATED')onUpdate(1); });   // 저장본을 띄운 뒤 새 화면을 받은 경우(2026-10-23 저장본 우선)
     window.addEventListener('load',function(){
-      try{ navigator.serviceWorker.register('./service-worker.js').then(function(r){ UPD.reg=r; },function(){}); }catch(e){}
+      try{ navigator.serviceWorker.register('./service-worker.js').then(function(r){ UPD.reg=r; swCheck(); },swCheck); }catch(e){ swCheck(); }
+      try{ navigator.serviceWorker.addEventListener('controllerchange',swCheck); }catch(e){}
+      setTimeout(swCheck,3000);
       setTimeout(function(){ serverTag().then(function(tag){ if(tag){ if(!UPD.tag)UPD.tag=tag; } else cachedTag().then(function(c){ if(c&&!UPD.tag)UPD.tag=c; }); }); },1500);   // 지금 화면의 기준값
     });
   }

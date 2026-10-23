@@ -1,5 +1,6 @@
 // 안전보건규칙 조문 → 안전보건공단 「만화로 보는 산업안전보건기준에 관한 규칙」 쪽 연결 검사 — 사용: node tests/comic_check.js index.html
 // 2026-10-23: 2026년판(전자책 Dir 647, 344쪽) PDF 쪽마다 '제N조(' 제목을 뽑아 만든 조문 → 첫 쪽 표(D.comic)
+// 5-68: 우리 사이트 쪽 보기 comic/(index.html·2026/NNN.webp)와 서비스워커 v9 범위도 확인
 const fs=require('fs'); const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const D=JSON.parse(html.match(/<script id="data" type="application\/json">([\s\S]*?)<\/script>/)[1].replace(/<\\\//g,'</'));
 let fail=0; const ok=(n,c,i)=>{console.log((c?'PASS ':'FAIL ')+n+(c?'':'  → '+i)); if(!c)fail++;};
@@ -14,4 +15,18 @@ const noLink=R.filter(e=>!M[e.no]).map(e=>e.no); ok('연결 없는 조문은 삭
 for(const [k,p] of [['제1조',10],['제3조',12],['제4조의2',12],['제42조',32],['제87조',61],['제227조',115],['제618조',284],['제619조의2',285],['제673조',312],['제674조',312]])
   ok(k+' → '+p+'쪽', M[k]===p, M[k]);
 ok('조문 화면 코드(comicLink)', /function comicLink\(e\)/.test(html)&&/ecatalog5\.jsp\?Dir=/.test(html)&&/comicLink\(e\)\+'<\/div>'/.test(html), '');
+// 5-68: 우리 사이트 쪽 보기(comic/) — 쪽 그림 파일·보기 화면 표·서비스워커 범위
+const path=require('path'), base=path.dirname(path.resolve(process.argv[2]||'index.html'));
+ok('앱 링크: v9 확인 시 comic/?p=쪽&a=조문, 확인 전 공단 전자책', /LAWON_COMIC_OK\?'comic\/\?p='/.test(html)&&/function swVer\(reg\)/.test(html)&&/type:'LAWON_VER'/.test(html), '');
+const VD=path.join(base,'comic'), V=fs.existsSync(path.join(VD,'index.html'))?fs.readFileSync(path.join(VD,'index.html'),'utf8'):'';
+const cfg=(V.match(/var CFG=(\{[\s\S]*?\});\n/)||[])[1]; let CF=null; try{ CF=Function('return '+cfg)(); }catch(e){}
+ok('보기 화면 설정(연도·쪽 수·시행 기준)', CF&&CF.y===C.y&&CF.n===344&&CF.basis==='2025. 10. 1. 시행 기준'&&CF.dir===C.y+'/', cfg&&cfg.slice(0,80));
+const miss=[]; for(let i=1;i<=344;i++){ const f=path.join(VD,String(C.y),String(i).padStart(3,'0')+'.webp'); if(!fs.existsSync(f)||fs.statSync(f).size<3000)miss.push(i); }
+ok('쪽 그림 344장(webp)', !miss.length, miss.slice(0,20).join(','));
+const extra=fs.existsSync(path.join(VD,String(C.y)))?fs.readdirSync(path.join(VD,String(C.y))).filter(f=>!/^\d{3}\.webp$/.test(f)||+f.slice(0,3)>344):['폴더 없음']; ok('그림 폴더에 다른 파일 없음', !extra.length, extra.join(','));
+if(CF){ const pm={}; Object.entries(CF.pages).forEach(([p,a])=>a.forEach(no=>{ if(!(no in pm))pm[no]=+p; }));
+  const d=Object.keys(M).filter(k=>pm[k]!==M[k]); ok('보기 화면 쪽별 조문 = 앱 연결 표', !d.length&&Object.keys(pm).length===Object.keys(M).length, d.slice(0,10).join(',')); }
+ok('보기 화면: 쪽 넘김은 방문 기록 안 늘림(replaceState)·확대 허용·출처 표시', /history\.replaceState/.test(V)&&!/history\.pushState/.test(V)&&!/user-scalable\s*=\s*no|maximum-scale\s*=\s*1/.test(V)&&/출처: 안전보건공단/.test(V), '');
+const SW=fs.readFileSync(path.join(base,'service-worker.js'),'utf8');
+ok('서비스워커 v9: 페이지 열기는 앱 화면 주소만·버전 응답', /CACHE_NAME = 'lawon-v9'/.test(SW)&&/req\.mode === 'navigate' && APP_PATHS\.indexOf\(url\.pathname\) >= 0/.test(SW)&&/LAWON_VER/.test(SW)&&/SW_VER = 9/.test(SW), '');
 console.log(fail?('실패 '+fail+'건'):'전체 통과'); process.exit(fail?1:0);
