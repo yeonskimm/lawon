@@ -1,6 +1,7 @@
 {
 "code": "LIC",
 "cur": {
+"aef": {},
 "arts": {
 "제10조": {
 "t": "등록",
@@ -102,11 +103,71 @@
 }
 },
 "ef": "20260407",
+"fms": [
+{
+"hwp": "/LSW/flDownload.do?flSeq=163080857",
+"n": "1",
+"pdf": "/LSW/flDownload.do?flSeq=163080859",
+"t": "교육기관 지정신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=163080863",
+"n": "2",
+"pdf": "/LSW/flDownload.do?flSeq=163080865",
+"t": "교육기관 지정서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=163080869",
+"n": "3",
+"pdf": "/LSW/flDownload.do?flSeq=163080871",
+"t": "인력ㆍ시설 변경신고서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=163080875",
+"n": "4",
+"pdf": "/LSW/flDownload.do?flSeq=163080877",
+"t": "교육수강 신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=163080881",
+"n": "5",
+"pdf": "/LSW/flDownload.do?flSeq=163080883",
+"t": "자격교육 수료증"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=163080887",
+"n": "6",
+"pdf": "/LSW/flDownload.do?flSeq=163080889",
+"t": "기능습득 교육이수증"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=163080893",
+"n": "7",
+"pdf": "/LSW/flDownload.do?flSeq=163080895",
+"t": "수료증등 재발급신청서"
+}
+],
 "id": "007844",
 "mst": "285435",
+"paths": {
+"제10조": [],
+"제11조": [],
+"제12조": [],
+"제13조": [],
+"제1조": [],
+"제2조": [],
+"제3조": [],
+"제4조": [],
+"제5조": [],
+"제6조": [],
+"제6조의2": [],
+"제7조": [],
+"제8조": [],
+"제9조": []
+},
 "pno": "00464"
 },
 "name": "유해ㆍ위험작업의 취업 제한에 관한 규칙",
 "pend": [],
-"updated": "2026-10-16"
+"updated": "2026-10-24"
 }

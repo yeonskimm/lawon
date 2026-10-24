@@ -1,6 +1,7 @@
 {
 "code": "DISPR",
 "cur": {
+"aef": {},
 "arts": {
 "제10조": {
 "t": "증표",
@@ -98,11 +99,91 @@
 }
 },
 "ef": "20240612",
+"fms": [
+{
+"hwp": "/LSW/flDownload.do?flSeq=141078239",
+"n": "1",
+"pdf": "/LSW/flDownload.do?flSeq=141078241",
+"t": "근로자파견사업(신규, 갱신) 허가신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=141078247",
+"n": "2",
+"pdf": "/LSW/flDownload.do?flSeq=141078249",
+"t": "근로자파견사업계획서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=141078255",
+"n": "3",
+"pdf": "/LSW/flDownload.do?flSeq=141078257",
+"t": "근로자파견사업 허가증"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=141078261",
+"n": "4",
+"pdf": "/LSW/flDownload.do?flSeq=141078263",
+"t": "근로자파견사업 허가관리대장"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=141078269",
+"n": "5",
+"pdf": "/LSW/flDownload.do?flSeq=141078271",
+"t": "근로자파견사업허가증 재발급신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=141078275",
+"n": "6",
+"pdf": "/LSW/flDownload.do?flSeq=141078277",
+"t": "근로자파견사업(변경허가신청서, 변경신고서)"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=141078283",
+"n": "7",
+"pdf": "/LSW/flDownload.do?flSeq=141078285",
+"t": "근로자파견사업 폐지신고서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=141078289",
+"n": "8",
+"pdf": "/LSW/flDownload.do?flSeq=141078291",
+"t": "(상반기, 하반기)근로자파견사업보고서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=141078297",
+"n": "9",
+"pdf": "/LSW/flDownload.do?flSeq=141078299",
+"t": "권한확인증"
+}
+],
 "id": "008563",
 "mst": "263205",
+"paths": {
+"제10조": [],
+"제11조": [],
+"제12조": [],
+"제13조": [],
+"제14조": [],
+"제15조": [],
+"제16조": [],
+"제17조": [],
+"제18조": [],
+"제19조": [],
+"제1조": [],
+"제20조": [],
+"제21조": [],
+"제2조": [],
+"제3조": [],
+"제3조의2": [],
+"제4조": [],
+"제5조": [],
+"제6조": [],
+"제7조": [],
+"제8조": [],
+"제9조": []
+},
 "pno": "00416"
 },
 "name": "파견근로자 보호 등에 관한 법률 시행규칙",
 "pend": [],
-"updated": "2026-10-16"
+"updated": "2026-10-24"
 }

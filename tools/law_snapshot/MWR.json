@@ -1,6 +1,7 @@
 {
 "code": "MWR",
 "cur": {
+"aef": {},
 "arts": {
 "제1조": {
 "t": "목적",
@@ -50,11 +51,59 @@
 }
 },
 "ef": "20260102",
+"fms": [
+{
+"hwp": "/LSW/flDownload.do?flSeq=159932861",
+"n": "1",
+"pdf": "/LSW/flDownload.do?flSeq=159932863",
+"t": "(정신, 신체) 장애로 인한 최저임금 적용 제외 인가신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=159932869",
+"n": "2",
+"pdf": "/LSW/flDownload.do?flSeq=159932871",
+"t": "(정신, 신체) 장애로 인한 최저임금 적용 제외 인가서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=159932875",
+"n": "3",
+"pdf": "/LSW/flDownload.do?flSeq=159932877",
+"t": "삭제 &lt;1994.11.14&gt;"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=159932881",
+"n": "4",
+"pdf": "/LSW/flDownload.do?flSeq=159932883",
+"t": "[별지 제2호서식]으로 이동 &lt;2011.12.19&gt;"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=159932887",
+"n": "5",
+"pdf": "/LSW/flDownload.do?flSeq=159932889",
+"t": "삭제 &lt;2005.8.31&gt;"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=159932893",
+"n": "6",
+"pdf": "/LSW/flDownload.do?flSeq=159932895",
+"t": "삭제 &lt;1994.11.14&gt;"
+}
+],
 "id": "008480",
 "mst": "282351",
+"paths": {
+"제1조": [],
+"제2조": [],
+"제3조": [],
+"제4조": [],
+"제5조": [],
+"제6조": [],
+"제7조": [],
+"제8조": []
+},
 "pno": "00459"
 },
 "name": "최저임금법 시행규칙",
 "pend": [],
-"updated": "2026-10-16"
+"updated": "2026-10-24"
 }

@@ -1,6 +1,7 @@
 {
 "code": "TUR",
 "cur": {
+"aef": {},
 "arts": {
 "제10조": {
 "t": "해산신고",
@@ -129,11 +130,268 @@
 },
 "bts": {},
 "ef": "20260310",
+"fms": [
+{
+"hwp": "/LSW/flDownload.do?flSeq=162122929",
+"n": "1",
+"pdf": "/LSW/flDownload.do?flSeq=162122931",
+"t": "노동조합(설립, 설립신고사항 변경)신고서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162122937",
+"n": "2",
+"pdf": "/LSW/flDownload.do?flSeq=162122939",
+"t": "삭제 &lt;2010.8.9&gt;"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162122943",
+"n": "3",
+"pdf": "/LSW/flDownload.do?flSeq=162122945",
+"t": "노동조합 설립신고증 재교부신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162122951",
+"n": "4",
+"pdf": "/LSW/flDownload.do?flSeq=162122953",
+"t": "노동조합현황 정기 통보서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162122963",
+"n": "5",
+"pdf": "/LSW/flDownload.do?flSeq=162122965",
+"t": "노동단체카드"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162122971",
+"n": "6",
+"pdf": "/LSW/flDownload.do?flSeq=162122973",
+"t": "(총회, 대의원회) 소집권자 지명 요구서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162122979",
+"n": "6의2",
+"pdf": "/LSW/flDownload.do?flSeq=162122981",
+"t": "결산결과 공표 표준서식"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162122989",
+"n": "7",
+"pdf": "/LSW/flDownload.do?flSeq=162122991",
+"t": "노동조합해산신고서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162122995",
+"n": "7의2",
+"pdf": "/LSW/flDownload.do?flSeq=162122997",
+"t": "교섭요구 사실의 공고에 대한 시정신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123003",
+"n": "7의3",
+"pdf": "/LSW/flDownload.do?flSeq=162123005",
+"t": "교섭요구 노동조합 확정공고 이의신청 사실의 공고에 대한 시정신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123011",
+"n": "7의4",
+"pdf": "/LSW/flDownload.do?flSeq=162123013",
+"t": "과반수노동조합에 대한 이의신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123019",
+"n": "7의5",
+"pdf": "/LSW/flDownload.do?flSeq=162123021",
+"t": "공동교섭대표단 구성 결정 신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123027",
+"n": "7의6",
+"pdf": "/LSW/flDownload.do?flSeq=162123029",
+"t": "공동교섭대표단 구성 결정에 대한 이의신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123035",
+"n": "7의7",
+"pdf": "/LSW/flDownload.do?flSeq=162123037",
+"t": "교섭단위 (분리, 통합) 결정 신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123043",
+"n": "7의8",
+"pdf": "/LSW/flDownload.do?flSeq=162123045",
+"t": "교섭단위 (분리, 통합) 결정 재심신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123051",
+"n": "7의9",
+"pdf": "/LSW/flDownload.do?flSeq=162123053",
+"t": "공정대표의무 위반 시정신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123059",
+"n": "7의10",
+"pdf": "/LSW/flDownload.do?flSeq=162123061",
+"t": "공정대표의무 위반 시정 재심신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123067",
+"n": "8",
+"pdf": "/LSW/flDownload.do?flSeq=162123069",
+"t": "단체협약신고서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123075",
+"n": "8의2",
+"pdf": "/LSW/flDownload.do?flSeq=162123077",
+"t": "필수유지업무 유지ㆍ운영 수준 등 결정신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123083",
+"n": "9",
+"pdf": "/LSW/flDownload.do?flSeq=162123085",
+"t": "사적 조정ㆍ중재 결정 신고서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123089",
+"n": "10",
+"pdf": "/LSW/flDownload.do?flSeq=162123091",
+"t": "노동쟁의조정신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123097",
+"n": "11",
+"pdf": "/LSW/flDownload.do?flSeq=162123099",
+"t": "노동쟁의중재신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123105",
+"n": "12",
+"pdf": "/LSW/flDownload.do?flSeq=162123107",
+"t": "노동조합 설립 신고증"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123111",
+"n": "13",
+"pdf": "/LSW/flDownload.do?flSeq=162123113",
+"t": "노동조합 설립신고사항 보완요구서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123117",
+"n": "14",
+"pdf": "/LSW/flDownload.do?flSeq=162123119",
+"t": "(총회, 대의원회)소집권자 지명서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123123",
+"n": "15",
+"pdf": "/LSW/flDownload.do?flSeq=162123125",
+"t": "(노동조합 규약, 노동조합 결의ㆍ처분, 단체협약) 시정명령서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123129",
+"n": "16",
+"pdf": "/LSW/flDownload.do?flSeq=162123131",
+"t": "자료제출요구서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123135",
+"n": "17",
+"pdf": "/LSW/flDownload.do?flSeq=162123137",
+"t": "단체협약의 지역적 적용범위 결정서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123141",
+"n": "18",
+"pdf": "/LSW/flDownload.do?flSeq=162123143",
+"t": "쟁의행위의 중지통보서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123147",
+"n": "18의2",
+"pdf": "/LSW/flDownload.do?flSeq=162123149",
+"t": "필수유지업무 유지ㆍ운영 수준 등 결정에 대한 재심신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123155",
+"n": "19",
+"pdf": "/LSW/flDownload.do?flSeq=162123157",
+"t": "직장폐쇄 신고서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123161",
+"n": "20",
+"pdf": "/LSW/flDownload.do?flSeq=162123163",
+"t": "중재재정의 재심신청서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123169",
+"n": "21",
+"pdf": "/LSW/flDownload.do?flSeq=162123171",
+"t": "시정요구서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123175",
+"n": "22",
+"pdf": "/LSW/flDownload.do?flSeq=162123177",
+"t": "노동조합의 시정결과보고서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123181",
+"n": "23",
+"pdf": "/LSW/flDownload.do?flSeq=162123183",
+"t": "노동조합 설립신고사항 변경신고증"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123187",
+"n": "24",
+"pdf": "/LSW/flDownload.do?flSeq=162123189",
+"t": "쟁의행위신고서"
+},
+{
+"hwp": "/LSW/flDownload.do?flSeq=162123193",
+"n": "25",
+"pdf": "/LSW/flDownload.do?flSeq=162123195",
+"t": "삭제 &lt;2007.12.26&gt;"
+}
+],
 "id": "006935",
 "mst": "284021",
+"paths": {
+"제10조": [],
+"제10조의2": [],
+"제10조의3": [],
+"제10조의4": [],
+"제10조의5": [],
+"제10조의6": [],
+"제10조의7": [],
+"제10조의8": [],
+"제10조의9": [],
+"제11조": [],
+"제11조의2": [],
+"제11조의3": [],
+"제12조": [],
+"제12조의2": [],
+"제12조의3": [],
+"제13조": [],
+"제14조": [],
+"제15조": [],
+"제16조": [],
+"제16조의2": [],
+"제17조": [],
+"제1조": [],
+"제2조": [],
+"제3조": [],
+"제4조": [],
+"제5조": [],
+"제6조": [],
+"제7조": [],
+"제8조": [],
+"제9조": [],
+"제9조의2": []
+},
 "pno": "00463"
 },
 "name": "노동조합 및 노동관계조정법 시행규칙",
 "pend": [],
-"updated": "2026-10-16"
+"updated": "2026-10-24"
 }
