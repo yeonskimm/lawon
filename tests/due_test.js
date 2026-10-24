@@ -102,4 +102,6 @@ const dup=Object.keys(cnt).filter(k=>cnt[k]>1); ok('함수 이름 중복 없음'
   ok('12. 10. 외국인고용법 제22조의3 시행', !!(f10&&!f10.fut), f10&&f10.fut);
   const g9=C.prepare(C.applyDue(JSON.parse(raw),'2027-06-09')).byKey['FW:제22조의2'];
   ok('2027. 6. 9. 제22조의2는 아직 개정 전 제목(기숙사)', g9&&g9.t==='기숙사의 제공 등', g9&&g9.t); }
+{ const j10=C.prepare(C.applyDue(JSON.parse(raw),'2027-06-10')), r=C.search(j10,'주거시설','',['FW']);
+  ok('2027. 6. 10. 주거시설 → 외국인고용법 제22조의2(개정 후 본문)', r.arts.some(e=>e.no==='제22조의2'&&/주거시설/.test(e.x)&&!e.hc), r.arts.map(e=>e.no)); }
 console.log(fail?('실패 '+fail+'건'):'전체 통과'); process.exit(fail?1:0);

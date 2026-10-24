@@ -1325,6 +1325,7 @@ function prepare(D){
   /*SUBLAW*/ D.dn={}; D.arts.forEach(function(e){ if(!e.up||!e.up.length)return; var p=D.byKey[e.up[0]]; if(!p)return; e.pa=p; (D.dn[e.up[0]]=D.dn[e.up[0]]||[]).push(e); });   // 시행령·시행규칙 조문 → 모법 조문(위임 근거)
   Object.keys(D.dn).forEach(function(k){ D.dn[k].sort(function(a,b){return a.o-b.o||cmpNo(a.no,b.no);}); });
   patchOSH(D);
+  D.arts.forEach(function(e){ if(!e.chg)return; var hc='',ht=''; [e.chg].concat(e.chg.nx||[]).forEach(function(c){ if(c.kind!=='삭제'){ hc+='|'+norm(c.t||'')+'|'+norm(c.x||''); if(c.t)ht+='|'+norm(c.t); } }); if(hc)e.hc=hc; if(ht)e.hct=ht; });   // 2026-10-24(5-75): 시행 전 개정 문구('주거시설' 등)도 검색(가장 낮은 점수 — 결과 줄은 '개정 예정' 표시)
   D.arts.forEach(function(e){ if(e.fn&&e.fn.length)e.hf=norm(e.fn.map(function(f){return (f.t||'')+' '+(f.rows||[]).map(function(r){return r.d||'';}).join(' ');}).join(' ')); });   // 2026-10-16: 과태료 부과기준 위반행위 문구('선임하지 않은 경우' 등)도 검색(낮은 점수)
   D.defs=defsOf(D);
   prepareBT(D);
@@ -1479,7 +1480,7 @@ function search(D,q,law,first,grp,nob){   // grp: 선택한 분야의 법령 →
       if(e.rt.indexOf(raw)>=0){s+=60;hit=true;} else if(e.rp.indexOf(raw)>=0){s+=40;hit=true;} else if(e.rx.indexOf(raw)>=0){s+=10;hit=true;}
       for(var j=0;j<g.length&&!hit;j++){var term=g[j]; if(!term)continue;
         var nx=j>g.nv?g.not:null;   // 2026-10-22: 용어사전 add 말이 다른 낱말 속에만 있으면 일치로 보지 않음(not — '환기' ⊂ '상환기간')
-        if(hasX(e.ht,term,nx)){s+=(j?30:6);hit=true;} else if(hasX(e.hp,term,nx)){s+=(j?20:4);hit=true;} else if(hasX(e.h,term,nx)){s+=(j?4:1);hit=true;} else if(e.hf&&e.hf.indexOf(term)>=0){s+=1;hit=true;}}
+        if(hasX(e.ht,term,nx)){s+=(j?30:6);hit=true;} else if(hasX(e.hp,term,nx)){s+=(j?20:4);hit=true;} else if(hasX(e.h,term,nx)){s+=(j?4:1);hit=true;} else if(e.hf&&e.hf.indexOf(term)>=0){s+=1;hit=true;} else if(e.hc&&e.hc.indexOf(term)>=0){s+=(e.hct&&e.hct.indexOf(term)>=0)?6:1;hit=true;}}
       if(hit&&s<30){ for(var j2=1;j2<=(g.nv||0);j2++){ if(!g[j2])continue; if(e.ht.indexOf(g[j2])>=0){s=Math.max(s,30);break;} if(e.hp.indexOf(g[j2])>=0)s=Math.max(s,20); } }
       if(!hit&&!pinBy[i][e.l+':'+e.no])return;   // 모든 검색어를 포함해야 함. 용어사전 고정 조문은 그 검색어에 한해서만 통과
       sc+=s*W[i];}
@@ -2576,6 +2577,10 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
         (e.fn||[]).forEach(function(f){ ((f.rows&&f.rows.length)?f.rows:[{d:''}]).forEach(function(r){ var tx=r.d||f.t||''; if(!fv&&tk.every(function(t){return inH(t)||norm(tx).indexOf(t)>=0;}))fv=tx; }); });
         if(!fv)(e.fn||[]).forEach(function(f){ if(!fv&&tk.every(function(t){return inH(t)||norm(f.t||'').indexOf(t)>=0;}))fv=f.t; });
         if(fv)return '<b class="snf">과태료 위반행위</b> '+escRaw(fv.length>90?fv.slice(0,88)+'…':fv); } }
+    if(e.hc){ var tq=splitQuery(q).toks, tn=tq.map(norm), inH2=function(t){return !t||e.h.indexOf(t)>=0;};   // 2026-10-24(5-75): 개정 예정 문구로만 걸린 조문은 그 문구를 보여줌
+      if(tn.length&&!tn.every(inH2)&&tn.every(function(t){return inH2(t)||e.hc.indexOf(t)>=0;})){ var miss=tq.filter(function(w,i){return !inH2(tn[i]);})[0].toLowerCase(), cv='';
+        [e.chg].concat(e.chg.nx||[]).forEach(function(c){ var cx=String(c.x||''), i=cx.toLowerCase().indexOf(miss); if(cv||c.kind==='삭제')return; if(i<0&&norm(cx).indexOf(norm(miss))<0)return; cv=i<0?cx.slice(0,88):((i>30?'…':'')+cx.slice(Math.max(0,i-30),i+58)); });
+        if(cv)return '<b class="snf">개정 예정</b> '+escRaw(cv.replace(/\s+/g,' ')); } }
     var x=e.x, xl=e.rx, occ=[];
     splitQuery(q).toks.forEach(function(w,k){ var s=D.syn[norm(w)], terms=[w].concat((s&&s.add)||[]);
       terms.forEach(function(tm){ tm=String(tm).toLowerCase(); if(!tm)return; var i=xl.indexOf(tm),c=0; while(i>=0&&c<30){occ.push([i,i+tm.length,k]);i=xl.indexOf(tm,i+tm.length);c++;} });
@@ -2947,7 +2952,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     var c=D.comic; if(!c||e.l!=='RULE'||!c.map)return ''; var p=c.map[e.no]; if(!p)return '';
     var href=window.LAWON_COMIC_OK?'comic/?p='+p+'&amp;a='+encodeURIComponent(e.no)   // 서비스워커 v9 이상(또는 서비스워커 없음)일 때만 — v8은 같은 사이트 다른 페이지를 앱 저장본 자리에 덮어씀
       :'https://www.kosha.or.kr/ebook/fcatalog/ecatalog5.jsp?Dir='+encodeURIComponent(c.dir)+'&amp;catimage=&amp;start='+p;   // 확인 전: 공단 전자책(5-67 방식)
-    return '<a class="cmk" href="'+href+'" target="_blank" rel="noopener"><b>만화로 보기</b> <span>안전보건공단 '+esc(String(c.y))+'년판 '+p+'쪽</span>'+EXT+'</a>';
+    return '<a class="cmk" href="'+href+'" target="_blank" rel="noopener"><b>만화로 보는 안전보건규칙</b> <span>'+esc(String(c.y))+'년판 '+p+'쪽</span>'+EXT+'</a>';
   }
   function renderArt(en){
     var e=D.byKey[en.spec.key]; if(!e){en.title='조문';en.el.innerHTML='<div class="note"><p>조문을 찾지 못했습니다.</p></div>';return;}

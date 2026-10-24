@@ -34,4 +34,6 @@ const MV={'제336조':['제333조','[종전 제336조는 제333조로 이동 <20
 for(const [no,[to,note]] of Object.entries(MV)){ const e=by[no]; ok(no+' 이동 표기 → '+to, e&&e.mv&&e.mv.to===to&&e.mv.note===note&&by[to]&&(by[to].x||'').trim(), e&&JSON.stringify(e.mv)); }
 const mvAll=D.arts.filter(e=>e.mv).map(e=>e.l+':'+e.no); ok('이동 표기 조문은 이 3개뿐', mvAll.join(',')==='RULE:제336조,RULE:제337조,RULE:제610조', mvAll.join(','));
 ok('옮겨진 조문: 적용 판단 없음·조 번호로만 검색·상세 화면 이동 칸', /if\(D\.meta\.laws\[e\.l\]\.nj\|\|e\.mv\)e\.nj=1/.test(html)&&/if\(e\.mv&&!toks\.some/.test(html)&&/옮겨간 조문<\/h3>/.test(html), '');
+// 2026-10-24(5-75) 조문 카드 줄 문구: 책 이름(굵게) + 판·쪽(회색) — 사용자 결정
+ok("조문 카드 줄 '만화로 보는 안전보건규칙' + 'N년판 N쪽'", html.includes("<b>만화로 보는 안전보건규칙</b> <span>'+esc(String(c.y))+'년판 '+p+'쪽</span>")&&!html.includes('<b>만화로 보기</b>'));
 console.log(fail?('실패 '+fail+'건'):'전체 통과'); process.exit(fail?1:0);

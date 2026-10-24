@@ -69,7 +69,7 @@ with sync_playwright() as pw:
         D = p.evaluate("JSON.parse(document.getElementById('data').textContent).comic.map")
         for q, key, pg in CASES:
             art(p, q, key); no = key.split(':')[1]; pg = pg or D[no]; m = cmk(p)
-            ok(tag + ' ' + key + " 조문 카드 안 '만화로 보기 안전보건공단 2026년판 %d쪽'" % pg, m and m['t'] == '만화로 보기 안전보건공단 2026년판 %d쪽' % pg and m['inCard'] and m['gl'] == '조문' and m['n'] == 1, m)
+            ok(tag + ' ' + key + " 조문 카드 안 '만화로 보는 안전보건규칙 2026년판 %d쪽'(5-75)" % pg, m and m['t'] == '만화로 보는 안전보건규칙 2026년판 %d쪽' % pg and m['inCard'] and m['gl'] == '조문' and m['n'] == 1, m)
             ok(tag + ' ' + key + ' 링크 comic/?p=쪽&a=조문·새 창', m and dec(m['href']) == 'comic/?p=%d&a=%s' % (pg, no) and m['tgt'] == '_blank' and m['ext'], m)
             ok(tag + ' ' + key + ' 높이 44 이상·넘침 없음', m and m['h'] >= 44 and not m['over'], m)
         art(p, '원동기 회전축', 'RULE:제87조')
