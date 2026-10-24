@@ -23,6 +23,9 @@ CASES=[ # 분야, 검색어, 있어야 할 글, 없어야 할 글, 검색어별 
  ('osh','지게차 작업계획서',['차량계 하역운반기계','작업계획서의 작성'],['검색어별 결과'],0),
  ('osh','건설현장 안전난간',['두 말이 함께 있는 조문 없음','건설현장'],['제외하고 검색'],2),
  ('osh','헤드가드없는쇠망치',['에 대한 검색 결과가 없습니다','수록 법령'],[],0),
+ ('osh','철골 추락',['철골 작업 기준','추락 방지 작업 기준','교류아크용접기'],[],2),   # 2026-10-24(5-80) 낱말마다 기준 카드
+ ('osh','자재 추락',['낙하물에 의한 위험의 방지','추락 방지 작업 기준'],['검색어별 결과'],0),   # 5-80 자재 추락 → 낙하물(제14조 1위는 search_regression)
+ ('osh','지붕 추락',['지붕 위에서의 위험 방지','추락 방지 작업 기준'],['화재감시자','발생기실'],2),   # 5-80 거리 표현 제외
 ]
 with sync_playwright() as pw:
     b=pw.chromium.launch()
@@ -47,5 +50,28 @@ with sync_playwright() as pw:
                 p.click('#results .andfb .row:not([disabled])'); p.wait_for_timeout(500)
                 ok(tag+' 줄 누르면 그 말로 다시 검색', p.input_value('#q')==first and first!='', (p.input_value('#q'),first))
             c.close()
+    # 2026-10-24(5-80) 카드 순서 = 입력 순서, 안내 줄은 첫 카드에만
+    c=b.new_context(viewport={'width':390,'height':760}); p=c.new_page(); p.goto('http://127.0.0.1:8791/index.html'); p.wait_for_timeout(600)
+    p.click('.pick[data-field="osh"]'); p.wait_for_timeout(200); p.click('#tabbar [data-nav="find"]'); p.wait_for_timeout(200)
+    for q,exp in [('철골 추락',['철골 작업 기준','추락 방지 작업 기준']),('추락 철골',['추락 방지 작업 기준','철골 작업 기준']),('지게차 추락',['지게차 작업 기준','추락 방지 작업 기준']),('추락',['추락 방지 작업 기준'])]:
+        p.fill('#q',q); p.wait_for_timeout(500)
+        got=p.evaluate("()=>[...document.querySelectorAll('#results .wcard b')].map(x=>x.innerText)")
+        ok('카드 순서 '+q, got==exp, got)
+    p.fill('#q','지게차 추락'); p.wait_for_timeout(500)
+    nt=p.evaluate("()=>[...document.querySelectorAll('#results .wcard')].map(x=>x.querySelectorAll('small').length)")
+    ok('지게차 추락: 안내 줄은 첫 카드에만', nt==[2,1], nt)
+    p.click('#results .wcard[data-wk="fall"]'); p.wait_for_timeout(500)
+    ok('두 번째 카드 눌러 추락 방지 기준 화면', '추락 방지' in p.evaluate("()=>document.body.innerText.slice(0,400)"))
+    ov=p.evaluate("()=>document.documentElement.scrollWidth>innerWidth+1"); ok('가로 넘침 없음(카드 2개)', not ov)
+    c.close()
+    c=b.new_context(viewport={'width':390,'height':760}); p=c.new_page(); p.goto('http://127.0.0.1:8791/index.html'); p.wait_for_timeout(600)
+    p.click('.pick[data-field="labor"]'); p.wait_for_timeout(200); p.click('#tabbar [data-nav="find"]'); p.wait_for_timeout(200)
+    p.fill('#q','주휴 알바'); p.wait_for_timeout(500)
+    got=p.evaluate("()=>[...document.querySelectorAll('#results .wcard')].map(x=>x.innerText.replace(/\\n/g,' / '))")
+    ok('주휴 알바: 휴게·주휴 + 기간제·단시간, 아르바이트 안내는 기간제·단시간 카드', len(got)==2 and got[0].startswith('휴게·주휴') and '아르바이트' not in got[0] and got[1].startswith('기간제·단시간') and '아르바이트' in got[1], got)
+    p.fill('#q','퇴직금 체불'); p.wait_for_timeout(500)
+    got=p.evaluate("()=>[...document.querySelectorAll('#results .wcard b')].map(x=>x.innerText)")
+    ok('퇴직금 체불: 카드 1개(검색어 전체 일치)', got==['퇴직급여 항목 기준'], got)
+    c.close()
     b.close()
 print('실패 %d건'%len(fails) if fails else '전체 통과'); sys.exit(1 if fails else 0)

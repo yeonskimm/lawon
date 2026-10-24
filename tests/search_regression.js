@@ -57,6 +57,8 @@ CASES.push(['사망사고','OSH:제167조',3,OSH],['사망사고','OSH:제54조'
  ['월급날','GK:제43조',1,LAB],['임금지급일','GK:제43조',1,LAB],['퇴직금 지급기한','RET:제9조',1,LAB],['비정규직 차별','FT:제8조',2,LAB],['비정규직','DISP:제21조',2,LAB]);
 // 2026-10-24(5-75) 시행 전 개정 문구로도 찾음(낮은 점수): 외국인고용법 제22조의2 '주거시설'(2027. 6. 10.), 건설근로자법 제13조 '전자카드 단말기'(2027. 1. 8.)
 CASES.push(['주거시설','FW:제22조의2',1,LAB],['주거시설 제공','FW:제22조의2',1,LAB],['전자카드 단말기','CW:제13조',4,LAB]);
+// 2026-10-24(5-80) '자재 추락·낙하·떨어짐'은 낙하물(법령은 '물체') → 규칙 제14조. '자재'만·다른 자재 검색은 그대로
+CASES.push(['자재 추락','RULE:제14조',1,OSH],['자재 낙하','RULE:제14조',1,OSH],['자재 떨어짐','RULE:제14조',1,OSH],['자재추락','RULE:제14조',1,OSH],['자재','RULE:제411조',1,OSH],['자재 운반','RULE:제411조',1,OSH]);
 let fail=0;
 for(const [q,exp,n,first] of CASES){
   const r=C.search(D,q,'',first), keys=r.arts.map(e=>e.l+':'+e.no);
@@ -143,4 +145,18 @@ for(const [q,exp] of [['관감','OSH:제16조'],['산안비','OSH:제72조'],['�
     ['산재',LF,'GK:제78조'],['산재',OF,'OSH:제57조'],['안전방망',OF,'RULE:제42조'],['뇌심혈관',OF,'RULE:제669조'],
     ['폐업',LF,'FW:제25조'],['보험료',LF,'FW:제13조'],['상시근로자수',OF,'OSH:제3조'],['사회보험',LF,'DW:제18조']];   // 5-64 검색 순위 정리
   for(const [q,f,exp] of FIX){ const a=C.search(D,q,'',f,f).arts[0], k=a&&a.l+':'+a.no; if(k!==exp)fail++; console.log((k===exp?'PASS':'FAIL')+' 현장 말 '+q+' → '+exp,k===exp?'':k); } }
+// 2026-10-24(5-80) '추락'·'떨어짐'의 '떨어' 중 거리·빠짐·벼락 같은 다른 뜻은 제외(용어사전 not) — 장비 말(굴러떨어짐·작업대가 떨어짐)·낙하물은 그대로
+{ const K=(q,f)=>C.search(D,q,'',f||OSH).arts.map(e=>e.l+':'+e.no), has=(q,k,n)=>K(q).slice(0,n).includes(k), none=(q,ks)=>{ const a=K(q); return ks.every(k=>!a.includes(k)); };
+  const T=[['지붕 추락 → 규칙 제45조 1위',has('지붕 추락','RULE:제45조',1)],['지붕 추락에 화재감시자·발생기실·석면 해체 없음',none('지붕 추락',['RULE:제241조의2','RULE:제287조','RULE:제495조'])],
+    ['개구부 추락 → 규칙 제43조·제42조',has('개구부 추락','RULE:제43조',1)&&has('개구부 추락','RULE:제42조',2)],['개구부 추락에 화재감시자·발생기실 없음',none('개구부 추락',['RULE:제241조의2','RULE:제286조','RULE:제287조'])],
+    ['지게차 추락 → 규칙 제171조(굴러떨어짐)',has('지게차 추락','RULE:제171조',2)],['굴착기 추락 → 규칙 제344조(굴러떨어질)',has('굴착기 추락','RULE:제344조',1)],['고소작업대 추락 → 규칙 제186조(작업대가 떨어지지)',has('고소작업대 추락','RULE:제186조',1)],
+    ['벼락 → 규칙 제349조(추락에서만 빠짐)',has('벼락','RULE:제349조',1)],['추락 1~3위 그대로',K('추락').slice(0,3).join()==='RULE:제42조,RULE:제415조,RULE:제418조'],['떨어짐 = 추락 결과',K('떨어짐').sort().join()===K('추락').sort().join()]];
+  for(const [n,okk] of T){ if(!okk)fail++; console.log((okk?'PASS':'FAIL')+'  추락 검색 '+n); }
+  // 새 법령 문구 감시: '떨어'로만 걸리는 조문·별표 줄이 바뀌면 실패 → 새 문구가 떨어지는 뜻인지 보고, 아니면 용어사전 '추락'·'떨어짐' not에 넣고 이 목록을 고침
+  const lit=e=>[e.ht,e.hp,e.h,e.hf,e.hc].filter(Boolean).join('|').indexOf('추락')>=0;
+  const ONLY='GRD:제18조,GRD:제3조,RULE:제146조,RULE:제14조,RULE:제159조,RULE:제171조,RULE:제174조,RULE:제177조,RULE:제186조,RULE:제193조,RULE:제198조,RULE:제199조,RULE:제201조,RULE:제344조,RULE:제375조,RULE:제396조,RULE:제410조';
+  const got=C.search(D,'추락','',OSH).arts.filter(e=>!lit(e)).map(e=>e.l+':'+e.no).sort().join();
+  { const okk=got===ONLY; if(!okk)fail++; console.log((okk?'PASS':'FAIL')+"  추락 검색에서 '떨어'로만 걸리는 조문 17개 그대로"+(okk?'':' → '+got)); }
+  const bgot=C.bsearch(D,'추락','osh').filter(x=>JSON.stringify(x.r||x.tab).indexOf('추락')<0).map(x=>x.r?x.r.id:(x.tab.id+(x.s!=null?':'+x.s:''))).sort().join();
+  { const okk=bgot==='R4.3,R4.9,S7.19'; if(!okk)fail++; console.log((okk?'PASS':'FAIL')+"  추락 별표 검색에서 '떨어'로만 걸리는 줄 3개 그대로(굴러 떨어짐 2·낙하물체 경고)"+(okk?'':' → '+bgot)); } }
 console.log(fail?('실패 '+fail+'건'):'전체 통과'); process.exit(fail?1:0);

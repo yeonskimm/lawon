@@ -6,7 +6,7 @@ const fs=require('fs'),vm=require('vm');
 const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const raw=/<script id="data" type="application\/json">([\s\S]*?)<\/script>/.exec(html)[1].replace(/<\\\//g,'</');
 const core=html.slice(html.indexOf('/*CORE_START*/'),html.indexOf('/*CORE_END*/'));
-const C=vm.runInNewContext(core+'\n;({prepare,prepareBT,ruleSanc,workIdx:typeof workIdx==="function"?workIdx:null,workOf:typeof workOf==="function"?workOf:null,workLines:typeof workLines==="function"?workLines:null,workGroups:typeof workGroups==="function"?workGroups:null})');
+const C=vm.runInNewContext(core+'\n;({prepare,prepareBT,ruleSanc,workIdx:typeof workIdx==="function"?workIdx:null,workOf:typeof workOf==="function"?workOf:null,workAll:typeof workAll==="function"?workAll:null,workLines:typeof workLines==="function"?workLines:null,workGroups:typeof workGroups==="function"?workGroups:null})');
 let fail=0,cnt=0;
 const chk=(name,c,info)=>{cnt++; if(!c)fail++; if(!c||process.env.VERBOSE)console.log((c?'PASS':'FAIL')+'  '+name+(c?'':'  → '+(info===undefined?'':JSON.stringify(info))));};
 if(!C.workIdx||!C.workOf||!C.workLines){ console.log('FAIL  작업별 기준 함수 없음(workIdx·workOf·workLines)'); process.exit(1); }
@@ -153,4 +153,14 @@ if(C.workGroups){ const G=C.workGroups(D), all=G.flatMap(g=>g.list.map(w=>w.id))
   chk('위험작업 = 밀폐·화기·전기·위험물·건조설비·벌목(5차)',G[3].list.map(w=>w.id).join()==='confined,hotwork,electric,hazmat,dryer,logging',G[3].list.map(w=>w.id));
   chk('묶음에 없는 새 작업은 기타로 표시(빠지지 않음)',C.workGroups({work:W.concat([{id:'zz',n:'새 작업'}])}).slice(-1)[0].h==='기타'); }
 
+// 2026-10-24(5-80) 낱말마다 기준 카드(입력 순서, 2개까지) — 작업 카드에는 추락 방지 조문(제42~45조·제13조)이 없어 둘 다 보여 줌. 한 낱말·검색어 전체가 맞는 말은 카드 1개
+if(!C.workAll)chk('workAll 함수 있음',false);
+else { const WA=(q,f)=>C.workAll(D,q,f||'osh').map(w=>w.id).join();
+  for(const [q,f,exp] of [['철골 추락','osh','steel,fall'],['추락 철골','osh','fall,steel'],['지게차 추락','osh','forklift,fall'],['비계 추락','osh','scaffold,fall'],['굴착 추락','osh','excav,fall'],
+      ['추락','osh','fall'],['지붕 추락','osh','fall'],['개구부 안전난간','osh','fall'],['석면 해체','osh','asbestos'],['석면 철거','osh','asbestos'],['비계 철골 추락','osh','scaffold,steel'],
+      ['자재 추락','osh','fall'],['안전교육','osh',''],['퇴직금 체불','labor','lb_ret'],['주휴수당','labor','lb_rest']])
+    chk('카드 "'+q+'" → '+(exp||'없음'),WA(q,f)===exp,WA(q,f));
+  chk('workOf = 첫 카드(철골 추락 → 철골)',(C.workOf(D,'철골 추락','osh')||{}).id==='steel');
+  const FALLK=['RULE:제42조','RULE:제43조','RULE:제44조','RULE:제45조','RULE:제13조'], ks=w=>W.find(x=>x.id===w).sec.reduce((a,s)=>a.concat((s.a||[]).map(x=>x.k)),[]);
+  chk('철골·비계 카드에는 추락 방지 조문이 없음(둘 다 보여 주는 이유 — 넣으면 이 검사도 고칠 것)',['steel','scaffold'].every(w=>!ks(w).some(k=>FALLK.includes(k)))); }
 console.log(fail?('실패 '+fail+'건 / '+cnt+'건'):('전체 통과 '+cnt+'건')); process.exit(fail?1:0);
