@@ -81,7 +81,7 @@ a{color:var(--pri);-webkit-tap-highlight-color:transparent}
 .r2{display:block;margin-top:2px;font-size:.8125rem;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .r2.pth{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-height:1.4}
 .snip{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px;font-size:.875rem;line-height:1.5;color:var(--ink2)}
-u.dif{text-decoration:underline;text-decoration-color:var(--pri);text-decoration-thickness:2px;text-underline-offset:3px}.dfh{margin-bottom:6px}
+u.dif{text-decoration:underline;text-decoration-color:var(--pri);text-decoration-thickness:1px;text-underline-offset:3px}.dfh{margin-bottom:6px}
 mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 .r3{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:7px}
 .sc{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
@@ -2892,7 +2892,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
       if(e.sn&&e.sn.note!==e.chg.note)h+='<p class="why sm">'+esc(e.sn.note)+'</p>';
       if(e.sn&&e.sn.list.length)h+=sameSanc(e.s,e.sn.list)?'<p class="why sm">벌칙·과태료 변경 없음(조문 문구 정비)</p>':'<div class="fines">'+sancBlocks(e.sn.list,function(){return e;},e.l,e.no,true)+'</div>';
       var pvx=e.x; stg.forEach(function(x){ var del=x.kind==='삭제';
-        h+='<details class="fut"><summary>'+esc(dotD(x.date)+(del?' 삭제':' 시행 조문 보기'))+'</summary><p class="why sm">'+esc(x.note||'')+'</p>'+((x.x&&!del)?'<p class="why sm dfh"><u class="dif">밑줄</u> 개정 예정</p><div class="law fm">'+fmtLaw(difMark(pvx,x.x))+'</div>':'')+'</details>'; if(x.x&&!del)pvx=x.x; });
+        h+='<details class="fut"><summary>'+esc(dotD(x.date)+(del?' 삭제':' 시행 조문 보기'))+'</summary><p class="why sm">'+esc(x.note||'')+'</p>'+((x.x&&!del)?'<p class="why sm dfh"><u class="dif">밑줄</u> 개정 예정 문구</p><div class="law fm">'+fmtLaw(difMark(pvx,x.x))+'</div>':'')+'</details>'; if(x.x&&!del)pvx=x.x; });
       return h+'</div>'+(e.old?oldBlock(e):'');
     }
     return pendOne(e,pd)+(e.old?oldBlock(e):'');
@@ -2903,7 +2903,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     if(e.sn&&(!e.chg||e.sn.note!==e.chg.note))h+='<p class="why sm">'+esc(e.sn.note)+'</p>';
     if(e.sn&&!(pd.del&&!e.sn.list.length))h+=sameSanc(e.s,e.sn.list)?'<p class="why sm">벌칙·과태료 변경 없음(조문 문구 정비)</p>':'<div class="fines">'+sancBlocks(e.sn.list,function(){return e;},e.l,e.no,true)+'</div>';
     if(e.chg&&e.chg.t&&!pd.del)h+='<p class="why sm">'+esc('제목: '+(e.t||'')+' → '+e.chg.t)+'</p>';   // 2026-10-21
-    if(e.chg&&e.chg.x)h+='<details class="fut"><summary>개정 후 조문 보기</summary><p class="why sm dfh"><u class="dif">밑줄</u> 개정 예정</p><div class="law fm">'+fmtLaw(difMark(e.x,e.chg.x))+'</div></details>';
+    if(e.chg&&e.chg.x)h+='<details class="fut"><summary>개정 후 조문 보기</summary><p class="why sm dfh"><u class="dif">밑줄</u> 개정 예정 문구</p><div class="law fm">'+fmtLaw(difMark(e.x,e.chg.x))+'</div></details>';
     return h+'</div>';
   }
   function whyCard(j,none,via){ var it=null; if(via)D.items.forEach(function(x){if(x.id===via)it=x;});

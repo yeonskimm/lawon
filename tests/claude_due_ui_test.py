@@ -46,7 +46,7 @@ with sync_playwright() as pw:
             c.close()
     # 5-76: 바뀌는 부분 밑줄 — 시행 전엔 '개정 후 조문'에 새 글자, 시행 후엔 '개정 전 조문'에 옛 글자. 현행 본문엔 밑줄 없음
     DQ="()=>{const s=[...document.querySelectorAll('main>section.sub')].find(x=>!x.hidden); return {cur:s.querySelector('.card .law').querySelectorAll('u.dif').length, fut:[...s.querySelectorAll('details.fut')].map(d=>[(d.querySelector('.dfh')||{}).textContent||'',[...d.querySelectorAll('.law u.dif')].map(u=>u.textContent).join('|')])}}"
-    for d,cap,word,notword in [('2026-10-24','개정 예정','노동감독관','근로감독관'),('2026-12-08','개정으로 바뀐 부분','근로감독관','노동감독관')]:
+    for d,cap,word,notword in [('2026-10-24','개정 예정 문구','노동감독관','근로감독관'),('2026-12-08','개정으로 바뀐 부분','근로감독관','노동감독관')]:
         c=b.new_context(viewport={'width':390,'height':760}); p=c.new_page(); p.add_init_script(FIX%d); p.goto('http://127.0.0.1:8790/index.html'); p.wait_for_timeout(700)
         open_art(p,'labor','근기법 116조','제116조'); r=p.evaluate(DQ)
         hit=[x for x in r['fut'] if cap in x[0] and word in x[1]]
