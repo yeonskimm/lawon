@@ -81,7 +81,7 @@ a{color:var(--pri);-webkit-tap-highlight-color:transparent}
 .r2{display:block;margin-top:2px;font-size:.8125rem;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .r2.pth{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-height:1.4}
 .snip{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px;font-size:.875rem;line-height:1.5;color:var(--ink2)}
-u.dif{text-decoration:underline;text-decoration-color:var(--pri);text-decoration-thickness:1px;text-underline-offset:3px}.dfh{margin-bottom:6px}
+u.dif{text-decoration:underline;text-decoration-color:var(--pri);text-decoration-thickness:1px;text-underline-offset:3px}s.dfd{color:var(--ink3);text-decoration:line-through;text-decoration-thickness:1px}.dfh{margin-bottom:6px}
 mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 .r3{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:7px}
 .sc{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
@@ -2144,32 +2144,53 @@ var EXT='<svg class="xlk" viewBox="0 0 24 24" width="16" height="16" fill="none"
   function escRaw(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function fmtD(s){return String(s).replace(/(^|[^\d])(20\d\d)-(\d\d)-(\d\d)(?!\d)/g,function(m,p,y,mo,d){return p+y+'. '+(+mo)+'. '+(+d)+'.';});}   // 2026-10-08 → 2026. 10. 8.
   function esc(s){return fmtD(escRaw(s));}
-  function difMark(a,b){   // 2026-10-24(5-76): b 중 a에 없는 낱말에 밑줄 표시(\u0001…\u0002). 개정 표시(<개정 …>)·[본조신설 …]은 표시 안 함
-    var re=/<[^<>\n]{1,200}>|\[[^\[\]\n]{1,200}\]|\n|[ \t]+|[0-9A-Za-z가-힣ㆍ·]+|./g, A=String(a||'').match(re)||[], B=String(b||'').match(re)||[];
-    var key=function(t){return /^[ \t]+$/.test(t)?' ':t;}, n=A.length, m=B.length; if(n*m>4e6)return b;
-    var L=[]; for(var i=0;i<=n;i++){ L.push(new Uint16Array(m+1)); }
-    for(var i2=n-1;i2>=0;i2--)for(var j=m-1;j>=0;j--)L[i2][j]=key(A[i2])===key(B[j])?L[i2+1][j+1]+1:Math.max(L[i2+1][j],L[i2][j+1]);
-    var keep=new Array(m), x=0, y=0; while(x<n&&y<m){ if(key(A[x])===key(B[y])){keep[y]=1;x++;y++;} else if(L[x+1][y]>=L[x][y+1])x++; else y++; }
-    var tag=function(t){return /^<(개정|신설|삭제|전문개정|본조신설|제목개정|타법개정)/.test(t)||/^\[(본조신설|전문개정|제목개정|종전|시행일)/.test(t);};
-    var out='', open=false;
-    for(var k=0;k<m;k++){ var t=B[k], ch=!keep[k]&&!/^\s+$/.test(t)&&!tag(t);
-      if(t==='\n'){ if(open){out+='\u0002';open=false;} out+=t; continue; }
-      if(ch&&!open){out+='\u0001';open=true;}
-      else if(!ch&&open&&!/^[ \t]+$/.test(t)){out+='\u0002';open=false;}
-      else if(!ch&&open){ var nx=k+1; while(nx<m&&/^[ \t]+$/.test(B[nx]))nx++; if(!(nx<m&&B[nx]!=='\n'&&!keep[nx]&&!tag(B[nx]))){out+='\u0002';open=false;} }
-      out+=t; }
-    if(open)out+='\u0002'; return out;
+  function difMark(a,b,del){   // 2026-10-24(5-78): b 중 a에 없는 낱말에 밑줄(\u0001…\u0002). del이면 대신 들어온 글자 없이 빠지기만 한 낱말을 취소선(\u0003…\u0004)으로 끼워 넣음. 개정 표시(<개정 …>·<2026.4.7>)·[본조신설 …]·줄 머리 번호(①·1.·가.)는 표시 안 함
+    var re=/<[^<>\n]{1,200}>|\[[^\[\]\n]{1,200}\]|[ \t]+|제\d+조(?:의\d+)?(?:제\d+항)?(?:제\d+호)?(?:의\d+)?|제\d+[항호](?:의\d+)?|[0-9A-Za-z가-힣]+|./g;
+    var hd=/^([ \t]*)([①-⑳]|\d+(?:의\d+)?\.|[가-하](?:의\d+)?\.|\d+\))?/;
+    var tk=function(s){ var r=[]; String(s||'').split('\n').forEach(function(ln,i){ if(i)r.push(['\n',0]); var m=hd.exec(ln); if(m[1])r.push([m[1],0]); if(m[2])r.push([m[2],1]); (ln.slice(m[0].length).match(re)||[]).forEach(function(t){r.push([t,0]);}); }); return r; };
+    var A=tk(a), B=tk(b); if(/[│├└┌┬┴┼─┐┘┤]/.test(String(a)+String(b)))del=false;
+    var sp=function(t){return /^\s+$/.test(t[0]);}, key=function(t){return t[1]?'\u0005'+t[0]:/^[ \t]+$/.test(t[0])?' ':t[0];};
+    var tag=function(t){var s=t[0]; return t[1]===1||/^<(개정|신설|삭제|전문개정|본조신설|제목개정|타법개정)/.test(s)||/^<[^<>]{0,60}?\d{4}\.\s?\d{1,2}\.\s?\d{1,2}\.?[^<>]{0,40}>$/.test(s)||/^\[(본조신설|전문개정|제목개정|종전|시행일)/.test(s);};
+    var sig=function(t){return !sp(t)&&!tag(t);}, wt=function(t){return sp(t)?0:tag(t)?1:t[0].length;};
+    var p=0,q=0,i,j; while(p<A.length&&p<B.length&&key(A[p])===key(B[p]))p++;
+    while(q<A.length-p&&q<B.length-p&&key(A[A.length-1-q])===key(B[B.length-1-q]))q++;
+    var a2=A.slice(p,A.length-q), b2=B.slice(p,B.length-q), n=a2.length, m=b2.length, ops=[];
+    for(i=0;i<p;i++)ops.push([0,B[i]]);
+    if(n*m>4e6){ for(i=0;i<n;i++)ops.push([-1,a2[i]]); for(j=0;j<m;j++)ops.push([1,b2[j]]); }
+    else{ var tw=0; for(i=0;i<n;i++)tw+=wt(a2[i]); var T=tw<65000?Uint16Array:Uint32Array, L=[], ka=a2.map(key), kb=b2.map(key); for(i=0;i<=n;i++)L.push(new T(m+1));
+      for(i=n-1;i>=0;i--)for(j=m-1;j>=0;j--)L[i][j]=ka[i]===kb[j]?L[i+1][j+1]+wt(a2[i]):Math.max(L[i+1][j],L[i][j+1]);
+      var x=0,y=0; while(x<n||y<m){ if(x<n&&y<m&&ka[x]===kb[y]){ops.push([0,b2[y]]);x++;y++;} else if(y>=m||(x<n&&L[x+1][y]>=L[x][y+1])){ops.push([-1,a2[x]]);x++;} else {ops.push([1,b2[y]]);y++;} } }
+    for(i=B.length-q;i<B.length;i++)ops.push([0,B[i]]);
+    var out='', gap=[];
+    var emit=function(g,o,c){ var k,s='',on=false; for(k=0;k<g.length;k++){ var t=g[k][1][0], mk=g[k][2];
+        if(t==='\n'){ if(on){s+=c;on=false;} s+=t; continue; }
+        if(mk&&!on){ s+=o; on=true; }
+        else if(!mk&&on){ if(!sp(g[k][1])){ s+=c; on=false; } else { var nx=k+1; while(nx<g.length&&sp(g[nx][1])&&g[nx][1][0]!=='\n')nx++; if(!(nx<g.length&&g[nx][2])){ s+=c; on=false; } } }
+        s+=t; } if(on)s+=c; return s; };
+    var flush=function(){ if(!gap.length)return; var ins=gap.some(function(g){return g[0]===1&&sig(g[1]);}), dl=gap.some(function(g){return g[0]===-1&&sig(g[1]);});
+      if(ins||!dl||!del) out+=emit(gap.filter(function(g){return g[0]!==-1;}).map(function(g){return [g[0],g[1],g[0]===1&&sig(g[1])];}),'\u0001','\u0002');
+      else out+=emit(gap.filter(function(g){return g[0]===0||(g[0]===1&&!sig(g[1]))||(g[0]===-1&&!(tag(g[1])&&g[1][1]!==1));}).map(function(g){return [g[0],g[1],g[0]===-1&&!sp(g[1])];}),'\u0003','\u0004');
+      gap=[]; };
+    for(i=0;i<ops.length;i++){ var op=ops[i]; if(op[0]===0&&!sp(op[1])){ flush(); out+=op[1][0]; } else gap.push(op); }
+    flush(); return out;
   }
+  function difLeg(h,old,b,a){   // 2026-10-24(5-78): 밑줄·취소선 안내 — 표시가 있을 때만
+    var u=h.indexOf('\u0001')>=0, d=h.indexOf('\u0003')>=0, t=[];
+    if(old){ if(u)t.push('<u class="dif">밑줄</u> 현행과 다른 문구'); else if(difMark(b,a).indexOf('\u0001')>=0)t.push('밑줄 없음 · 현행에 문구만 추가됨'); }
+    else{ if(u)t.push('<u class="dif">밑줄</u> 개정 예정 문구'); if(d)t.push('<s class="dfd">취소선</s> 삭제 예정 문구'); }
+    return t.length?'<p class="why sm dfh">'+t.join(' · ')+'</p>':'';
+  }
+  function difLaw(a,b,old){ var h=difMark(a,b,!old); return difLeg(h,old,b,a)+'<div class="law fm">'+fmtLaw(h)+'</div>'; }
   function fmtLaw(s){   // 항(①)·호(1.)·목(가.) 내어쓰기. 표시만 바꾸고 원문 글자는 그대로
     s=String(s==null?'':s).replace(/<img[^<>]*>\s*<\/img>/g,'(그림은 원문 참조)').replace(/^[ \t]*<\/?img[^<>]*>[ \t]*\n?/gm,'');   // 2026-10-18: 그림 자리 표시
     var hasC=/(^|\n)\s*[①-⑳]/.test(s), hasH=/(^|\n)\s*\d+(의\d+)?\.\s/.test(s);
     var L1=hasC?1:0, L2=L1+(hasH?1:0), out=[];
     var am=function(t){ return t.replace(/&lt;[^&\n]{0,60}?\d{4}\.\s?\d{1,2}\.\s?\d{1,2}\.?[^&\n]{0,40}?&gt;/g,'<span class="am">$&</span>').replace(/\[(본조신설|전문개정|제목개정|종전|시행일)[^\]]{0,80}\]/g,'<span class="am">$&</span>'); };
-    var dm=function(h){ return h.replace(/\u0001/g,'<u class="dif">').replace(/\u0002/g,'</u>'); };
+    var dm=function(h){ return h.replace(/\u0001/g,'<u class="dif">').replace(/\u0002/g,'</u>').replace(/\u0003/g,'<s class="dfd">').replace(/\u0004/g,'</s>'); };
     var put=function(l,p,t){ out.push('<div class="lw l'+l+'"><span class="lp">'+escRaw(p)+'</span><span>'+dm(am(escRaw(t)))+'</span></div>'); };
     s.split('\n').forEach(function(ln){ if(!ln.trim())return;
       if(/^\s*[│├└┌┬┴┼─┐┘┤]/.test(ln)){ out.push('<div class="lt">'+escRaw(ln)+'</div>'); return; }
-      var t=ln.replace(/^\s+/,''), m, ld=''; if(t.charAt(0)==='\u0001'){ ld='\u0001'; t=t.slice(1); }
+      var t=ln.replace(/^\s+/,''), m, ld=''; while(/^[\u0001\u0003]/.test(t)){ ld+=t.charAt(0); t=t.slice(1).replace(/^\s+/,''); }
       if((m=/^([①-⑳])\s*/.exec(t)))return put(0,m[1],ld+t.slice(m[0].length));
       if((m=/^(\d+(?:의\d+)?\.)\s+/.exec(t)))return put(L1,m[1],ld+t.slice(m[0].length));
       if((m=/^([가나다라마바사아자차카타파하](?:의\d+)?\.)\s+/.exec(t)))return put(L2,m[1],ld+t.slice(m[0].length));
@@ -2879,9 +2900,9 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     if(o.s&&o.s.length)h+='<div class="fines">'+sancBlocks(o.s,function(){return e;},e.l,e.no,true)+'</div>';
     var ymd=function(d){ return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }, eve=function(d){ var t=new Date(d+'T00:00:00'); t.setDate(t.getDate()-1); return dotD(ymd(t)); };
     var span=function(x){ return x.prev?dotD(x.prev.d)+' ~ '+eve(x.d)+' 조문 보기':(x===o?'개정 전 조문 보기':eve(x.d)+' 이전 조문 보기'); };   // 2026-10-02: 여러 단계 개정은 단계별 기간
-    if(o.x)h+='<details class="fut"><summary>'+esc(span(o))+'</summary><p class="why sm dfh"><u class="dif">밑줄</u> 개정으로 바뀐 부분</p><div class="law fm">'+fmtLaw(difMark(e.x,o.x))+'</div></details>';
+    if(o.x)h+='<details class="fut"><summary>'+esc(span(o))+'</summary>'+difLaw(e.x,o.x,true)+'</details>';
     for(var p=o.prev;p;p=p.prev){ if(!p.x&&!(p.s&&p.s.length))continue;
-      h+='<details class="fut"><summary>'+esc(span(p))+'</summary><p class="why sm">'+esc(p.note)+'</p>'+((p.s&&p.s.length)?'<div class="fines">'+sancBlocks(p.s,function(){return e;},e.l,e.no,true)+'</div>':'')+(p.x?'<div class="law fm">'+fmtLaw(p.x)+'</div>':'')+'</details>'; }
+      h+='<details class="fut"><summary>'+esc(span(p))+'</summary><p class="why sm">'+esc(p.note)+'</p>'+((p.s&&p.s.length)?'<div class="fines">'+sancBlocks(p.s,function(){return e;},e.l,e.no,true)+'</div>':'')+(p.x?difLaw(e.x,p.x,true):'')+'</details>'; }
     return h+'</div>';
   }
   function pendBlock(e,pd){
@@ -2892,7 +2913,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
       if(e.sn&&e.sn.note!==e.chg.note)h+='<p class="why sm">'+esc(e.sn.note)+'</p>';
       if(e.sn&&e.sn.list.length)h+=sameSanc(e.s,e.sn.list)?'<p class="why sm">벌칙·과태료 변경 없음(조문 문구 정비)</p>':'<div class="fines">'+sancBlocks(e.sn.list,function(){return e;},e.l,e.no,true)+'</div>';
       var pvx=e.x; stg.forEach(function(x){ var del=x.kind==='삭제';
-        h+='<details class="fut"><summary>'+esc(dotD(x.date)+(del?' 삭제':' 시행 조문 보기'))+'</summary><p class="why sm">'+esc(x.note||'')+'</p>'+((x.x&&!del)?'<p class="why sm dfh"><u class="dif">밑줄</u> 개정 예정 문구</p><div class="law fm">'+fmtLaw(difMark(pvx,x.x))+'</div>':'')+'</details>'; if(x.x&&!del)pvx=x.x; });
+        h+='<details class="fut"><summary>'+esc(dotD(x.date)+(del?' 삭제':' 시행 조문 보기'))+'</summary><p class="why sm">'+esc(x.note||'')+'</p>'+((x.x&&!del)?difLaw(pvx,x.x,false):'')+'</details>'; if(x.x&&!del)pvx=x.x; });
       return h+'</div>'+(e.old?oldBlock(e):'');
     }
     return pendOne(e,pd)+(e.old?oldBlock(e):'');
@@ -2903,7 +2924,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     if(e.sn&&(!e.chg||e.sn.note!==e.chg.note))h+='<p class="why sm">'+esc(e.sn.note)+'</p>';
     if(e.sn&&!(pd.del&&!e.sn.list.length))h+=sameSanc(e.s,e.sn.list)?'<p class="why sm">벌칙·과태료 변경 없음(조문 문구 정비)</p>':'<div class="fines">'+sancBlocks(e.sn.list,function(){return e;},e.l,e.no,true)+'</div>';
     if(e.chg&&e.chg.t&&!pd.del)h+='<p class="why sm">'+esc('제목: '+(e.t||'')+' → '+e.chg.t)+'</p>';   // 2026-10-21
-    if(e.chg&&e.chg.x)h+='<details class="fut"><summary>개정 후 조문 보기</summary><p class="why sm dfh"><u class="dif">밑줄</u> 개정 예정 문구</p><div class="law fm">'+fmtLaw(difMark(e.x,e.chg.x))+'</div></details>';
+    if(e.chg&&e.chg.x)h+='<details class="fut"><summary>개정 후 조문 보기</summary>'+difLaw(e.x,e.chg.x,false)+'</details>';
     return h+'</div>';
   }
   function whyCard(j,none,via){ var it=null; if(via)D.items.forEach(function(x){if(x.id===via)it=x;});

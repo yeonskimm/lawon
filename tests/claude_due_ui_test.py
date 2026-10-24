@@ -46,11 +46,23 @@ with sync_playwright() as pw:
             c.close()
     # 5-76: 바뀌는 부분 밑줄 — 시행 전엔 '개정 후 조문'에 새 글자, 시행 후엔 '개정 전 조문'에 옛 글자. 현행 본문엔 밑줄 없음
     DQ="()=>{const s=[...document.querySelectorAll('main>section.sub')].find(x=>!x.hidden); return {cur:s.querySelector('.card .law').querySelectorAll('u.dif').length, fut:[...s.querySelectorAll('details.fut')].map(d=>[(d.querySelector('.dfh')||{}).textContent||'',[...d.querySelectorAll('.law u.dif')].map(u=>u.textContent).join('|')])}}"
-    for d,cap,word,notword in [('2026-10-24','개정 예정 문구','노동감독관','근로감독관'),('2026-12-08','개정으로 바뀐 부분','근로감독관','노동감독관')]:
+    for d,cap,word,notword in [('2026-10-24','개정 예정 문구','노동감독관','근로감독관'),('2026-12-08','현행과 다른 문구','근로감독관','노동감독관')]:
         c=b.new_context(viewport={'width':390,'height':760}); p=c.new_page(); p.add_init_script(FIX%d); p.goto('http://127.0.0.1:8790/index.html'); p.wait_for_timeout(700)
         open_art(p,'labor','근기법 116조','제116조'); r=p.evaluate(DQ)
         hit=[x for x in r['fut'] if cap in x[0] and word in x[1]]
         ok(d+' 116조 밑줄('+cap+')', r['cur']==0 and hit and not any(cap in x[0] and notword in x[1] for x in r['fut']), r)
+        c.close()
+    # 5-78: 조사 붙은 조 번호·빠지기만 한 글자(취소선)·긴 조문·추가만 된 개정
+    DQ2="(s)=>{const sec=[...document.querySelectorAll('main>section.sub')].find(x=>!x.hidden); const d=[...sec.querySelectorAll('details.fut')].find(x=>x.querySelector('summary').textContent.includes(s)); return d?{leg:(d.querySelector('.dfh')||{}).textContent||'',u:[...d.querySelectorAll('.law u.dif')].map(x=>x.textContent),s:[...d.querySelectorAll('.law s.dfd')].map(x=>x.textContent)}:null}"
+    for d,f,q,no,summ,chk,label in [
+        ('2026-10-24','labor','근기법 114조','제114조','2026. 12. 8.',lambda r:r['u']==['및'] and r['s']==['및 제103조'] and '취소선 삭제 예정 문구' in r['leg'],'114조 제103조 삭제 취소선'),
+        ('2026-10-24','osh','산안법 175조','제175조','2026. 12. 8.',lambda r:r['u']==['노동감독관의'],'175조 긴 조문 밑줄'),
+        ('2026-10-24','labor','건설근로자법 3조','제3조','개정 후',lambda r:r['s']==['동절기'] and not r['u'] and '밑줄' not in r['leg'],'건설근로자법 3조 취소선만'),
+        ('2026-12-10','labor','근기법 54조','제54조','개정 전',lambda r:not r['u'] and r['leg']=='밑줄 없음 · 현행에 문구만 추가됨','54조 추가만'),
+        ('2027-01-01','labor','근기법 116조','제116조','이전 조문',lambda r:'근로감독관의' in r['u'] and '현행과 다른 문구' in r['leg'],'116조 이전 단계도 밑줄')]:
+        c=b.new_context(viewport={'width':390,'height':760}); p=c.new_page(); p.add_init_script(FIX%d); p.goto('http://127.0.0.1:8790/index.html'); p.wait_for_timeout(700)
+        open_art(p,f,q,no); r=p.evaluate(DQ2,summ)
+        ok(d+' '+label, bool(r) and chk(r), r)
         c.close()
     b.close()
 print('실패 %d건'%len(fails) if fails else '전체 통과'); sys.exit(1 if fails else 0)
