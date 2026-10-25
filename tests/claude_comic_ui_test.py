@@ -2,6 +2,7 @@
 # 사용: python3 tests/claude_comic_ui_test.py <저장소 폴더> [캡처 폴더]   (포트 8781·8782)
 # ① 조문 화면 줄(390·320 크게·430 어둡게) ② 보기 화면: 제목·그림·이전/다음·쪽 넘겨도 방문 기록 1개(안드로이드 뒤로 한 번에 닫힘)·닫기
 # ③ 서비스워커 v9: 만화 보기 연결, comic/를 열어도 앱 저장본이 그대로 ④ v8(옛 판)이 깔린 기기: 공단 전자책으로 연결, v8에서 덮어써진 저장본을 v9가 바로잡음
+# 5-82: 조문 줄 끝 쪽('61~62쪽', 세 자리 쪽은 두 줄 허용), 보기 화면 이어지는 쪽 머리 띠(연 조문 유지·이어지는 조문)
 import sys, os, shutil, tempfile, threading, functools, http.server, socketserver, urllib.parse, subprocess
 from playwright.sync_api import sync_playwright
 
@@ -55,7 +56,8 @@ def app_cache(p):   # 서비스워커 저장본(앱 화면 자리)에 든 것이
     return p.evaluate("""(async()=>{const ks=(await caches.keys()).filter(k=>k.startsWith('lawon-')); const out={};
       for(const k of ks){ const c=await caches.open(k); const r=await c.match('./index.html'); out[k]=r?((await r.text()).indexOf('id="vStart"')>=0?'앱':'다른 페이지'):'없음'; } return out;})()""")
 
-CASES = [('원동기 회전축', 'RULE:제87조', 61), ('추락의 방지', 'RULE:제42조', 32), ('충전부 접근 한계거리', 'RULE:제321조', None), ('밀폐공간 작업 프로그램', 'RULE:제619조', None)]
+# (검색어, 조문, 첫 쪽, 끝 쪽 — 5-82: 다음 쪽까지 이어지는 조문만, 책 쪽 그림으로 확인한 값)
+CASES = [('원동기 회전축', 'RULE:제87조', 61, 62), ('추락의 방지', 'RULE:제42조', 32, None), ('충전부 접근 한계거리', 'RULE:제321조', 155, 156), ('밀폐공간 작업 프로그램', 'RULE:제619조', 284, None), ('안전보건규칙 331조의3', 'RULE:제331조의3', 162, 163)]
 with sync_playwright() as pw:
     br = pw.chromium.launch()
     # ① ② 서비스워커 없이(화면 검사) — 조문 화면 줄과 보기 화면
@@ -66,11 +68,10 @@ with sync_playwright() as pw:
         start(p)
         if big: p.evaluate("document.documentElement.dataset.fs='l'")
         if dark: p.evaluate("document.documentElement.dataset.theme='dark'")
-        D = p.evaluate("JSON.parse(document.getElementById('data').textContent).comic.map")
-        for q, key, pg in CASES:
-            art(p, q, key); no = key.split(':')[1]; pg = pg or D[no]; m = cmk(p)
-            ok(tag + ' ' + key + " 조문 카드 안 '만화로 보는 안전보건규칙 2026년판 %d쪽'(5-75)" % pg, m and m['t'] == '만화로 보는 안전보건규칙 2026년판 %d쪽' % pg and m['inCard'] and m['gl'] == '조문' and m['n'] == 1, m)
-            ok(tag + ' ' + key + ' 링크 comic/?p=쪽&a=조문·새 창', m and dec(m['href']) == 'comic/?p=%d&a=%s' % (pg, no) and m['tgt'] == '_blank' and m['ext'], m)
+        for q, key, pg, pe in CASES:
+            art(p, q, key); no = key.split(':')[1]; m = cmk(p); rng = '%d~%d' % (pg, pe) if pe else '%d' % pg
+            ok(tag + ' ' + key + " 조문 카드 안 '만화로 보는 안전보건규칙 2026년판 %s쪽'(5-75·5-82)" % rng, m and m['t'] == '만화로 보는 안전보건규칙 2026년판 %s쪽' % rng and m['inCard'] and m['gl'] == '조문' and m['n'] == 1, m)
+            ok(tag + ' ' + key + ' 링크 comic/?p=첫 쪽&a=조문·새 창', m and dec(m['href']) == 'comic/?p=%d&a=%s' % (pg, no) and m['tgt'] == '_blank' and m['ext'], m)
             ok(tag + ' ' + key + ' 높이 44 이상·넘침 없음', m and m['h'] >= 44 and not m['over'], m)
         art(p, '원동기 회전축', 'RULE:제87조')
         with c.expect_page() as pi: p.click('%s .cmk' % SUB)
@@ -79,7 +80,9 @@ with sync_playwright() as pw:
         ok(tag + ' 이전·다음 버튼·출처 줄·넘침 없음', s['prev'] == '‹ 60쪽' and s['next'] == '62쪽 ›' and s['src2'].startswith('출처: 안전보건공단 「만화로 보는 산업안전보건기준에 관한 규칙」 2026년판(2025. 10. 1. 시행 기준)') and not s['over'], s)
         shot(v, tag + '_보기_61')
         hl0 = s['hl']
-        for _ in range(3): v.click('#next'); v.wait_for_timeout(120)
+        v.click('#next'); v.wait_for_timeout(120); s = view(v)
+        ok(tag + ' 다음 → 62쪽: 제87조가 이어지는 쪽이라 머리 띠 그대로(5-82)', s['ttl'] == '제87조 · 62쪽' and not s['over'], s)
+        for _ in range(2): v.click('#next'); v.wait_for_timeout(120)
         wait_img(v); s = view(v)
         ok(tag + ' 다음 3번 → 64쪽, 주소 p=64', s['no'] == '64 / 344' and 'p=64' in s['url'] and s['nw'] == 1591, s)
         ok(tag + ' 쪽을 넘겨도 방문 기록이 늘지 않음(안드로이드 뒤로 한 번에 닫힘)', s['hl'] == hl0 == 1, (hl0, s['hl']))
@@ -95,6 +98,20 @@ with sync_playwright() as pw:
     v.goto(APP + 'comic/?p=1'); wait_img(v); s = view(v); ok('1쪽: 이전 숨김·제목 1쪽', s['prev'] == '' and s['ttl'] == '1쪽' and s['nw'] > 0, s)
     v.goto(APP + 'comic/?p=344'); wait_img(v); s = view(v); ok('344쪽: 다음 숨김', s['next'] == '' and s['no'] == '344 / 344', s)
     v.goto(APP + 'comic/?p=999'); wait_img(v); s = view(v); ok('잘못된 쪽 → 1쪽', s['no'] == '1 / 344', s)
+    # 5-82: 앞 쪽 조문이 이어지는 쪽의 머리 띠
+    def ttls(url, nexts):
+        v.goto(APP + url); wait_img(v); out = [view(v)['ttl']]
+        for _ in range(nexts): v.click('#next'); v.wait_for_timeout(120); out.append(view(v)['ttl'])
+        return out
+    t = ttls('comic/?p=65&a=' + urllib.parse.quote('제96조'), 2); ok('제96조로 열고 65 → 66 → 67쪽: 제96조·제96조·제97조', t == ['제96조 · 65쪽', '제96조 · 66쪽', '제97조 · 67쪽'], t)
+    t = ttls('comic/?p=38&a=' + urllib.parse.quote('제56조'), 2); ok('제56조로 열고 39쪽(제57조 시작 쪽)도 제56조, 40쪽은 이어지는 제57조', t == ['제56조 · 38쪽', '제56조 · 39쪽', '제57조 · 40쪽'], t)
+    t = ttls('comic/?p=65&a=' + urllib.parse.quote('제93조'), 1); ok('다른 조문(제93조)으로 열고 66쪽 → 이어지는 제96조', t == ['제93조 · 65쪽', '제96조 · 66쪽'], t)
+    v.goto(APP + 'comic/?p=66'); wait_img(v); s = view(v); al = v.get_attribute('#img', 'alt')
+    ok('조문 없이 66쪽 → 제96조 · 66쪽, 그림 설명에 조문', s['ttl'] == '제96조 · 66쪽' and al.endswith('66쪽 (제96조)'), (s['ttl'], al))
+    v.goto(APP + 'comic/?p=39'); wait_img(v); s = view(v); al = v.get_attribute('#img', 'alt')
+    ok('조문 없이 39쪽 → 그 쪽에서 시작하는 제57조, 그림 설명은 이어지는 조문부터', s['ttl'] == '제57조 · 39쪽' and al.endswith('39쪽 (제56조·제57조)'), (s['ttl'], al))
+    v.goto(APP + 'comic/?p=58'); wait_img(v); s = view(v); ok('장 그림 쪽(58쪽)은 쪽 번호만', s['ttl'] == '58쪽', s)
+    v.goto(APP + 'comic/?p=313'); wait_img(v); s = view(v); ok('부칙 쪽(313쪽)은 쪽 번호만', s['ttl'] == '313쪽', s)
     v.goto(APP + 'comic/?p=12&a=' + urllib.parse.quote('제4조의2')); wait_img(v); s = view(v); ok('한 쪽에 조문 여럿 — 연 조문 이름으로(제4조의2)', s['ttl'] == '제4조의2 · 12쪽', s)
     v.route('**/comic/2026/050.webp', lambda r: r.abort())
     v.goto(APP + 'comic/?p=50'); wait_img(v); s = view(v); ok('그림 못 받으면 안내 문구(그림 자리 숨김)', s['err'] and not s['imgShown'], s)

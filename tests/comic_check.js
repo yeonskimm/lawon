@@ -1,6 +1,7 @@
 // 안전보건규칙 조문 → 안전보건공단 「만화로 보는 산업안전보건기준에 관한 규칙」 쪽 연결 검사 — 사용: node tests/comic_check.js index.html
 // 2026-10-23: 2026년판(전자책 Dir 647, 344쪽) PDF 쪽마다 '제N조(' 제목을 뽑아 만든 조문 → 첫 쪽 표(D.comic)
 // 5-68: 우리 사이트 쪽 보기 comic/(index.html·2026/NNN.webp)와 서비스워커 v9 범위도 확인
+// 5-82: 다음 쪽까지 이어지는 조문의 끝 쪽(D.comic.to 62개)·보기 화면 이어지는 쪽(CFG.cont)
 const fs=require('fs'); const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const D=JSON.parse(html.match(/<script id="data" type="application\/json">([\s\S]*?)<\/script>/)[1].replace(/<\\\//g,'</'));
 let fail=0; const ok=(n,c,i)=>{console.log((c?'PASS ':'FAIL ')+n+(c?'':'  → '+i)); if(!c)fail++;};
@@ -35,5 +36,18 @@ for(const [no,[to,note]] of Object.entries(MV)){ const e=by[no]; ok(no+' 이동 
 const mvAll=D.arts.filter(e=>e.mv).map(e=>e.l+':'+e.no); ok('이동 표기 조문은 이 3개뿐', mvAll.join(',')==='RULE:제336조,RULE:제337조,RULE:제610조', mvAll.join(','));
 ok('옮겨진 조문: 적용 판단 없음·조 번호로만 검색·상세 화면 이동 칸', /if\(D\.meta\.laws\[e\.l\]\.nj\|\|e\.mv\)e\.nj=1/.test(html)&&/if\(e\.mv&&!toks\.some/.test(html)&&/옮겨간 조문<\/h3>/.test(html), '');
 // 2026-10-24(5-75) 조문 카드 줄 문구: 책 이름(굵게) + 판·쪽(회색) — 사용자 결정
-ok("조문 카드 줄 '만화로 보는 안전보건규칙' + 'N년판 N쪽'", html.includes("<b>만화로 보는 안전보건규칙</b> <span>'+esc(String(c.y))+'년판 '+p+'쪽</span>")&&!html.includes('<b>만화로 보기</b>'));
+ok("조문 카드 줄 '만화로 보는 안전보건규칙' + 'N년판 N쪽'(5-82: 이어지는 조문은 'N~N쪽')", html.includes("<b>만화로 보는 안전보건규칙</b> <span>'+esc(String(c.y))+'년판 '+p+(q?'~'+q:'')+'쪽</span>")&&!html.includes('<b>만화로 보기</b>'));
+// 2026-10-25(5-82) 다음 쪽까지 이어지는 조문의 끝 쪽 — 쪽 그림으로 판별(맨 위가 조문 칸 윗줄로 시작하는 쪽 62개, 모두 눈 확인 — app-dev scripts/claude_comic_end_20261025.py)
+const TO=C.to||{}, TK=Object.keys(TO);
+ok('이어지는 조문 62개·모두 두 쪽(시작 쪽 + 1)', TK.length===62&&TK.every(k=>M[k]&&TO[k]===M[k]+1), TK.length+' '+JSON.stringify(TK.filter(k=>!(M[k]&&TO[k]===M[k]+1)).slice(0,5)));
+const order=R.filter(e=>M[e.no]).map(e=>e.no), lateEnd=[];
+order.forEach((no,i)=>{ const nx=order[i+1]; if(TO[no]&&nx&&M[nx]<TO[no])lateEnd.push(no+'→'+nx); });
+ok('끝 쪽이 다음 조문 첫 쪽보다 뒤가 아님', !lateEnd.length, lateEnd.join(','));
+ok('한 쪽이 두 조문의 끝 쪽이 아님', new Set(Object.values(TO)).size===TK.length, '');
+for(const [k,s,e] of [['제38조',28,29],['제56조',38,39],['제57조',39,40],['제87조',61,62],['제96조',65,66],['제156조',86,87],['제162조',88,89],['제321조',155,156],['제331조의3',162,163],['제542조',249,250],['제651조',298,299],['제672조',311,312]])
+  ok(k+' → '+s+'~'+e+'쪽(책 쪽 확인)', M[k]===s&&TO[k]===e, M[k]+'~'+TO[k]);
+for(const k of ['제1조','제42조','제93조','제95조','제97조','제619조','제674조']) ok(k+' 한 쪽(끝 쪽 없음)', M[k]&&!(k in TO), TO[k]);
+if(CF){ const CN=CF.cont||{}; ok('보기 화면 이어지는 쪽(cont) = 앱 끝 쪽 표', Object.keys(CN).length===TK.length&&TK.every(k=>CN[String(TO[k])]===k), Object.keys(CN).length); }
+ok('조문 화면 코드: q = 끝 쪽', html.includes("var p=c.map[e.no], q=c.to&&c.to[e.no]; if(!p)return '';"), '');
+ok('보기 화면 머리 띠: 연 조문이 이어지면 그 이름, 시작 조문 없으면 이어지는 조문', V.includes("cn=CFG.cont[n]||'', t=a&&(arts.indexOf(a)>=0||cn===a)?a:(arts[0]||cn)")&&V.includes("var al=(cn?[cn]:[]).concat(arts)"), '');
 console.log(fail?('실패 '+fail+'건'):'전체 통과'); process.exit(fail?1:0);
