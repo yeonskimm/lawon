@@ -234,6 +234,8 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 .fines.fcon .fr[data-fa]{cursor:pointer}
 .fines.fcon .fr.fsel .fa span.fpk{box-shadow:inset 0 0 0 2px var(--pri);background:var(--hl)}
 .fines.fcon .fr.fsel .fd{color:var(--ink);font-weight:700}
+.fines.fcable .fr[data-fa] .fa span{cursor:pointer}   /* 2026-10-25 금액 칸을 누르면 그 줄·차수로 계산 */
+.fines.fcon .fr:not([data-fa]) .fa{opacity:.5}   /* 2026-10-25 계산하지 않는 글 금액 줄(미계상액 등) */
 .fr+.fr{margin-top:10px}
 .fd{margin:0 0 5px;font-size:.875rem;line-height:1.45;color:var(--ink2)}
 .fa{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -2270,10 +2272,10 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
       var num=x.a.every(function(v){return typeof v==='number';}), u=fcUnits((x.t||'')+' '+(x.g||'')+' '+(x.d||''));
       if(num)nfc++;
       h+='<div class="fr"'+(num?' data-fa="'+(x.a.length===1?[x.a[0],x.a[0],x.a[0]]:x.a).join(',')+'" data-fu="'+u.join(',')+'" data-fg="'+esc(x.g||'')+'" data-ft="'+esc(x.t||'')+'"':'')+'>'+(x.d?'<p class="fd">'+esc(x.d)+'</p>':'')+(same?'<div class="fa one"><span><small>'+(one?'금액':'1~3차')+'</small>'+wonF(x.a[0])+'</span></div>'
-        :'<div class="fa"><span><small>1차</small>'+wonF(x.a[0])+'</span><span><small>2차</small>'+wonF(x.a[1])+'</span><span><small>3차</small>'+wonF(x.a[2])+'</span></div>')+'</div>'; });
+        :'<div class="fa"><span><small>1차</small>'+wonF(x.a[0])+'</span><span><small>2차</small>'+wonF(x.a[1])+'</span><span><small>3차 이상</small>'+wonF(x.a[2])+'</span></div>')+'</div>'; });
     var cb=(fineKey(ctx)==='OSH'&&nfc)?'<button type="button" class="fcl" data-fcopen>금액 계산 ›</button><div class="fcb" hidden></div>':'';   // 2026-10-15 산안법(시행령 별표 35)만
     var fc=cb?fineCapOf(basis):null;
-    return '<div class="fines"'+(fc?' data-fh="'+fc.h+'"':'')+'>'+h+cb+'</div>';
+    return '<div class="fines'+(cb?' fcable':'')+'"'+(fc?' data-fh="'+fc.h+'"':'')+'>'+h+cb+'</div>';
   }
   // ── 산안법 과태료 금액 계산(2026-10-15): 계산은 CALC의 fineRate·fineCalc, 여기서는 화면만 ──
   var FCU={'명':['인원','명'],'대':['대수','대'],'개소':['개소 수','개소'],'종':['물질 수','종'],'건':['건수','건'],'회':['횟수','회'],'서류':['서류 수','건'],'대상':['대상 수','개']};
@@ -2326,15 +2328,29 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     if(o.cut)w+=' × '+Math.round(o.r*100)+'%'+(o.floor?' → 100만원 미만이라 100만원':'');
     if(st.sj)w+=' · 3차 금액 적용';
     ob.textContent=fineWon(o.out); ow.textContent=w; }
+  function fcOpen(F){   // 2026-10-25 '금액 계산 ›'과 금액 칸 누름이 같이 씀 — 펼치고, 고른 줄이 없으면 첫 줄
+    var B=F.querySelector('.fcb'), op=F.querySelector('[data-fcopen]'); B.hidden=false; F.classList.add('fcon'); op.textContent='금액 계산 접기';
+    F._fc=F._fc||{c:0,r:null,sj:false,nm:{}}; if(!F.querySelector('.fr.fsel')){ var R0=F.querySelector('.fr[data-fa]'); if(R0)R0.classList.add('fsel'); } }
+  function fcSeen(F,R){   // 2026-10-25 금액 칸을 눌렀을 때 결과 칸이 아래 탭(키보드) 뒤에 가려 있으면 그만큼만 올림 — 누른 줄은 화면 안에 남김
+    var res=F.querySelector('.fcres'); if(!res||!R)return;
+    var tb=document.getElementById('tabbar'), hd=document.querySelector('.hdr'), vv=window.visualViewport, tr=tb?tb.getBoundingClientRect():null;
+    var bot=Math.min(tr&&tr.height?tr.top:innerHeight, vv?vv.offsetTop+vv.height:innerHeight)-8, top=(hd?Math.max(0,hd.getBoundingClientRect().bottom):0)+8;
+    var d=Math.min(res.getBoundingClientRect().bottom-bot, R.getBoundingClientRect().top-top);
+    if(d>1)window.scrollBy({top:d,behavior:(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)?'auto':'smooth'}); }
   document.addEventListener('click',function(ev){ var t=ev.target, F=t&&t.closest?t.closest('.fines'):null; if(!F)return;
     var op=t.closest('[data-fcopen]');
-    if(op){ var B=F.querySelector('.fcb'), on=B.hidden; B.hidden=!on; F.classList.toggle('fcon',on); op.textContent=on?'금액 계산 접기':'금액 계산 ›';
-      if(on){ F._fc=F._fc||{c:0,r:null,sj:false,nm:{}}; if(!F.querySelector('.fr.fsel')){ var R0=F.querySelector('.fr[data-fa]'); if(R0)R0.classList.add('fsel'); } fcDraw(F); }
-      else each('.fa span.fpk',function(x){ if(F.contains(x))x.classList.remove('fpk'); });
+    if(op){ if(F.classList.contains('fcon')){ F.querySelector('.fcb').hidden=true; F.classList.remove('fcon'); op.textContent='금액 계산 ›'; each('.fa span.fpk',function(x){ if(F.contains(x))x.classList.remove('fpk'); }); }
+      else { fcOpen(F); fcDraw(F); }
       return; }
+    var R=t.closest('.fr[data-fa]'), cell=R?t.closest('.fa span'):null, opened=false;
+    if(cell&&!F.classList.contains('fcon')&&F.querySelector('[data-fcopen]')){ fcOpen(F); opened=true; }   // 2026-10-25 접혀 있어도 금액 칸을 누르면 계산을 펼침
     if(!F.classList.contains('fcon')||!F._fc)return;
-    var R=t.closest('.fr[data-fa]');
-    if(R){ if(!R.classList.contains('fsel')){ each('.fr.fsel',function(x){ if(F.contains(x))x.classList.remove('fsel'); }); R.classList.add('fsel'); fcDraw(F); } return; }
+    if(R){ var cs=R.querySelectorAll('.fa span'), ci=(cell&&cs.length>1)?Array.prototype.indexOf.call(cs,cell):-1, nr=!R.classList.contains('fsel'), nc=ci>=0&&!F._fc.sj&&ci!==F._fc.c;   // 2026-10-25 금액 칸 = 그 줄 + 그 차수(중대재해 체크면 3차 그대로, 한 칸 줄은 차수 그대로)
+      if(nr){ each('.fr.fsel',function(x){ if(F.contains(x))x.classList.remove('fsel'); }); R.classList.add('fsel'); }
+      if(nc)F._fc.c=ci;
+      if(nr||opened)fcDraw(F); else if(nc)fcUpd(F);
+      if(cell)fcSeen(F,R);
+      return; }
     var c=t.closest('[data-fcc]'); if(c){ F._fc.c=+c.getAttribute('data-fcc'); fcUpd(F); return; }
     var z=t.closest('[data-fcs]'); if(z){ F._fc.r=+z.getAttribute('data-fcs'); fcUpd(F); return; }
     var bs=t.closest('[data-fcbs]'); if(bs){ var nb=bs.getAttribute('data-fcbs'); if(nb!==(F._fc.b||'n')){ F._fc.b=nb; F._fc.r=null; fcDraw(F); } return; }   // 2026-10-17 규모 기준 바꾸면 고른 규모는 지움
