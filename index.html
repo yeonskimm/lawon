@@ -255,6 +255,17 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 .edu li:last-child{padding-bottom:0}
 .edu small{display:block;font-size:.8125rem;color:var(--ink2)}
 .edu b{font-size:.9375rem}
+.edu{container-type:inline-size}   /* 2026-10-26(5-83): 교육시간 줄 — 대상 왼쪽·시간 오른쪽 한 줄, 시간이 길거나 조건이 있으면 아래로 */
+.edu li.er{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.edu li.er small{flex:1 1 auto;min-width:0}
+.edu li.er b{flex:0 0 auto;white-space:nowrap;text-align:right}
+.edu li.er.st{display:block}
+.edu li.er.st b{display:block;white-space:normal;text-align:left;margin-top:2px}
+@container (max-width:290px){.edu li.er{display:block} .edu li.er b{display:block;white-space:normal;text-align:left;margin-top:2px}}
+.edu .ec{display:block;margin-top:3px;font-size:.8125rem;line-height:1.5;color:var(--ink2)}
+.edg{margin:14px 0 4px;font-size:.8125rem;font-weight:700;color:var(--ink2)}
+.edg:first-child,.edh+.edg{margin-top:0}
+.edu li.edn{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
 .edh{margin:12px 0 6px;font-size:.75rem;font-weight:700;color:var(--ink3)}
 .edh:first-child{margin-top:0}
 .bwrap.clip.ed{max-height:17em}
@@ -427,7 +438,9 @@ button.brand:active{opacity:.7}
 .snip.bx{white-space:pre-line;-webkit-line-clamp:3;font-size:.8125rem}
 .r1.c2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .row.sm{min-height:48px;padding-top:10px;padding-bottom:10px}
-.bval{margin:0;font-size:1.25rem;font-weight:800;font-variant-numeric:tabular-nums}
+.bval{margin:0;font-size:1.25rem;font-weight:800;font-variant-numeric:tabular-nums;white-space:pre-line}
+.bval.lg{font-size:1rem;font-weight:500;line-height:1.65}   /* 2026-10-26(5-83): 긴 기준값(40자 넘음)은 보통 크기 — 큰 굵은 글씨 덩어리 대신 */
+.bvc{margin:6px 0 0;font-size:.9375rem;line-height:1.6;color:var(--ink2)}
 .bsub{margin:8px 0 0;font-size:.9375rem;line-height:1.65;color:var(--ink2)}
 .bnote{margin-top:14px}
 .bnote .law{font-size:.875rem;line-height:1.65;color:var(--ink2)}
@@ -2998,12 +3011,23 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     var an=ART_NOTE[e.l+':'+e.no]; if(an)return '<h3 class="gl">부칙 참고</h3><div class="card"><p class="why">'+esc(an)+'</p></div>';
     if(e.l!=='MW'||e.no!=='제6조')return '';
     return '<h3 class="gl">부칙 참고</h3><div class="card"><p class="why">제4항 단서 제2호(상여금 등 25%)·제3호나목(현금 복리후생비 7%)의 비율은 부칙으로 해마다 낮아져 <b>2024년부터 0</b>입니다. 매월 1회 이상 정기적으로 주는 상여금 등과 현금 복리후생비는 전액 산입하고, 제1호 임금과 현물 복리후생비(제3호가목)는 계속 산입하지 않습니다.</p><div class="law fm">'+fmtLaw(MW6NOTE)+'</div></div>'; }
+  // 2026-10-26(5-83): 교육시간 값 — '16시간 이상(조건)'·'가) …\n나) …'·' / '로 이어진 값을 시간(굵게)과 조건(작은 글씨)으로. 글자는 원문 그대로(괄호·가)나) 표시만 뺌)
+  function eduV(v){ var ps=String(v||'').split(/\n| \/ /).map(function(x){return x.replace(/^[가-힣]\)\s*/,'').trim();}).filter(Boolean); if(!ps.length)return {m:'',c:[]};
+    var m=ps[0], c=[], x=/^(.*?\d+시간 이상)\((.+)\)$/.exec(m); if(x){ m=x[1]; c.push(x[2]); } return {m:m,c:c.concat(ps.slice(1))}; }
+  function eduLi(w,v){ var V=eduV(v), st=V.c.length>0||V.m.length>12;   // 짧은 시간은 대상 오른쪽 한 줄, 길거나 조건이 있으면 대상 아래
+    return '<li class="er'+(st?' st':'')+'"><small>'+esc(w)+'</small><b>'+esc(V.m)+'</b>'+V.c.map(function(c){return '<span class="ec">'+esc(c)+'</span>';}).join('')+'</li>'; }
+  function eduTL(L,grp){ var h='', lg=null;   // D.eduTime 줄(과정 c·대상 w·시간 t) — grp면 과정 이름을 묶음 제목으로 한 번만
+    L.forEach(function(x){ var g=grp&&x.w?x.c:''; if(g!==lg){ h+=(lg!==null?'</ul>':'')+(g?'<p class="edg">'+esc(g)+'</p>':'')+'<ul class="edu">'; lg=g; } h+=eduLi(x.w||x.c,x.t); });
+    return lg!==null?h+'</ul>':''; }
   function artEdu(e,en){   // 2026-10-19(5-44): 교육시간 카드 — CORE eduOf. 7줄 넘으면 접고 '전체 보기'
     var E=eduOf(D,e.l+':'+e.no); if(!E)return ''; var n=0;
-    var body=E.secs.map(function(S){ return ((E.secs.length>1||E.via)&&S.h?'<p class="edh">'+esc(S.h)+'</p>':'')+'<ul class="edu">'+S.rows.map(function(r){ n++;
-      if(r.t==='비고')return '<li class="edn"><small>비고</small><span>'+esc((r.x||'').replace(/^비고:?\s*/,'').replace(/\n\s*/g,'\n').trim()).replace(/\n/g,'<br>')+'</span></li>';
-      var w=(r.up?r.up.replace(/^[가-힣]\.\s*/,'')+' · ':'')+r.t.replace(/^[가-힣]\.\s*/,'').replace(/^\d+\)\s*/,'').replace(/\s*›\s*[가-힣]\)\s*/,' · ').replace(/:\s*별표 5 제1호라목(.*?)에 해당하는 작업에 종사하는 근로자에 한정한다\./,' — 별표5 제1호라목$1 작업');
-      return '<li><small>'+esc(w)+'</small><b>'+esc((r.v||'').replace(/^신규교육 - · (.*)$/,'$1 (신규교육 없음)')).replace(/\n/g,'<br>')+'</b></li>'; }).join('')+'</ul>'; }).join('');
+    var body=E.secs.map(function(S){ var lg=null, h=((E.secs.length>1||E.via)&&S.h?'<p class="edh">'+esc(S.h)+'</p>':'');   // 5-83: 과정(가. 정기교육 등)은 묶음 제목으로 한 번만
+      S.rows.forEach(function(r){ n++;
+        var g=r.t==='비고'?'':(r.up||'').replace(/^[가-힣]\.\s*/,''); if(g!==lg||r.t==='비고'){ h+=(lg!==null?'</ul>':'')+(g?'<p class="edg">'+esc(g)+'</p>':'')+'<ul class="edu">'; lg=g; }
+        if(r.t==='비고'){ h+='<li class="edn"><small>비고</small><span>'+esc((r.x||'').replace(/^비고:?\s*/,'').replace(/\n\s*/g,'\n').replace(/^\d+\.\s*삭제\s*<[^<>\n]*>\n?/gm,'').trim()).replace(/\n/g,'<br>')+'</span></li>'; return; }   // 삭제된 비고 호(4~6. 삭제 <2025. 5. 30.>)는 뺌
+        var w=r.t.replace(/^[가-힣]\.\s*/,'').replace(/^\d+\)\s*/,'').replace(/\s*›\s*[가-힣]\)\s*/,' · ').replace(/:\s*별표 5 제1호라목(.*?)에 해당하는 작업에 종사하는 근로자에 한정한다\./,' — 별표5 제1호라목$1 작업');
+        h+=eduLi(w,(r.v||'').replace(/^신규교육 - · (.*)$/,'$1 (신규교육 없음)')); });
+      return h+(lg!==null?'</ul>':''); }).join('');
     var lng=n>7, full=!!en.efull, vk=E.via?E.via.split(':'):null;
     return '<h3 class="gl">교육시간 <span>'+(vk?'근거 '+esc(D.meta.laws[vk[0]].short+' '+vk[1])+' · ':'')+'시행규칙 별표 4</span></h3><div class="card edc"><div class="bwrap'+(lng&&!full?' clip ed':'')+'">'+body+'</div>'
       +(lng?'<button type="button" class="fullbtn" data-efull="1" aria-expanded="'+full+'">'+(full?'접기':'전체 보기')+'</button>':'')
@@ -3114,7 +3138,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     var bx='<p class="why sm">'+esc(it.basis)+'</p>'+(it.note?'<p class="why sm">'+esc(it.note)+'</p>':'')+indNote()+(GRADE[it.g]?'<p class="why sm">근거 확인: '+esc(GRADE[it.g])+'</p>':'');
     var blong=bx.replace(/<[^>]+>/g,'').length>200, bfull=!!en.bfull;   // 2026-10-03: 길면 앞부분만 보이고 '전체 보기'(조문 전문 보기와 같은 방식)
     h+='<h3 class="gl">적용 기준과 근거</h3><div class="card"><div class="bwrap'+(blong&&!bfull?' clip':'')+'">'+bx+'</div>'+(blong?'<button type="button" class="fullbtn" data-bfull="1" aria-expanded="'+bfull+'">'+(bfull?'접기':'전체 보기')+'</button>':'')+'</div>';
-    if(it.edu&&it.edu.length)h+='<h3 class="gl">교육시간 <span>산업안전보건법 시행규칙 별표4</span></h3><div class="card"><ul class="edu">'+it.edu.map(function(x){return '<li><small>'+esc(x.c+(x.w?' · '+x.w:''))+'</small><b>'+esc(x.t)+'</b></li>';}).join('')+'</ul>'
+    if(it.edu&&it.edu.length)h+='<h3 class="gl">교육시간 <span>산업안전보건법 시행규칙 별표4</span></h3><div class="card">'+eduTL(it.edu,true)
       +'<p class="why sm edn">시행령 별표1 제1호 사업, 상시 50명 미만 도매업·숙박 및 음식점업은 위 시간의 2분의 1 이상(별표4 비고 3)</p>'
       +(it.edu.some(function(x){return x.s==='근로자';})?'<p class="why sm">일용근로자가 채용 시·특별교육을 받은 날 이후 1주일 동안 같은 사업장에서 같은 업무로 다시 종사하면 그 교육 면제(별표4 비고 2)</p>':'')
       +(BT.tabById.S4?'<button type="button" class="lnk" data-bt="S4">시행규칙 별표4 전체 보기</button>':'')+'</div>';
@@ -3276,7 +3300,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     h+=alRows(r,T);
     (r.b||[]).forEach(function(b){ h+='<h3 class="gl">'+esc(b[0])+'</h3><div class="card"><p class="law">'+esc(b[1])+'</p></div>'; });
     if(r.pair)h+='<p class="cnote">원문 표에서 제12호·제13호가 한 칸에 함께 적혀 같은 내용</p>';
-    if(r.v&&r.tb!=='S23')h+='<h3 class="gl">'+esc(BTX[r.tb]||'기준')+'</h3><div class="card"><p class="bval">'+esc(r.v)+'</p>'+(r.vgrp?'<p class="fnote">원문 표에서 제5호 인화성 가스(가목~아목)에 한 칸으로 적힌 기준량</p>':'')+'</div>';
+    if(r.v&&r.tb!=='S23')h+='<h3 class="gl">'+esc(BTX[r.tb]||'기준')+'</h3><div class="card">'+(r.tb==='S4'?(function(V){ return '<p class="bval">'+esc(V.m)+'</p>'+V.c.map(function(c){return '<p class="bvc">'+esc(c)+'</p>';}).join(''); })(eduV(r.v)):'<p class="bval'+(r.v.length>40?' lg':'')+'">'+esc(r.v)+'</p>')+(r.vgrp?'<p class="fnote">원문 표에서 제5호 인화성 가스(가목~아목)에 한 칸으로 적힌 기준량</p>':'')+'</div>';
     if(r.tb==='S23'){
       h+='<h3 class="gl">시기·주기</h3><div class="card"><ul class="hct"><li><span>시기(배치 후 첫 번째 특수건강진단)</span><b>'+esc(r.t1)+'</b></li><li><span>주기</span><b>'+esc(r.t2)+'</b></li></ul></div>';
       h+='<h3 class="gl">대상 유해인자 <span>산안법 시행규칙 별표 22</span></h3><div class="list">'+(r.to?r.to.map(function(id){return btRowLink(BT.byId[id]);}).join(''):btTabRow(BT.tabById.S22))+'</div>';
@@ -3291,7 +3315,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     if(r.ref2){ var R2=BT.tabById[r.ref2[0]]; h+='<h3 class="gl">같은 내용</h3><div class="list">'+(r.ref2.length>2?btRowLink(BT.byId[R2.secs[r.ref2[1]].rows[r.ref2[2]]]):btTabRow(R2,r.ref2[1]))+'</div>'; }
     if(r.spe){ var is39=r.no==='제39호', ed=D.eduTime.filter(function(x){ if(x.s!=='근로자'||x.c!=='특별교육')return false;
         if(/제39호 제외/.test(x.w))return !is39; if(/라목제39호/.test(x.w))return is39; return true; });   // 일용근로자 등: 제39호 8시간, 그 밖의 작업 2시간
-      if(ed.length)h+='<h3 class="gl">교육시간 <span>산업안전보건법 시행규칙 별표4</span></h3><div class="card"><ul class="edu">'+ed.map(function(x){return '<li><small>'+esc(x.w)+'</small><b>'+esc(x.t)+'</b></li>';}).join('')+'</ul></div>'; }
+      if(ed.length)h+='<h3 class="gl">교육시간 <span>산업안전보건법 시행규칙 별표4</span></h3><div class="card">'+eduTL(ed,false)+'</div>'; }
     if(r.bk)h+='<h3 class="gl">관련 규정</h3><div class="list">'+r.bk.map(function(pp,i){return bkRow(pp,r.id+':'+i);}).join('')+'</div>';
     h+='<h3 class="gl">별표 전체</h3><div class="list">'+btTabRow(T)+(T.secs.length>1&&S.rows.length>1?btTabRow(T,r.s):'')+'</div>';
     h+=btBasis(T,S);
@@ -3348,7 +3372,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     return '<button type="button" class="wq" data-art="'+esc(k)+'"><span class="qh">'+esc((e.l==='RULE'?'':D.meta.laws[e.l].short+' ')+e.no+(hs&&hs!=='정의'?hs:''))+'</span>'+esc(L.join('\n'))+'</button>'; }
   function wkEdu(S){ var is39=(S.bt||[]).some(function(id){ var r=BT.byId[id]; return r&&r.no==='제39호'; }), only39=(S.bt||[]).every(function(id){ var r=BT.byId[id]; return r&&r.no==='제39호'; });
     var ed=D.eduTime.filter(function(x){ if(x.s!=='근로자'||x.c!=='특별교육')return false; if(/제39호 제외/.test(x.w))return !only39; if(/라목제39호/.test(x.w))return is39; return true; });
-    return ed.length?'<p class="qh" style="margin:10px 0 0;font-size:.75rem;font-weight:700;color:var(--ink3)">교육시간 · 산안법 시행규칙 별표 4</p><ul class="edu">'+ed.map(function(x){return '<li><small>'+esc(x.w)+'</small><b>'+esc(x.t)+'</b></li>';}).join('')+'</ul>':''; }
+    return ed.length?'<p class="qh" style="margin:10px 0 0;font-size:.75rem;font-weight:700;color:var(--ink3)">교육시간 · 산안법 시행규칙 별표 4</p>'+eduTL(ed,false):''; }
   function wkTabQuote(id){ var T=BT.tabById[id]; return T?'<button type="button" class="wq" data-bt="'+T.id+'"><span class="qh">'+esc(btName(T))+'</span><span class="qt">'+esc(T.t)+'</span></button>':''; }   // 별표 전체 발췌 줄(항목 it.t·묶음 S.t 공용)
   function wkL5(e){ var L=l5Lab(D,e), pd=pend(e), h='';   // 2026-10-18 항목별 기준: 상시 5명 미만 적용 여부(CORE l5Lab)·개정 예정
     if(L)h+='<span class="lb'+(L.k==='na'||L.k==='min'?' na':'')+'">'+esc(L.t)+'</span>';
