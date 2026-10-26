@@ -26,6 +26,17 @@ def sec(p, name):   # 그 구획 카드 정보
         return {w:s.textContent, v:b.textContent, ec:[...li.querySelectorAll('.ec')].map(x=>x.textContent), side:rb.left>rs.left+20&&Math.abs(rb.top-rs.top)<12, st:li.classList.contains('st')};});
       return {t:c.innerText, edg:[...c.querySelectorAll('.edg')].map(x=>x.textContent), rows:rows, bval:[...c.querySelectorAll('.bval')].map(x=>({t:x.textContent,lg:x.classList.contains('lg'),fs:parseFloat(getComputedStyle(x).fontSize)})),
         bvc:[...c.querySelectorAll('.bvc')].map(x=>x.textContent), over:[...c.querySelectorAll('*')].some(x=>x.getBoundingClientRect().right>innerWidth+0.5)};}""" % SUB, name)
+def gls(p):   # 펼친 비고의 풀이 줄(5-85): 글, 누를 수 있는지, 높이, 목 이름 덩어리가 줄에서 끊기지 않는지
+    return p.evaluate("""[...document.querySelectorAll('%s details.edd[open] .edx')].map(x=>({t:x.innerText.replace(/\\s+/g,' ').trim(), lk:x.classList.contains('lk'), h:x.getBoundingClientRect().height,
+      nw:[...x.querySelectorAll('.nw')].every(s=>{const r=document.createRange(); r.selectNodeContents(s); return new Set([...r.getClientRects()].filter(q=>q.width>0).map(q=>Math.round(q.top))).size===1;})}))""" % SUB)
+def dt(p): return p.evaluate("(()=>{const s=document.querySelector('%s'); return s?(s.querySelector('.dlaw')||{}).innerText+' | '+(s.querySelector('.dt')||{}).innerText:'';})()" % SUB)
+def headok(p):   # 교육시간 제목이 낱말 중간에서 꺾이지 않음
+    return p.evaluate("""(()=>{const g=[...document.querySelectorAll('%s h3.gl')].find(x=>x.textContent.startsWith('교육시간')); const b=g&&g.querySelector('.gh'); if(!b)return false; const r=document.createRange(); r.selectNodeContents(b); return new Set([...r.getClientRects()].filter(q=>q.width>0).map(q=>Math.round(q.top))).size===1;})()""" % SUB)
+GL13 = ['위 표 나목 채용 시 교육 · 라목 특별교육', '위 표 가목 정기교육 · 나목 채용 시 교육 · 다목 작업내용 변경 시 교육 · 라목 특별교육', '영 별표 1 제1호 「광산안전법」·「원자력안전법」·「항공안전법」·「선박안전법」 적용 사업']
+GL18 = ['제1호의 비고 제3호 각 목 가. 영 별표 1 제1호에 따른 사업 나. 상시근로자 50명 미만의 도매업, 숙박 및 음식점업', '영 별표 1 제1호 「광산안전법」·「원자력안전법」·「항공안전법」·「선박안전법」 적용 사업', '위 표 가목 정기교육 · 나목 채용 시 교육 · 다목 작업내용 변경 시 교육 · 라목 특별교육']
+def order(t, *subs):   # 글이 모두 있고 이 순서로 나오는지
+    ix = [t.find(x) for x in subs]
+    return all(i >= 0 for i in ix) and ix == sorted(ix)
 def row(C, w):
     for r in (C or {}).get('rows', []):
         if r['w'] == w: return r
@@ -53,7 +64,18 @@ with sync_playwright() as pw:
         if w >= 390: ok(tag + ' 비고 안내 한 줄', all(h < 52 for h in hs), hs)
         p.locator(SUB + ' details.edd summary').first.click(); p.wait_for_timeout(200); C = sec(p, '교육시간')
         ok(tag + ' 비고 누르면 펼침·삭제된 호 없음', C and '면제한다' in C['t'] and '2분의 1 이상을 그 교육시간으로' in C['t'] and '삭제 <2025' not in C['t'], C and C['t'][-400:])
-        ok(tag + ' 제29조는 제1호 비고 각 목을 관리감독자 비고에 다시 붙이지 않음', C and C['t'].count('상시근로자 50명 미만의 도매업') == 1, C and C['t'].count('상시근로자 50명 미만의 도매업'))
+        G = gls(p)
+        ok(tag + ' 근로자 비고 풀이 3줄(5-85)', [g['t'] for g in G] == GL13, [g['t'] for g in G])
+        ok(tag + ' 풀이 줄은 가리키는 줄 바로 아래', C and order(C['t'], '면제한다.', '위 표 나목', '3. 다음') and order(C['t'], '그 교육시간으로 한다.', '위 표 가목', '가. 영 별표 1 제1호에 따른 사업', '영 별표 1 제1호 「광산', '나. 상시근로자 50명'), C and C['t'][-600:])
+        ok(tag + ' 목 이름 덩어리가 줄에서 안 끊김', all(g['nw'] for g in G), G)
+        ok(tag + ' 영 별표 1 제1호 줄만 누를 수 있음·44 이상', [g['lk'] for g in G] == [False, False, True] and G[2]['h'] >= 43.5, G)
+        ok(tag + ' 제29조 제목 안 꺾임', headok(p))
+        p.locator(SUB + ' details.edd[open] .edx.lk').first.click(); p.wait_for_timeout(450)
+        ok(tag + ' 누르면 시행령 별표 1 제1호 화면', '산업안전보건법 시행령 [별표 1]' in dt(p) and '다음 각 목의 어느 하나에 해당하는 사업' in dt(p) and '「광산안전법」 적용 사업' in p.evaluate("document.querySelector('%s').innerText" % SUB), dt(p))
+        go(p, 'data-art', 'OSH:제29조'); p.locator(SUB + ' [data-efull]').click(); p.wait_for_timeout(250)
+        p.locator(SUB + ' details.edd summary').nth(1).click(); p.wait_for_timeout(200); G = gls(p)
+        ok(tag + ' 제29조 관리감독자 비고 풀이 3줄', [g['t'] for g in G] == GL18 and all(g['nw'] for g in G), [g['t'] for g in G])
+        p.locator(SUB + ' details.edd summary').first.click(); p.wait_for_timeout(200); C = sec(p, '교육시간')
         hb = p.evaluate("document.querySelector('%s details.edd summary').getBoundingClientRect().height" % SUB)
         ok(tag + ' 비고 누르는 칸 높이 44 이상', hb >= 43.5, hb)
         p.locator(SUB + ' details.edd summary').first.click(); p.wait_for_timeout(200)
@@ -72,10 +94,18 @@ with sync_playwright() as pw:
         ok(tag + ' 제16조 비고 접힘·안내', C and '제1호의 비고 제3호 각 목' not in C['t'] and p.evaluate("document.querySelector('%s details.edd summary').innerText.replace(/\\s+/g,' ').trim()" % SUB) == '비고 교육시간 2분의 1 이상')
         p.locator(SUB + ' details.edd summary').first.click(); p.wait_for_timeout(200); C = sec(p, '교육시간')
         ok(tag + ' 제16조 비고 펴면 제1호 비고 제3호 가·나목', C and '제1호의 비고 제3호 각 목' in C['t'] and '가. 영 별표 1 제1호에 따른 사업' in C['t'] and '나. 상시근로자 50명 미만의 도매업, 숙박 및 음식점업' in C['t'], C and C['t'][-300:])
+        G = gls(p)
+        ok(tag + ' 제16조 풀이 3줄(관리감독자 표 목 이름)', [g['t'] for g in G] == GL18 and all(g['nw'] for g in G), [g['t'] for g in G])
+        ok(tag + ' 제16조 제목 안 꺾임(교육시간 · 근거 산안법 제29조)', headok(p))
+        if SHOT and tag in ('393크게', '320크게'): p.screenshot(path=os.path.join(SHOT, 'edu2_16_' + tag + '.png'), full_page=True)
         ok(tag + ' 제16조 넘침 없음', C and not C['over'])
         # 1-3. 법 제77조 비고 안내
         go(p, 'data-art', 'OSH:제77조')
         ok(tag + ' 제77조 비고 안내', p.evaluate("document.querySelector('%s details.edd summary').innerText.replace(/\\s+/g,' ').trim()" % SUB) == '비고 유해화학물질 안전교육')
+        p.locator(SUB + ' details.edd summary').first.click(); p.wait_for_timeout(200); G = gls(p)
+        ok(tag + ' 제77조 풀이(영 제67조제13호라목)', [g['t'] for g in G] == ['영 제67조제13호라목 「물류정책기본법」 제29조제1항 각 호의 위험물질을 운송하는 화물차주'] and G[0]['lk'] and G[0]['h'] >= 43.5, G)
+        p.locator(SUB + ' details.edd[open] .edx.lk').first.click(); p.wait_for_timeout(450)
+        ok(tag + ' 누르면 시행령 제67조 화면', '산업안전보건법 시행령' in dt(p) and '제67조' in dt(p), dt(p))
         # 2. 법 제32조 — 긴 시간은 아래로, 문구 그대로
         go(p, 'data-art', 'OSH:제32조'); C = sec(p, '교육시간'); r = row(C, '안전관리자, 안전관리전문기관의 종사자')
         ok(tag + ' 제32조 신규·보수 문구 그대로·대상 아래', r and r['v'] == '신규교육 34시간 이상 · 보수교육 24시간 이상' and r['st'], r)
