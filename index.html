@@ -265,7 +265,12 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 .edu .ec{display:block;margin-top:3px;font-size:.8125rem;line-height:1.5;color:var(--ink2)}
 .edg{margin:14px 0 4px;font-size:.8125rem;font-weight:700;color:var(--ink2)}
 .edg:first-child,.edh+.edg{margin-top:0}
-.edu li.edn{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.edu li.edn{margin-top:8px;padding-top:0;padding-bottom:0;border-top:1px solid var(--line)}
+.edd summary{display:flex;align-items:center;min-height:44px;cursor:pointer;list-style:none;font-size:.875rem;font-weight:600;color:var(--ink2)}   /* 5-83: 비고는 접어 둠(사용자 선택) */
+.edd summary::-webkit-details-marker{display:none}
+.edd summary::after{content:'›';display:inline-block;margin-left:8px;transform:rotate(90deg);font-weight:700}
+.edd[open] summary::after{transform:rotate(-90deg)}
+.edd span{padding-bottom:4px}
 .edh{margin:12px 0 6px;font-size:.75rem;font-weight:700;color:var(--ink3)}
 .edh:first-child{margin-top:0}
 .bwrap.clip.ed{max-height:17em}
@@ -3024,7 +3029,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     var body=E.secs.map(function(S){ var lg=null, h=((E.secs.length>1||E.via)&&S.h?'<p class="edh">'+esc(S.h)+'</p>':'');   // 5-83: 과정(가. 정기교육 등)은 묶음 제목으로 한 번만
       S.rows.forEach(function(r){ n++;
         var g=r.t==='비고'?'':(r.up||'').replace(/^[가-힣]\.\s*/,''); if(g!==lg||r.t==='비고'){ h+=(lg!==null?'</ul>':'')+(g?'<p class="edg">'+esc(g)+'</p>':'')+'<ul class="edu">'; lg=g; }
-        if(r.t==='비고'){ h+='<li class="edn"><small>비고</small><span>'+esc((r.x||'').replace(/^비고:?\s*/,'').replace(/\n\s*/g,'\n').replace(/^\d+\.\s*삭제\s*<[^<>\n]*>\n?/gm,'').trim()).replace(/\n/g,'<br>')+'</span></li>'; return; }   // 삭제된 비고 호(4~6. 삭제 <2025. 5. 30.>)는 뺌
+        if(r.t==='비고'){ h+='<li class="edn"><details class="edd"><summary>비고</summary><span>'+esc((r.x||'').replace(/^비고:?\s*/,'').replace(/\n\s*/g,'\n').replace(/^\d+\.\s*삭제\s*<[^<>\n]*>\n?/gm,'').trim()).replace(/\n/g,'<br>')+'</span></details></li>'; return; }   // 삭제된 비고 호(4~6. 삭제 <2025. 5. 30.>)는 뺌
         var w=r.t.replace(/^[가-힣]\.\s*/,'').replace(/^\d+\)\s*/,'').replace(/\s*›\s*[가-힣]\)\s*/,' · ').replace(/:\s*별표 5 제1호라목(.*?)에 해당하는 작업에 종사하는 근로자에 한정한다\./,' — 별표5 제1호라목$1 작업');
         h+=eduLi(w,(r.v||'').replace(/^신규교육 - · (.*)$/,'$1 (신규교육 없음)')); });
       return h+(lg!==null?'</ul>':''); }).join('');

@@ -24,7 +24,7 @@ def art(p, q, key):
     p.locator('#results [data-art="%s"]' % key).first.click(); p.wait_for_timeout(450); p.evaluate('scrollTo(0,0)')
 def card(p):   # 교육시간 카드 내용
     return p.evaluate("""(()=>{const g=[...document.querySelectorAll('%s .gl')].find(x=>x.textContent.startsWith('교육시간')); if(!g)return null; const c=g.nextElementSibling;
-      return {h:g.textContent.replace(/\\s+/g,' ').trim(), t:c.innerText, secs:[...c.querySelectorAll('.edh')].map(x=>x.textContent), li:c.querySelectorAll('.edu li').length,
+      return {h:g.textContent.replace(/\\s+/g,' ').trim(), t:c.textContent, secs:[...c.querySelectorAll('.edh')].map(x=>x.textContent), li:c.querySelectorAll('.edu li').length,
         clip:!!c.querySelector('.bwrap.clip'), full:!!c.querySelector('[data-efull]'), bt:!!c.querySelector('[data-bt="S4"]'),
         over:[...c.querySelectorAll('*')].some(x=>x.getBoundingClientRect().right>innerWidth+0.5)};})()""" % SUB)
 
