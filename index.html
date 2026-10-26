@@ -271,6 +271,7 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 .edd summary::after{content:'›';display:inline-block;margin-left:8px;transform:rotate(90deg);font-weight:700}
 .edd[open] summary::after{transform:rotate(-90deg)}
 .edd span{padding-bottom:4px}
+.edd summary small{display:inline;margin-left:8px;font-size:.8125rem;font-weight:500;color:var(--ink3)}
 .edh{margin:12px 0 6px;font-size:.75rem;font-weight:700;color:var(--ink3)}
 .edh:first-child{margin-top:0}
 .bwrap.clip.ed{max-height:17em}
@@ -1921,6 +1922,8 @@ function k9Of(D,q){ var K=D.k9; if(!K)return []; var k=norm(joinPhrase(q||'')); 
   return out; }
 // 2026-10-19 조문 화면 교육시간(5-44): 조문 → 시행규칙 별표4 구획(s)·줄(r), ex 제외 줄, via 근거 조문이 다를 때(관리감독자 → 법 제29조)
 // 근거: 별표4 각 호 '(제26조제1항, 제28조제1항 관련)' 등 — 시행규칙 조문과 그 모법(up)
+// 2026-10-26(5-83): 접힌 비고 줄에 붙이는 안내 — 원문에 있는 낱말만(edu_art_check가 원문에 있는지 검사)
+var EDU_NOTE={'S4.13':'교육 면제 · 교육시간 2분의 1 이상','S4.18':'교육시간 2분의 1 이상','S4.28':'유해화학물질 안전교육'};
 var EDU_ART={'OSH:제29조':{s:[0,1],ex:['S4.12']},'SR:제26조':{s:[0,1],ex:['S4.12']},'OSH:제31조':{r:['S4.12']},'SR:제28조':{r:['S4.12']},
   'OSH:제32조':{s:[2]},'SR:제29조':{s:[2]},'OSH:제77조':{s:[3]},'SR:제95조':{s:[3]},'SR:제131조':{s:[4]},'OSH:제16조':{s:[1],via:'OSH:제29조'}};
 function eduOf(D,k){ var m=EDU_ART[k], B=D.bt; if(!m||!B||!B.tabById)return null; var T=B.tabById.S4; if(!T)return null;
@@ -3029,7 +3032,10 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     var body=E.secs.map(function(S){ var lg=null, h=((E.secs.length>1||E.via)&&S.h?'<p class="edh">'+esc(S.h)+'</p>':'');   // 5-83: 과정(가. 정기교육 등)은 묶음 제목으로 한 번만
       S.rows.forEach(function(r){ n++;
         var g=r.t==='비고'?'':(r.up||'').replace(/^[가-힣]\.\s*/,''); if(g!==lg||r.t==='비고'){ h+=(lg!==null?'</ul>':'')+(g?'<p class="edg">'+esc(g)+'</p>':'')+'<ul class="edu">'; lg=g; }
-        if(r.t==='비고'){ h+='<li class="edn"><details class="edd"><summary>비고</summary><span>'+esc((r.x||'').replace(/^비고:?\s*/,'').replace(/\n\s*/g,'\n').replace(/^\d+\.\s*삭제\s*<[^<>\n]*>\n?/gm,'').trim()).replace(/\n/g,'<br>')+'</span></details></li>'; return; }   // 삭제된 비고 호(4~6. 삭제 <2025. 5. 30.>)는 뺌
+        if(r.t==='비고'){ var nx=(r.x||'').replace(/^비고:?\s*/,'').replace(/\n\s*/g,'\n').replace(/^\d+\.\s*삭제\s*<[^<>\n]*>\n?/gm,'').trim();
+          if(r.id==='S4.18'&&!E.secs.some(function(S){return S.rows.indexOf(D.bt.byId['S4.13'])>=0;})){ var m=/\n\s*3\.[^\n]*((?:\n\s*[가-힣]\.[^\n]*)+)/.exec((D.bt.byId['S4.13']||{}).x||'');   // 관리감독자만 나오는 카드(법 제16조): 비고가 가리키는 제1호 비고 제3호 각 목을 함께
+            if(m)nx+='\n\n제1호의 비고 제3호 각 목\n'+m[1].replace(/\n\s*/g,'\n').trim(); }
+          h+='<li class="edn"><details class="edd"><summary>비고'+(EDU_NOTE[r.id]?'<small>'+esc(EDU_NOTE[r.id])+'</small>':'')+'</summary><span>'+esc(nx).replace(/\n/g,'<br>')+'</span></details></li>'; return; }   // 삭제된 비고 호(4~6. 삭제 <2025. 5. 30.>)는 뺌
         var w=r.t.replace(/^[가-힣]\.\s*/,'').replace(/^\d+\)\s*/,'').replace(/\s*›\s*[가-힣]\)\s*/,' · ').replace(/:\s*별표 5 제1호라목(.*?)에 해당하는 작업에 종사하는 근로자에 한정한다\./,' — 별표5 제1호라목$1 작업');
         h+=eduLi(w,(r.v||'').replace(/^신규교육 - · (.*)$/,'$1 (신규교육 없음)')); });
       return h+(lg!==null?'</ul>':''); }).join('');

@@ -4,7 +4,7 @@ const fs=require('fs'),vm=require('vm');
 const h=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const raw=/<script id="data" type="application\/json">([\s\S]*?)<\/script>/.exec(h)[1].replace(/<\\\//g,'</');
 const core=h.slice(h.indexOf('/*CORE_START*/'),h.indexOf('/*CORE_END*/')+12);
-const C=vm.runInNewContext(core+'\n;({prepare,eduOf:typeof eduOf==="function"?eduOf:null})',{});
+const C=vm.runInNewContext(core+'\n;({prepare,eduOf:typeof eduOf==="function"?eduOf:null,EDU_NOTE:typeof EDU_NOTE==="undefined"?null:EDU_NOTE})',{});
 const D=C.prepare(JSON.parse(raw)), B=D.bt;
 let fail=0,n=0; const ok=(name,c,info)=>{ n++; if(!c){ fail++; console.log('FAIL '+name+(info===undefined?'':'  → '+JSON.stringify(info).slice(0,300))); } };
 const sp=t=>(t||'').replace(/\s+/g,'');
@@ -49,5 +49,11 @@ const cp=t=>sp(t.replace(/ \/ /g,''));
 D.eduTime.forEach((x,i)=>ok('eduTime['+i+'] = 별표4 줄 ('+x.s+' '+x.c+')',S4v.indexOf(cp(x.t))>=0,x.t));
 D.items.forEach(it=>(it.edu||[]).forEach((x,i)=>ok('주요 의무 '+it.id+' edu['+i+'] = 별표4 줄',S4v.indexOf(cp(x.t))>=0,x.t)));
 
+// 5. 접힌 비고 줄 안내(5-84) — 안내 낱말이 모두 그 비고 원문에 있는지(별표 4가 바뀌면 안내도 다시 봄)
+ok('CORE EDU_NOTE 있음',!!C.EDU_NOTE);
+const NOTE_EXP={'S4.13':'교육 면제 · 교육시간 2분의 1 이상','S4.18':'교육시간 2분의 1 이상','S4.28':'유해화학물질 안전교육'};
+Object.keys(NOTE_EXP).forEach(id=>{ const t=(C.EDU_NOTE||{})[id]; ok('비고 안내 '+id,t===NOTE_EXP[id],t);
+  const x=sp(R(id).x); ok('비고 안내 낱말이 원문에 '+id,!!t&&R(id).t==='비고'&&t.split(/\s*·\s*|\s+/).every(w=>x.indexOf(w)>=0),t); });
+ok('비고 안내 대상 = 조문 카드에 나오는 비고 줄',JSON.stringify(Object.keys(C.EDU_NOTE||{}).sort())===JSON.stringify([...new Set([].concat(...Object.keys({'OSH:제29조':1,'OSH:제16조':1,'OSH:제77조':1}).map(k=>[].concat(...Es(k).secs.map(S=>S.rows.filter(r=>r.t==='비고').map(r=>r.id))))))].sort()));
 console.log((fail?'실패 '+fail+'건':'통과')+' / '+n+'건');
 process.exit(fail?1:0);
