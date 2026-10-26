@@ -23,7 +23,9 @@ def go(p, attr, val):   # 화면 열기(문서에 위임된 누르기 처리 사
 def sec(p, name):   # 그 구획 카드 정보
     return p.evaluate("""(n)=>{const g=[...document.querySelectorAll('%s h3.gl')].find(x=>x.textContent.trim().startsWith(n)); if(!g)return null; const c=g.nextElementSibling;
       const rows=[...c.querySelectorAll('.edu li.er')].map(li=>{const s=li.querySelector('small'), b=li.querySelector('b'); const rs=s.getBoundingClientRect(), rb=b.getBoundingClientRect();
-        return {w:s.textContent, v:b.textContent, ec:[...li.querySelectorAll('.ec')].map(x=>x.textContent), side:rb.left>rs.left+20&&Math.abs(rb.top-rs.top)<12, st:li.classList.contains('st')};});
+        return {w:s.textContent, v:b.textContent, ec:[...li.querySelectorAll('.ec')].map(x=>x.textContent), side:rb.left>rs.left+20&&Math.abs(rb.top-rs.top)<12, st:li.classList.contains('st'),
+          right:Math.abs(rb.right-li.getBoundingClientRect().right)<2, ecc:[...li.querySelectorAll('.ec')].map(x=>getComputedStyle(x).color), sc:getComputedStyle(s).color,
+          nwok:[...b.querySelectorAll('.nw')].every(x=>{const r=document.createRange(); r.selectNodeContents(x); return new Set([...r.getClientRects()].filter(q=>q.width>0).map(q=>Math.round(q.top))).size===1;})};});
       return {t:c.innerText, edg:[...c.querySelectorAll('.edg')].map(x=>x.textContent), rows:rows, bval:[...c.querySelectorAll('.bval')].map(x=>({t:x.textContent,lg:x.classList.contains('lg'),fs:parseFloat(getComputedStyle(x).fontSize)})),
         bvc:[...c.querySelectorAll('.bvc')].map(x=>x.textContent), over:[...c.querySelectorAll('*')].some(x=>x.getBoundingClientRect().right>innerWidth+0.5)};}""" % SUB, name)
 def gls(p):   # 펼친 비고의 풀이 줄(5-85): 글, 누를 수 있는지, 높이, 목 이름 덩어리가 줄에서 끊기지 않는지
@@ -84,9 +86,13 @@ with sync_playwright() as pw:
         if w >= 390: ok(tag + ' 짧은 시간은 대상 오른쪽 한 줄', r and r['side'], r)
         else: ok(tag + ' 좁은 화면은 대상 아래로', r and not r['side'], r)
         r = row(C, '일용근로자 및 근로계약기간이 1주일 이하인 기간제근로자를 제외한 근로자 — 별표5 제1호라목 작업')
-        ok(tag + ' 특별교육 16시간 이상 + 조건 2줄(원문 글자)', r and r['v'] == '16시간 이상' and r['st'] and r['ec'] == ['최초 작업에 종사하기 전 4시간 이상 실시하고 12시간은 3개월 이내에서 분할하여 실시 가능', '단기간 작업 또는 간헐적 작업인 경우에는 2시간 이상'], r)
+        ok(tag + ' 특별교육 16시간 이상 + 조건 2줄(원문 글자)', r and r['v'] == '16시간 이상' and not r['st'] and r['ec'] == ['최초 작업에 종사하기 전 4시간 이상 실시하고 12시간은 3개월 이내에서 분할하여 실시 가능', '단기간 작업 또는 간헐적 작업인 경우에는 2시간 이상'], r)
+        if w >= 390: ok(tag + ' 조건 있는 16시간 이상도 대상 오른쪽(5-87)', r and r['side'] and r['right'], r)
+        else: ok(tag + ' 좁은 화면은 16시간 이상도 대상 아래', r and not r['side'], r)
+        ok(tag + ' 조건 줄은 대상 글보다 한 단계 옅게', r and r['ecc'] and all(c != r['sc'] for c in r['ecc']), r and (r['ecc'], r['sc']))
         r = row(C, '특별교육')
         ok(tag + ' 관리감독자 특별교육 16시간 이상 + 조건', r and r['v'] == '16시간 이상' and len(r['ec']) == 2 and r['ec'][1] == '단기간 작업 또는 간헐적 작업인 경우에는 2시간 이상', r)
+        if w >= 390: ok(tag + ' 관리감독자 특별교육 16시간 이상 오른쪽', r and r['side'] and r['right'], r)
         ok(tag + ' 제29조 넘침 없음', C and not C['over'])
         if SHOT and tag in ('393크게', '320크게'): os.makedirs(SHOT, exist_ok=True); p.screenshot(path=os.path.join(SHOT, 'edu2_29_' + tag + '.png'), full_page=True)
         # 1-2. 법 제16조 — 관리감독자 표만 나오는 카드: 비고를 펴면 제1호 비고 제3호 각 목도(5-84)
@@ -109,10 +115,12 @@ with sync_playwright() as pw:
         # 2. 법 제32조 — 긴 시간은 아래로, 문구 그대로
         go(p, 'data-art', 'OSH:제32조'); C = sec(p, '교육시간'); r = row(C, '안전관리자, 안전관리전문기관의 종사자')
         ok(tag + ' 제32조 신규·보수 문구 그대로·대상 아래', r and r['v'] == '신규교육 34시간 이상 · 보수교육 24시간 이상' and r['st'], r)
+        ok(tag + " 제32조 '이상'만 다음 줄로 안 떨어짐(' · '에서만 줄바꿈)", C and all(x['nwok'] for x in C['rows']), C and [x['w'] for x in C['rows'] if not x['nwok']])
         ok(tag + ' 제32조 묶음 제목 없음', C and C['edg'] == [], C and C['edg'])
         # 3. 법 제77조 — 최초 노무제공 2시간 이상 + 조건
         go(p, 'data-art', 'OSH:제77조'); C = sec(p, '교육시간'); r = row(C, '최초 노무제공 시 교육')
         ok(tag + ' 제77조 최초 노무제공 2시간 이상 + 조건', r and r['v'] == '2시간 이상' and r['ec'] == ['단기간 작업 또는 간헐적 작업에 노무를 제공하는 경우에는 1시간 이상 실시하고, 특별교육을 실시한 경우는 면제'], r)
+        if w >= 390: ok(tag + ' 제77조 2시간 이상 오른쪽', r and r['side'] and r['right'], r)
         # 4. 주요 의무 특별교육 — 과정 묶음
         go(p, 'data-item', 'o_edu3'); C = sec(p, '교육시간')
         ok(tag + ' 주요 의무 특별교육 묶음 제목', C and C['edg'] == ['작업내용 변경 시 교육', '특별교육'], C and C['edg'])

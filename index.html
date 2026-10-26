@@ -257,13 +257,15 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 .edu small{display:block;font-size:.8125rem;color:var(--ink2)}
 .edu b{font-size:.9375rem}
 .edu{container-type:inline-size}   /* 2026-10-26(5-83): 교육시간 줄 — 대상 왼쪽·시간 오른쪽 한 줄, 시간이 길거나 조건이 있으면 아래로 */
-.edu li.er{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.edu li.er .erh{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .edu li.er small{flex:1 1 auto;min-width:0}
 .edu li.er b{flex:0 0 auto;white-space:nowrap;text-align:right}
-.edu li.er.st{display:block}
+.edu li.er.st .erh{display:block}
 .edu li.er.st b{display:block;white-space:normal;text-align:left;margin-top:2px}
-@container (max-width:290px){.edu li.er{display:block} .edu li.er b{display:block;white-space:normal;text-align:left;margin-top:2px}}
-.edu .ec{display:block;margin-top:3px;font-size:.8125rem;line-height:1.5;color:var(--ink2)}
+@container (max-width:290px){.edu li.er .erh{display:block} .edu li.er b{display:block;white-space:normal;text-align:left;margin-top:2px}}
+.edu .ec{display:block;margin-top:3px;font-size:.8125rem;line-height:1.5;color:var(--ink3)}
+.edu .erh b .nw{white-space:nowrap}   /* 5-87: '신규교육 34시간 이상 · 보수교육 24시간 이상'은 ' · '에서만 줄바꿈('이상' 혼자 다음 줄 막음) */
+.edu .erh+.ec{margin-top:8px}   /* 5-87: 시간이 오른쪽일 때 조건 줄(한 단계 옅게)이 대상 글과 붙어 보이지 않게 */
 .edg{margin:14px 0 4px;font-size:.8125rem;font-weight:700;color:var(--ink2)}
 .edg:first-child,.edh+.edg{margin-top:0}
 .edu li.edn{margin-top:8px;padding-top:0;padding-bottom:0;border-top:1px solid var(--line)}
@@ -3038,8 +3040,8 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   // 2026-10-26(5-83): 교육시간 값 — '16시간 이상(조건)'·'가) …\n나) …'·' / '로 이어진 값을 시간(굵게)과 조건(작은 글씨)으로. 글자는 원문 그대로(괄호·가)나) 표시만 뺌)
   function eduV(v){ var ps=String(v||'').split(/\n| \/ /).map(function(x){return x.replace(/^[가-힣]\)\s*/,'').trim();}).filter(Boolean); if(!ps.length)return {m:'',c:[]};
     var m=ps[0], c=[], x=/^(.*?\d+시간 이상)\((.+)\)$/.exec(m); if(x){ m=x[1]; c.push(x[2]); } return {m:m,c:c.concat(ps.slice(1))}; }
-  function eduLi(w,v){ var V=eduV(v), st=V.c.length>0||V.m.length>12;   // 짧은 시간은 대상 오른쪽 한 줄, 길거나 조건이 있으면 대상 아래
-    return '<li class="er'+(st?' st':'')+'"><small>'+esc(w)+'</small><b>'+esc(V.m)+'</b>'+V.c.map(function(c){return '<span class="ec">'+esc(c)+'</span>';}).join('')+'</li>'; }
+  function eduLi(w,v){ var V=eduV(v), st=V.m.length>12;   // 5-87: 시간은 조건이 있어도 대상 오른쪽(다른 줄과 같게), 조건은 그 아래 줄 전체 폭. 시간 글이 길면(제32조 신규·보수) 대상 아래
+    return '<li class="er'+(st?' st':'')+'"><div class="erh"><small>'+esc(w)+'</small><b>'+V.m.split(' · ').map(function(x){return '<span class="nw">'+esc(x)+'</span>';}).join(' · ')+'</b></div>'+V.c.map(function(c){return '<span class="ec">'+esc(c)+'</span>';}).join('')+'</li>'; }
   function eduTL(L,grp){ var h='', lg=null;   // D.eduTime 줄(과정 c·대상 w·시간 t) — grp면 과정 이름을 묶음 제목으로 한 번만
     L.forEach(function(x){ var g=grp&&x.w?x.c:''; if(g!==lg){ h+=(lg!==null?'</ul>':'')+(g?'<p class="edg">'+esc(g)+'</p>':'')+'<ul class="edu">'; lg=g; } h+=eduLi(x.w||x.c,x.t); });
     return lg!==null?h+'</ul>':''; }
