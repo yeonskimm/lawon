@@ -192,6 +192,7 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 .bwrap.clip:after{content:"";position:absolute;left:0;right:0;bottom:0;height:2.6em;background:linear-gradient(to bottom,transparent,var(--card))}
 .law.clip:after{content:"";position:absolute;left:0;right:0;bottom:0;height:3.2em;background:linear-gradient(to bottom,transparent,var(--card))}
 .gl .xrl{order:2;flex:none;display:inline-flex;align-items:center;gap:3px;min-height:44px;margin:-14px -4px -14px 0;padding:0 4px;font-size:.8125rem;font-weight:600;color:var(--pri);font-variant-numeric:tabular-nums}
+.gl .xrl.xwk{flex:0 1 auto;min-width:0;white-space:nowrap}.gl .xrl .xrn{min-width:0;overflow:hidden;text-overflow:ellipsis;color:inherit;font-weight:inherit}   /* 2026-10-26(5-86): 제목 줄이 좁으면 기준 이름만 '…'로(조문 글자는 .gh로 꺾이지 않게) */
 .gl .xrc,.bpic .xrc{width:6px;height:6px;margin-left:2px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(-45deg)}
 .xhint{margin:0 2px 10px;font-size:.8125rem;line-height:1.5;color:var(--ink2)}
 .fullbtn{display:block;width:100%;height:44px;margin-top:10px;border-radius:6px;border:1px solid var(--line2);font-size:.9375rem;font-weight:600;color:var(--ink);text-align:center}
@@ -3085,7 +3086,8 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     var long=e.x.length>360||e.x.split('\n').length>8, full=!!en.full;   // 긴 조문은 몇 줄만 보이고 펼치기(벌칙·과태료가 너무 아래로 밀리지 않게)
     var ml=missLink(e);   // 2026-10-18: 원문 링크가 있으면 작업 기준 링크는 짧게('작업 기준 1' → 아래 창) — 좁은 화면에서 제목 줄이 넘치지 않게
     var xl=xrefLink(e), cl=calcLink(e), wl=wkLink(e,!!(ml||cl)); if(cl&&xl&&(ml||wl))cl=calcLink(e,1);
-    h+='<h3 class="gl">조문'+xl+ml+wl+cl+'</h3><div class="card"><div class="law fm'+(long&&!full?' clip':'')+'">'+fmtLaw(e.x)+'</div>'+(long?'<button type="button" class="fullbtn" data-full="1" aria-expanded="'+full+'">'+(full?'조문 접기':'조문 전문 보기')+'</button>':'')+comicLink(e)+'</div>';
+    if(xl&&wl&&(xl+wl).replace(/<[^>]+>/g,'').length>=21)wl=wkLink(e,true);   // 2026-10-26(5-86): 인용 조문 + 긴 기준 링크가 21자 이상이면 기준 링크는 짧게(320폭 큰 글자 실측 — 21자부터 '조/문' 꺾임, 근기법 제59조 등 8개). 그래도 넘치면 기준 이름이 '…'로 줄어듦(.xwk)
+    h+='<h3 class="gl"><b class="gh">조문</b>'+xl+ml+wl+cl+'</h3><div class="card"><div class="law fm'+(long&&!full?' clip':'')+'">'+fmtLaw(e.x)+'</div>'+(long?'<button type="button" class="fullbtn" data-full="1" aria-expanded="'+full+'">'+(full?'조문 접기':'조문 전문 보기')+'</button>':'')+comicLink(e)+'</div>';
     h+=jyCard(e);   // 2026-10-21: 수사준칙 — 특별사법경찰관리 준용(협력규정 제5조)
     h+=artNote(e);   // 조문만으로 오해할 수 있는 부칙 특례(최임법 제6조)
     h+=artEdu(e,en);   // 2026-10-19: 교육시간(별표4 줄 그대로)
@@ -3366,7 +3368,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   var WIDX=workIdx(D), WBY={}; (D.work||[]).forEach(function(W){WBY[W.id]=W;});
   function wkWord(L){ var f=L.map(function(x){return WBY[x.w]?wkF(WBY[x.w]):'osh';}); return f.every(function(v){return v==='labor';})?'항목':(f.every(function(v){return v==='osh';})?'작업':'기준'); }   // 2026-10-18: 작업 기준 / 항목 기준
   function wkLink(e,short){ var L=WIDX[e.l+':'+e.no]; if(!L||!L.length)return ''; var w=wkWord(L), wd=w==='기준'?'기준':w+' 기준';
-    if(L.length===1&&!short)return '<button type="button" class="xrl" data-wk="'+esc(L[0].w)+'" aria-label="'+esc(L[0].n)+' '+wd+' 보기">'+wd+' · '+esc(L[0].n)+'<i class="xrc" aria-hidden="true"></i></button>';
+    if(L.length===1&&!short)return '<button type="button" class="xrl xwk" data-wk="'+esc(L[0].w)+'" aria-label="'+esc(L[0].n)+' '+wd+' 보기"><span class="xrn">'+wd+' · '+esc(L[0].n)+'</span><i class="xrc" aria-hidden="true"></i></button>';
     return '<button type="button" class="xrl" data-wks="'+e.l+':'+esc(e.no)+'" aria-label="'+wd+' '+L.length+'건 보기">'+wd+' '+L.length+'<i class="xrc" aria-hidden="true"></i></button>'; }
   function openWkSheet(k){ var L=WIDX[k]; if(!L)return; var w=wkWord(L);
     $('xsheetT').textContent=(w==='기준'?'기준':w+' 기준')+' '+L.length+'건'; $('xhint').textContent=''; $('xhint').hidden=true;
