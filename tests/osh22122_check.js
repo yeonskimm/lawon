@@ -1,0 +1,22 @@
+// 산안법 법률 제22122호(2026-10-27 공포) 반영 확인 — 공포일 시행분(제70·84조)·2027-01-28·04-28 단계·신설 조문(fut)·제175조 단계. 사용: node tests/osh22122_check.js index.html
+const fs=require('fs'),vm=require('vm');
+const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
+const raw=/<script id="data" type="application\/json">([\s\S]*?)<\/script>/.exec(html)[1].replace(/<\\\//g,'</');
+const core=html.slice(html.indexOf('/*CORE_START*/'),html.indexOf('/*CORE_END*/'));
+const C=vm.runInNewContext(core+'\n;({prepare,search,applyDue})',{});
+const mk=d=>C.prepare(C.applyDue(JSON.parse(raw),d));
+let f=0;const ok=(n,c)=>{if(!c)f++;console.log((c?'PASS ':'FAIL ')+n);};
+const t=mk('2026-11-02'),j=mk('2027-01-28'),a=mk('2027-04-28'),g=(D,k)=>D.byKey[k];
+ok('11.2 70조 폭염',/폭염ㆍ한파/.test(g(t,'OSH:제70조').x)&&g(t,'OSH:제70조').old);
+ok('11.2 84조 수출',/연구ㆍ개발 또는 수출/.test(g(t,'OSH:제84조').x));
+ok('11.2 51조 아직',!/근로자등/.test(g(t,'OSH:제51조').x)&&g(t,'OSH:제51조').chg);
+ok('11.2 7조의2 fut',!!g(t,'OSH:제7조의2').fut);
+ok('1.28 7조 안전한일터',/안전한일터위원회/.test(g(j,'OSH:제7조').x));
+ok('1.28 51조 아직',!/근로자등/.test(g(j,'OSH:제51조').x));
+ok('4.28 51조',/근로자등/.test(g(a,'OSH:제51조').x)&&g(a,'OSH:제51조').t==='사업주의 작업중지 등'&&g(a,'OSH:제51조').s[0].qual==='제51조제1항');
+ok('4.28 55조 제목',g(a,'OSH:제55조').t==='고용노동부장관의 작업중지 조치');
+ok('4.28 175조 72조 3~6',/제72조제1항ㆍ제3항부터 제6항까지/.test(g(a,'OSH:제175조').x)&&/노동감독관의 검사/.test(g(a,'OSH:제175조').x)&&/제31조의2제1항/.test(g(a,'OSH:제175조').x));
+ok('1.27 175조 그대로',!/제3항부터 제6항까지/.test(g(j,'OSH:제175조').x));
+ok('4.28 72조 fn 유지',(g(a,'OSH:제72조').fn||[]).length===3);
+const r=C.search(t,'폭염','',['OSH']);ok('검색 폭염 → 70조',r.arts.some(x=>x.l==='OSH'&&x.no==='제70조'));
+process.exit(f?1:0);

@@ -63,6 +63,8 @@ jobs:
         run: node tests/ux_check.js index.html
       - name: 안전보건규칙 만화 쪽 연결 (공단 2026년판 조문별 첫 쪽)
         run: node tests/comic_check.js index.html
+      - name: 산안법 제22122호 반영 (공포일 시행분·2027 개정 예정 단계·신설 조문)
+        run: node tests/osh22122_check.js index.html
       - name: 캐시 삭제 범위 (오늘의안전 저장본 보존)
         run: node tests/check_sw_scope.js service-worker.js
       - name: 배포 정보 자리 (관리자 화면 커밋 번호·최종 업데이트)
