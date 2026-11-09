@@ -51,4 +51,5 @@ for(const k of ['제1조','제42조','제93조','제95조','제97조','제619조
 if(CF){ const CN=CF.cont||{}; ok('보기 화면 이어지는 쪽(cont) = 앱 끝 쪽 표', Object.keys(CN).length===TK.length&&TK.every(k=>CN[String(TO[k])]===k), Object.keys(CN).length); }
 ok('조문 화면 코드: q = 끝 쪽', html.includes("var p=c.map[e.no], q=c.to&&c.to[e.no]; if(!p)return '';"), '');
 ok('보기 화면 머리 띠: 연 조문이 이어지면 그 이름, 시작 조문 없으면 이어지는 조문', V.includes("cn=CFG.cont[n]||'', t=a&&(arts.indexOf(a)>=0||cn===a)?a:(arts[0]||cn)")&&V.includes("var al=(cn?[cn]:[]).concat(arts)"), '');
+ok('보기 화면 출처 줄: 판·시행 기준은 한 덩어리(줄 넘김 없음, 5-88)', V.includes("k.className='nw'; k.textContent=CFG.y+'년판('+CFG.basis+')'")&&/\.src \.nw\{white-space:nowrap\}/.test(V), '');
 console.log(fail?('실패 '+fail+'건'):'전체 통과'); process.exit(fail?1:0);
