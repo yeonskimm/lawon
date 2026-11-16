@@ -105,7 +105,7 @@ def run(w, big):
         fa = p.evaluate("()=>{const x=[...document.querySelectorAll('#results [data-art]')].find(y=>!y.closest('.dfc')); return x?x.getAttribute('data-art'):'';}")
         ok(tag + " '위험성평가' 1순위 산안법 조문 유지", fa.startswith('OSH:'), fa)
         dc = p.evaluate("()=>{const c=document.querySelector('#results .dfc'); return c?c.innerText.replace(/\\s+/g,' '):'';}")
-        ok(tag + " '위험성평가' 정의 카드(위험성평가 지침 제3조)", '위험성평가 지침 제3조' in dc, dc)
+        ok(tag + " '위험성평가' 정의 카드(위험성평가 지침 제2조)", '위험성평가 지침 제2조' in dc, dc)
         p.close(); p = b.new_page(viewport={'width': w, 'height': 800}); p.on('pageerror', lambda e: errs.append(str(e))); p.goto(URL); p.wait_for_timeout(1000)
         p.click('.pick[data-field="osh"]'); p.wait_for_timeout(200); p.click('#tabbar [data-nav="find"]'); p.wait_for_timeout(300)
         p.fill('#q', '산업안전보건관리비'); p.keyboard.press('Enter'); p.wait_for_timeout(700)

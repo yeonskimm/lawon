@@ -67,6 +67,8 @@ jobs:
         run: node tests/osh22122_check.js index.html
       - name: 임금채권보장법 시행령 제36804호 반영 (제13조·제16조 고시 방법)
         run: node tests/wgd36804_check.js index.html
+      - name: 2026-11-16 법령 대조 반영 (고평법 시행령 제36816호·고령자고용법 시행령 제36815호 개정 예정·위험성평가 지침 전부개정)
+        run: node tests/law20261116_check.js index.html
       - name: 캐시 삭제 범위 (오늘의안전 저장본 보존)
         run: node tests/check_sw_scope.js service-worker.js
       - name: 배포 정보 자리 (관리자 화면 커밋 번호·최종 업데이트)
