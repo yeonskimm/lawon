@@ -43,7 +43,10 @@ with sync_playwright() as pw:
                       (360, 740, True), (390, 844, True), (430, 932, True)]:
         c, p, errs = page(br, w, h, big)
         o = p.evaluate(OVER); tag = '%dx%d%s' % (w, h, ' 크게' if big else '')
-        ok(tag + ' 첫 화면 한 화면(넘침 ≤1px)', o <= 1, o)
+        # 5-92(2026-11-17): 맨 아래 문의 줄(.sfb)이 생김 — 분야·계산 도구까지는 한 화면, 넘침은 문의 줄 높이 이내(작은 화면은 문의 줄만 살짝 스크롤 — 사용자 수용)
+        tb = p.evaluate("Math.max(...[...document.querySelectorAll('#vStart .tile')].map(x=>x.getBoundingClientRect().bottom))"); sf = p.evaluate("(()=>{const e=document.querySelector('#vStart .sfb'); const r=e.getBoundingClientRect(); return r.bottom-r.top+parseFloat(getComputedStyle(e).marginTop);})()")
+        ok(tag + ' 첫 화면 한 화면(계산 도구까지 화면 안, 넘침은 문의 줄 높이 이내)', tb <= h + 0.5 and o <= sf + 1, (o, tb, sf))
+        if w >= 390 and h >= 844 and not big: ok(tag + ' 문의 줄까지 스크롤 없이 보임', o <= 1, o)
         T = p.evaluate("[...document.querySelectorAll('#vStart .tile b')].map(b=>({t:b.textContent,cut:b.scrollWidth>b.clientWidth}))")
         ok(tag + ' 계산 도구 6칸·이름 안 잘림', [x['t'] for x in T] == ['상시근로자', '임금·주휴', '연차', '퇴직금', '과태료(산업안전)', '관리비 계상'] and not any(x['cut'] for x in T), T)
         PK = p.evaluate("[...document.querySelectorAll('#vStart .pick')].map(x=>[parseFloat(getComputedStyle(x).paddingTop),parseFloat(getComputedStyle(x).paddingBottom)])")

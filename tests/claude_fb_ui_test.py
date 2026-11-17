@@ -61,6 +61,16 @@ def run(w, h, big, dark, cap=False):
         p.goto(URL); p.wait_for_timeout(900)
         if big: p.evaluate("()=>{document.documentElement.setAttribute('data-fs','l');}")
         if big: p.evaluate("()=>{ try{ const b=document.querySelector('[data-fs-set=\"l\"]'); b&&b.click(); }catch(e){} }")
+        # ── 홈 화면 맨 아래 문의 줄(5-92) ──
+        hr = p.evaluate(RECT, '#vStart .sfb'); last = p.evaluate("()=>{const k=[...document.querySelector('#vStart .start').children].filter(x=>!x.hidden); return k[k.length-1].className;}")
+        ok(tag + ' 홈 화면 맨 아래 = 문의 줄(왼쪽 정렬·가로 꽉 참·44px 이상)', last == 'sfb' and hr and hr[0] >= 8 and hr[0] <= 24 and w - hr[2] <= 24 and hr[3] - hr[1] >= 44, (last, hr))
+        if h >= 844: ok(tag + ' 일반 크기 화면: 스크롤 없이 첫 화면에 보임', p.evaluate("()=>document.scrollingElement.scrollHeight-innerHeight") <= 0 and hr[3] <= h, hr)
+        ok(tag + ' 홈 문의 줄: 글자 안 잘림', p.evaluate("()=>[...document.querySelectorAll('#vStart .sfb span,#vStart .sfb em')].every(e=>e.scrollWidth<=e.clientWidth+1)"))
+        p.click('#vStart .sfb'); p.wait_for_timeout(300)
+        ok(tag + ' 홈 문의 줄 → 의견 보내기 창', p.evaluate(OPEN) == 'fsheet' and not p.evaluate("()=>document.getElementById('fbForm').hidden"), p.evaluate(OPEN))
+        if cap: shot(p, '0_홈_문의줄_창')
+        p.click('#fsheet .shh [data-fbclose]'); p.wait_for_timeout(250)
+        ok(tag + ' 닫으면 홈 화면 그대로', p.evaluate(OPEN) == '' and p.evaluate(VIEW) == 'vStart')
         # ── 설정 맨 아래 ──
         p.click('#gear'); p.wait_for_timeout(300)
         last = p.evaluate("()=>{const c=document.querySelector('#sheet .shcard'); const k=[...c.children].filter(x=>!x.hidden); const e=k[k.length-1], q=k[k.length-2]; return [e.tagName, e.textContent.trim(), e.hasAttribute('data-fbopen'), q.textContent.trim()];}")
