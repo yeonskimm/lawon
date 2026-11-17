@@ -69,6 +69,8 @@ jobs:
         run: node tests/wgd36804_check.js index.html
       - name: 2026-11-16 법령 대조 반영 (고평법 시행령 제36816호·고령자고용법 시행령 제36815호 개정 예정·위험성평가 지침 전부개정)
         run: node tests/law20261116_check.js index.html
+      - name: 의견 보내기 (설정 맨 아래 버튼·문구·전송 항목, 워커 접수·연속 전송 제한·180일 삭제·관리자 목록)
+        run: node tests/fb_check.js index.html
       - name: 캐시 삭제 범위 (오늘의안전 저장본 보존)
         run: node tests/check_sw_scope.js service-worker.js
       - name: 배포 정보 자리 (관리자 화면 커밋 번호·최종 업데이트)

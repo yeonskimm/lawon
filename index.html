@@ -777,6 +777,25 @@ html:not([data-fs="l"]) .otog .ot .g{font-size:clamp(11.5px,5cqi,.8125rem)}   /*
 .adm-row small{color:var(--ink3);font-size:.8125rem;margin-left:6px}
 .adm-in{width:100%;height:48px;border-radius:6px;border:1.5px solid var(--line2);background:var(--fld);color:var(--ink);padding:0 12px;font-size:16px;box-sizing:border-box}
 .adm-msg{min-height:1.5em;margin:8px 2px 0;font-size:.875rem;color:var(--pen)}
+/* 2026-11-17 의견 보내기(설정 맨 아래 → 아래 창) · 관리자 화면 의견 목록 */
+#fsheet .sn{margin-top:0}
+#fsheet .seg{margin-top:12px}
+.fbt{display:block;width:100%;height:124px;margin-top:10px;border-radius:6px;border:1.5px solid var(--line2);background:var(--fld);color:var(--ink);padding:10px 12px;font:inherit;font-size:max(16px,1rem);line-height:1.5;resize:none;-webkit-appearance:none;appearance:none}
+.fbt:focus{border-color:var(--pri);outline:none}
+.fbt::placeholder{color:var(--ink3)}
+.fbn{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;min-height:1.5em;margin:6px 2px 12px;font-size:.875rem;line-height:1.5}
+.fbn #fbMsg{color:var(--pen)}
+.fbn #fbCnt{flex:none;margin-left:auto;color:var(--ink3);font-variant-numeric:tabular-nums}
+#fbSend:disabled{opacity:.55}
+#fbDone{padding:20px 0 0;text-align:center}
+#fbDone .fbok{margin:0;font-size:1.0625rem;font-weight:800}
+#fbDone .sn{margin:6px 0 18px}
+.adm-tab{margin-top:12px}
+.adm-fb{padding:10px 0;border-bottom:1px solid var(--line)}
+.adm-fb:first-child{padding-top:2px}
+.adm-fb:last-child{border-bottom:0;padding-bottom:2px}
+.adm-fb .fbh{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:0;font-size:.8125rem;line-height:1.55;color:var(--ink3);font-variant-numeric:tabular-nums}
+.adm-fb .fbx{margin:6px 0 0;font-size:.9375rem;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
 /* 2026-09-29: 원문형 별표(doc) */
 .bdocw{margin-top:12px}
 .bdoc{padding:14px 16px}
@@ -1024,6 +1043,26 @@ html[data-fs="l"] .tile .tsub{display:block;margin:1px 0 0;line-height:1.1}
       <p class="verh">과태료 금액</p><ul class="verl" id="fver"></ul>
       <p class="vern">원문 대조 전: 별표 등을 2차 자료·구버전으로만 확인했거나 현행 원문 미확인.</p>
     </details>
+    <p class="slb">문의 · 오류 신고</p>
+    <button type="button" class="btn sec" data-fbopen="1">의견 보내기</button>
+  </div>
+</div>
+<div class="sheet" id="fsheet" hidden role="dialog" aria-modal="true" aria-labelledby="fsheetT">
+  <div class="shbg" data-fbclose="1"></div>
+  <div class="shcard">
+    <div class="shh"><h2 id="fsheetT">의견 보내기</h2><button type="button" data-fbclose="1">닫기</button></div>
+    <div id="fbForm">
+      <p class="sn">법령 내용이나 앱 사용 중 발견한 오류를 알려 주세요.</p>
+      <div class="seg s3"><button type="button" data-fbcat="law" aria-pressed="true">법령 오류</button><button type="button" data-fbcat="app" aria-pressed="false">앱 오류</button><button type="button" data-fbcat="sug" aria-pressed="false">개선 제안</button></div>
+      <textarea class="fbt" id="fbText" maxlength="500" aria-label="의견 내용" placeholder="예) 산업안전보건법 제29조 과태료 금액이 시행령 별표 35와 다릅니다." autocapitalize="off" spellcheck="false"></textarea>
+      <p class="fbn"><span id="fbMsg" role="alert"></span><span id="fbCnt">0 / 500</span></p>
+      <button type="button" class="btn pri" id="fbSend">보내기</button>
+    </div>
+    <div id="fbDone" hidden>
+      <p class="fbok">접수되었습니다</p>
+      <p class="sn">검토 후 반영하겠습니다.</p>
+      <button type="button" class="btn pri" data-fbclose="1">확인</button>
+    </div>
   </div>
 </div>
 <div class="adm" id="adm" hidden role="dialog" aria-modal="true" aria-labelledby="admT">
@@ -3507,7 +3546,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   // 2026-09-27 뒤로 버튼(안드로이드)·뒤로 스와이프(아이폰) = 앱 안 '← 뒤로'와 같게: 창 닫기 → 쌓인 화면 → 탭 첫 화면 → 분야 선택 → (안드로이드만) '한 번 더 누르면 종료'
   // 기록: [맨 아래 b=분야 선택][g=종료 안내용, 안드로이드만][탭 첫 화면 d:0][d:1…][창 sh]
   var ANDR=/Android/i.test(navigator.userAgent||''), guardOn=false, rootH=false, shH=false, shPend=false, shSkip=false;
-  var SHEETS=['sheet','isheet','csheet','wsheet','asheet','rsheet','adm','xsheet','ssheet','hfsheet'];
+  var SHEETS=['sheet','isheet','csheet','wsheet','asheet','rsheet','adm','xsheet','ssheet','hfsheet','fsheet'];
   function anySheet(){ return SHEETS.some(function(id){ var el=$(id); return !!el&&!el.hidden; }); }
   function shOpen(){ if(!HIST||shH)return; if(shPend){ shPend=false; shH=true; return; }   // 창을 닫자마자 다른 창을 열면 기록 하나를 이어 씀
     var s=history.state||{}, c={fl:1,sh:1}; if(typeof s.d==='number')c.d=s.d;
@@ -3688,7 +3727,7 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   $('fieldsw').addEventListener('click',function(){ setField(st.field==='labor'?'osh':'labor'); });
   $('gear').addEventListener('click',openSheet);
   $('hback').addEventListener('click',goBack);
-  document.addEventListener('keydown',function(ev){ if(ev.key==='Escape'){ if(!$('csheet').hidden)closeCalc(); else if(!$('wsheet').hidden)closeWage(); else if(!$('asheet').hidden)closeLeave(); else if(!$('isheet').hidden)closeISheet(); else if(!$('xsheet').hidden)closeXSheet(); else if(!$('sheet').hidden)closeSheet(); } });
+  document.addEventListener('keydown',function(ev){ if(ev.key==='Escape'){ if(!$('csheet').hidden)closeCalc(); else if(!$('wsheet').hidden)closeWage(); else if(!$('asheet').hidden)closeLeave(); else if(!$('isheet').hidden)closeISheet(); else if(!$('xsheet').hidden)closeXSheet(); else if(!$('fsheet').hidden)fbClose(); else if(!$('sheet').hidden)closeSheet(); } });
   window.addEventListener('resize',function(){ setHdrH(); setSbH(); });
   if(window.matchMedia){ var mq=window.matchMedia('(prefers-color-scheme: dark)'), onMq=function(){ if(ui.theme==='auto')applyUI(); }; if(mq.addEventListener)mq.addEventListener('change',onMq); else if(mq.addListener)mq.addListener(onMq); }
 
@@ -4079,10 +4118,12 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
   // 2026-10-16: 검색 화면의 '개정 시행' 안내 줄 삭제 — 분야 구분 없이 연중 떠 있었음. 개정 시행 사실은 조문 화면(개정 시행됨·개정 전 조문)에서 표시
   // 2026-09-26: 이용자 수 집계(Cloudflare Worker + D1, 저장소 tools/lawon-stats). 하루 한 번 무작위 번호만 보냄. 배포 주소에서만, 실패해도 앱 동작과 무관
   var STATS_URL='https://lawon-stats.darksky166.workers.dev', STATS_FROM='2026-09-26';   // 집계 개시일(관리자 화면 표시)
+  function statUid(){ var u=''; try{ u=localStorage.getItem('lawon.uid')||''; }catch(e){}   // 2026-11-17: 기기별 무작위 번호(집계·의견 보내기 연속 전송 제한이 같이 씀)
+    if(!/^[0-9a-f-]{32,40}$/i.test(u)){ u=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16);}); try{ localStorage.setItem('lawon.uid',u); }catch(e){} }
+    return u; }
   (function(){ try{
     if(location.hostname!=='yeonskimm.github.io'||!window.fetch||localStorage.getItem('lawon.ping')===today)return;
-    var u=localStorage.getItem('lawon.uid')||'';
-    if(!/^[0-9a-f-]{32,40}$/i.test(u)){ u=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16);}); localStorage.setItem('lawon.uid',u); }
+    var u=statUid();
     fetch(STATS_URL+'/ping',{method:'POST',mode:'cors',credentials:'omit',keepalive:true,headers:{'Content-Type':'text/plain'},body:JSON.stringify({uid:u})})
       .then(function(r){ if(r.ok)localStorage.setItem('lawon.ping',today); },function(){});
   }catch(e){} })();
@@ -4115,7 +4156,37 @@ var UPDATED=BUILD.app||'2026-09-29';   // 최종 업데이트(앱 파일을 고�
     var row=function(x,j){ return '<div class="adm-row"><span>'+x.day.slice(5).replace('-','. ')+'.'+(j===0?'<small>오늘</small>':'')+'</span><span>'+x.n+'명'+(x.nw?'<small>신규 '+x.nw+'</small>':'')+'</span></div>'; };
     h+='<h3 class="gl">날짜별 이용자</h3><div class="card">'+L.slice(0,7).map(row).join('')+'<details class="fut"><summary>30일 전체 보기</summary>'+L.slice(7).map(function(x,j){return row(x,j+7);}).join('')+'</details></div>';
     h+='<p class="sn">이용자 = 그날 앱을 연 서로 다른 기기 수(하루 한 번 집계) · 신규 = 그날 처음 연 기기 · 연인원 = 날마다 이용자 합계 · 앱을 지우거나 방문 기록을 지운 기기는 새 기기로 셈</p>';
-    $('admBody').innerHTML=h+admBuild(); }
+    var fb=Array.isArray(d.fb)?d.fb:null, g;   // 2026-11-17 의견 목록(d.fb: [{ts,cat,body,dev,tab,ver}] 최근 200건, 워커가 옛 판이거나 표를 못 읽으면 없음)
+    if(!fb)g='<div class="card"><p class="why sm">의견 목록을 불러오지 못함 · 워커 갱신 확인</p></div>';
+    else if(!fb.length)g='<div class="card"><p class="why sm">접수된 의견 없음</p></div>';
+    else g='<div class="card">'+fb.map(function(x){ return '<div class="adm-fb"><p class="fbh"><span class="tg '+(x.cat==='law'?'a':'n')+'">'+(FB_CAT[x.cat]||'기타')+'</span><span>'+escRaw([fbWhen(x.ts),x.dev,x.tab,x.ver].filter(Boolean).join(' · '))+'</span></p><p class="fbx">'+escRaw(x.body)+'</p></div>'; }).join('')+'</div><p class="sn">접수 후 180일 지나면 자동 삭제 · 최근 200건 표시</p>';
+    $('admBody').innerHTML='<div class="seg adm-tab"><button type="button" data-atab="st">이용 현황</button><button type="button" data-atab="fb">의견'+(fb&&fb.length?' '+fb.length:'')+'</button></div><div id="admSt">'+h+'</div><div id="admFb" hidden>'+g+'</div>'+admBuild(); admTab(admT); }
+  var admT='st', FB_CAT={law:'법령 오류',app:'앱 오류',sug:'개선 제안'};
+  function admTab(t){ admT=(t==='fb')?'fb':'st'; var a=$('admSt'), b=$('admFb'); if(!a||!b)return; a.hidden=(admT!=='st'); b.hidden=(admT!=='fb');
+    each('[data-atab]',function(x){ x.setAttribute('aria-pressed',String(x.getAttribute('data-atab')===admT)); }); }
+  function fbWhen(ts){ var d=new Date((+ts||0)+9*3600e3); if(isNaN(d.getTime()))return ''; var k=d.toISOString(); return (+k.slice(5,7))+'. '+(+k.slice(8,10))+'. '+k.slice(11,16); }   // 한국 시각 '11. 17. 08:42'
+  // ── 2026-11-17 의견 보내기: 설정 맨 아래 → 아래 창. 적은 글·분류·보던 탭·앱 반영 번호·무작위 번호(연속 전송 제한용)만 보냄. 검색어·입력한 조건은 보내지 않음 ──
+  var fbCat='law', fbBusy=false, fbSeq=0, FB_MAX=500, FB_FAIL='전송하지 못했습니다. 잠시 후 다시 시도해 주세요.', FB_RATE='짧은 시간에 여러 번 보냈습니다. 잠시 후 다시 시도해 주세요.';
+  function fbTab(){ var F=FIELD[st.field]; if(nav==='start')return '첫 화면'; return (F?F.name+' · ':'')+({find:'법령 검색',site:'적용 확인',book:'법령집'}[nav]||''); }
+  function fbSay(m){ $('fbMsg').textContent=m||''; }
+  function fbSync(){ each('[data-fbcat]',function(b){ b.setAttribute('aria-pressed',String(b.getAttribute('data-fbcat')===fbCat)); }); $('fbCnt').textContent=$('fbText').value.length+' / '+FB_MAX; }
+  function fbOpen(){ $('sheet').hidden=true; $('fbForm').hidden=false; $('fbDone').hidden=true; fbSay(''); fbSync(); $('fsheet').hidden=false; shOpen(); $('fsheet').querySelector('.shcard').scrollTop=0; }   // 설정 창 기록을 이어 씀(shOpen은 이미 열린 창이 있으면 기록을 더 쌓지 않음)
+  function fbClose(){ var a=document.activeElement; if(a&&$('fsheet').contains(a)&&a.blur)a.blur(); $('fsheet').hidden=true; shClose(); }   // 쓰던 글은 앱을 닫기 전까지 남김(잘못 닫아도 다시 열면 그대로)
+  function fbSend(){ if(fbBusy)return; var tx=$('fbText').value.trim().slice(0,FB_MAX), btn=$('fbSend');
+    if(!tx){ fbSay('내용을 입력해 주세요.'); $('fbText').focus(); return; }
+    if(!window.fetch){ fbSay(FB_FAIL); return; }
+    fbBusy=true; btn.disabled=true; btn.textContent='보내는 중…'; fbSay('');
+    var tm=0, my=++fbSeq, end=function(m){ if(my!==fbSeq||!fbBusy)return; clearTimeout(tm); fbBusy=false; btn.disabled=false; btn.textContent='보내기';   // my: 늦게 온 앞 요청의 응답이 다음 전송을 끝내지 않게
+      if(m){ fbSay(m); return; }
+      $('fbText').value=''; fbCat='law'; fbSync(); if($('fsheet').contains(document.activeElement)&&document.activeElement.blur)document.activeElement.blur(); $('fbForm').hidden=true; $('fbDone').hidden=false; };
+    var ac=window.AbortController?new AbortController():null, o={method:'POST',mode:'cors',credentials:'omit',headers:{'Content-Type':'text/plain'},body:JSON.stringify({uid:statUid(),cat:fbCat,text:tx,tab:fbTab(),ver:String(BUILD.sha||'').slice(0,7)})};
+    if(ac)o.signal=ac.signal;
+    tm=setTimeout(function(){ if(ac)try{ ac.abort(); }catch(e){} end(FB_FAIL); },15000);   // 응답이 없으면 15초 뒤 실패로
+    try{ fetch(STATS_URL+'/feedback',o).then(function(r){ end(r.ok?'':(r.status===429?FB_RATE:FB_FAIL)); },function(){ end(FB_FAIL); }); }catch(e){ end(FB_FAIL); } }
+  document.addEventListener('click',function(ev){ var t=ev.target.closest&&ev.target.closest('[data-fbopen],[data-fbclose],[data-fbcat],[data-atab],#fbSend'); if(!t)return;
+    if(t.hasAttribute('data-fbopen'))fbOpen(); else if(t.hasAttribute('data-fbclose'))fbClose(); else if(t.hasAttribute('data-atab'))admTab(t.getAttribute('data-atab'));
+    else if(t.hasAttribute('data-fbcat')){ fbCat=t.getAttribute('data-fbcat'); fbSync(); } else fbSend(); });
+  $('fbText').addEventListener('input',function(){ fbSync(); if($('fbMsg').textContent)fbSay(''); });
   document.addEventListener('click',function(ev){ if(ev.target.closest&&ev.target.closest('[data-aclose]'))admClose(); });
   if(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)){   // 아이폰: 두 손가락 확대 막기(viewport만으로 안 막히는 경우 대비)
     ['gesturestart','gesturechange'].forEach(function(t){ document.addEventListener(t,function(ev){ ev.preventDefault(); },{passive:false}); }); }
