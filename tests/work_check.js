@@ -15,10 +15,15 @@ const W=(D.work||[]).filter(w=>(w.f||'osh')==='osh')/* 2026-10-18: 산업안전 
 const lines=(x)=>String(x||'').split('\n').map(l=>l.trim());
 
 // 1. 작업 목록·조문 수(1차 10개)
-const EXP={forklift:['지게차',23],aerial:['고소작업대',15],crane:['크레인',36],lift:['리프트·곤돌라·승강기',32],cart:['구내운반차',18],truck:['화물취급·화물자동차',27],heavy:['중량물',10],scaffold:['비계',19],ladder:['사다리',3],fall:['추락 방지',11],excav:['굴착',30],formwork:['거푸집·동바리',12],steel:['철골',4],asbestos:['석면',20],demol:['해체',8],pile:['항타기·항발기',17],confined:['밀폐공간',30],hotwork:['화기작업',27],electric:['전기작업',27],hazmat:['위험물·화학설비',49],conveyor:['컨베이어',15],press:['프레스·전단기',10],robot:['산업용 로봇',7],injection:['사출성형기',8],roller:['롤러기',9],grinder:['연삭기',5],wood:['목재가공용 기계',13],boiler:['보일러·압력용기',15],chem:['관리대상 유해물질',36],permit:['허가대상 유해물질',29],dust:['분진',13],noise:['소음·진동',10],heat:['폭염·한랭',11],msd:['근골격계부담작업',15],dryer:['건조설비·호퍼',9],foundry:['주물·단조',13],logging:['벌목',7]};
+const EXP={forklift:['지게차',23],aerial:['고소작업대',15],crane:['크레인',36],lift:['리프트·곤돌라·승강기',32],cart:['구내운반차',18],truck:['화물취급·화물자동차',27],heavy:['중량물',10],scaffold:['비계',19],ladder:['사다리',3],fall:['추락 방지',11],excav:['굴착',30],formwork:['거푸집·동바리',12],steel:['철골',4],asbestos:['석면',20],demol:['해체',8],pile:['항타기·항발기',17],confined:['밀폐공간',30],hotwork:['화기작업',27],electric:['전기작업',27],hazmat:['위험물·화학설비',49],conveyor:['컨베이어',15],press:['프레스·전단기',10],robot:['산업용 로봇',7],injection:['사출성형기',8],roller:['롤러기',9],grinder:['연삭기',5],wood:['목재가공용 기계',13],boiler:['보일러·압력용기',15],chem:['관리대상 유해물질',36],permit:['허가대상 유해물질',29],dust:['분진',13],noise:['소음·진동',10],heat:['폭염·한랭',11],msd:['근골격계부담작업',15],dryer:['건조설비·호퍼',9],foundry:['주물·단조',13],logging:['벌목',7],
+  risk:['위험성평가',25],edu:['안전보건교육',9],subcon:['도급',21],accident:['재해 보고·작업중지',14],msds:['물질안전보건자료',13],health:['건강진단',16]};
+// 6차 손 계산(2026-11-17 공통): 위험성평가 = 법 제36조 + 규칙 제37조 + 지침 제13~16조(4) + 규칙 제37조의2·3 + 지침 제6·7·17·18조 + 규칙 제37조의4 + 지침 제21조 + 지침 제5·8조 + 규칙 제9조 + 영 제15·18·22·25조 + 영 제53조 + 규칙 제79조 + 중처법 시행령 제4조 + 규칙 제50조 = 25
+//   교육 = 법 제29·30·31·32조 + 규칙 제26·27·28·29·30조 = 9 / 도급 = 법 제58~66조(9) + 영 제51·52·53·53조의2·54조(5) + 규칙 제79~85조(7) = 21
+//   재해 보고·작업중지 = 법 제51~57조(7) + 규칙 제67~73조(7) = 14 / MSDS = 법 제110·111·114·115조 + 영 제86조 + 규칙 제156·157·159·160·167·168·169·170조 = 13
+//   건강진단 = 법 제129~133조(5) + 규칙 제197·201~205·207·209·210·220·221조(11) = 16
 // 4차 손 계산: 위험물 = 제225~238(14) + 제255~279(25) + 제296~300(5) + 제20조 + 제38조 + 제35조 + 법 제44조 + 영 제43조 = 49 / 허가대상 = 법 제118조 + 영 제88조 + 제452~476(25) + 제35조 + 영 제74조 = 29 / 폭염·한랭 = 제558·559 + 제560·561 + 제562·567·571 + 제563·569·572 + 제566 = 11
 // 5차 손 계산(2026-10-22): 건조설비·호퍼 = 제280~284(5) + 제243조 + 제48조 + 제35조 + 법 제42조 = 9 / 주물·단조 = 제247~254(8) + 제559·562·566조 + 제605조 + 법 제42조 = 13 / 벌목 = 제405·406조 + 제20조 + 제512·518·519·521조 = 7
-chk('작업 37개',W.length===37,W.length);
+chk('작업 43개',W.length===43,W.length);
 chk('작업 순서(검색어 우선순위 — 석면은 해체 앞)',W.map(w=>w.id).join()===Object.keys(EXP).join(),W.map(w=>w.id));
 const ids=W.map(w=>w.id); chk('작업 id 겹침 없음',new Set(ids).size===ids.length,ids);
 W.forEach(w=>{ const e=EXP[w.id], n=w.sec.reduce((a,s)=>a+(s.a||[]).filter(i=>i.k).length,0);
@@ -86,7 +91,8 @@ chk('역연결 규칙 제136조(크레인) → 크레인만',(I['RULE:제136조'
 chk('역연결 규칙 제132조(양중기 공통) → 크레인·리프트',(I['RULE:제132조']||[]).length===2&&has('RULE:제132조','crane')&&has('RULE:제132조','lift'));
 chk('역연결 규칙 제559조(폭염작업 정의) → 폭염',has('RULE:제559조','heat'));
 chk('역연결 규칙 제663조 → 중량물',has('RULE:제663조','heavy'));
-chk('역연결 법 제125조·제130조(작업환경측정·특수건강진단)는 작업 기준 링크 없음(교육·자격처럼 묶음 근거로만)',!I['OSH:제125조']&&!I['OSH:제130조']);
+chk('역연결 법 제125조(작업환경측정)는 작업 기준 링크 없음(묶음 근거로만)',!I['OSH:제125조']);
+chk('역연결 법 제130조 = 건강진단 하나(공통 6차 — 보건 작업의 특수건강진단은 묶음 근거라 링크 없음)',(I['OSH:제130조']||[]).map(x=>x.w).join()==='health',I['OSH:제130조']);
 chk('역연결 규칙 제42조 → 사다리 제4항·추락 방지',has('RULE:제42조','ladder','제4항')&&has('RULE:제42조','fall'));
 chk('역연결 규칙 제40조 → 지게차·크레인·굴착·항타기 호별',has('RULE:제40조','forklift','제1항제2호')&&has('RULE:제40조','crane','제1항제1호')&&has('RULE:제40조','excav','제1항제3호')&&has('RULE:제40조','pile','제1항제4호'));
 chk('역연결 법 제119조 → 해체·석면',has('OSH:제119조','demol')&&has('OSH:제119조','asbestos')&&(I['OSH:제119조']||[]).length===2);
@@ -128,7 +134,33 @@ chk('작업환경측정 묶음 근거 = 법 제125조, 특수건강진단 = 법 
 const Q=[['둥근톱','wood'],['목공','wood'],['보일러','boiler'],['공기압축기','boiler'],['콤프레샤','boiler'],['안전밸브','boiler'],['위험물','hazmat'],['인화성 액체','hazmat'],['공정안전보고서','hazmat'],['PSM','hazmat'],['베릴륨','permit'],['염화비닐','permit'],['근골격계','msd'],['유해요인조사','msd'],['한랭','heat'],['동상','heat'],['냉동창고','heat'],['리프트','lift'],['곤돌라','lift'],['승강기','lift'],['사다리차','lift'],['호이스트','crane'],['양중기','crane'],['구내운반차','cart'],['화물차','truck'],['상하차','truck'],['하역','truck'],['중량물','heavy'],['드럼통','heavy'],['석면','asbestos'],['석면 해체','asbestos'],['석면 철거','asbestos'],['슬레이트','asbestos'],['유기용제','chem'],['톨루엔','chem'],['국소배기장치','chem'],['분진','dust'],['용접흄','dust'],['소음','noise'],['귀마개','noise'],['진동','noise'],['폭염','heat'],['열사병','heat'],['체감온도','heat'],['고열','heat'],['지게차','forklift'],['지게차 작업계획서','forklift'],['아시바','scaffold'],['말비계','scaffold'],['밀폐공간','confined'],['질식','confined'],['타워크레인','crane'],['카고크레인','crane'],['고소작업대','aerial'],['포클레인','excav'],['흙막이','excav'],['용접','hotwork'],['화재감시자','hotwork'],['동바리','formwork'],['감전','electric'],['컨베이어','conveyor'],['사다리','ladder'],['이동식 사다리','ladder'],['추락','fall'],['개구부','fall'],['철골','steel'],['철거','demol'],['해체','demol'],['비계 해체','scaffold'],['거푸집 해체','formwork'],['항타기','pile'],['프레스','press'],['로봇','robot'],['사출기','injection'],['롤러기','roller'],['그라인더','grinder'],['연삭숫돌','grinder']];
 Q.push(['건조설비','dryer'],['호퍼','dryer'],['사일로','dryer'],['주물','foundry'],['단조','foundry'],['용해로','foundry'],['쇳물','foundry'],['벌목','logging'],['체인톱','logging'],['집재','logging']);   // 5차
 Q.forEach(([q,w])=>{ const r=C.workOf(D,q); chk('검색어 "'+q+'" → '+w,!!r&&r.id===w,r&&r.id); });
-['안전교육','휴게시간','MSDS','위험성평가',''].forEach(q=>chk('검색어 "'+q+'" → 작업 없음(산업안전)',C.workOf(D,q,'osh')===null));
+Q.push(['위험성평가','risk'],['위평','risk'],['수시평가','risk'],['안전교육','edu'],['정기교육','edu'],['기초교육','edu'],['직무교육','edu'],['도급','subcon'],['하청','subcon'],['원청','subcon'],['협의체','subcon'],['중대재해','accident'],['산재보고','accident'],['산재은폐','accident'],['작업중지','accident'],['MSDS','msds'],['msds','msds'],['경고표시','msds'],['특검','health'],['배치전','health'],['건강진단','health']);   // 6차 공통
+Q.slice(-21).forEach(([q,w])=>{ const r=C.workOf(D,q,'osh'); chk('검색어 "'+q+'" → '+w+'(6차)',!!r&&r.id===w,r&&r.id); });
+['휴게시간','근로계약',''].forEach(q=>chk('검색어 "'+q+'" → 작업 없음(산업안전)',C.workOf(D,q,'osh')===null));
+
+// 6차 공통(2026-11-17): 역연결·제재·발췌·과태료 시행 문구(2026. 2. 19. 개정 산안법 부칙 제1조 — 11/17 법제처 원문 확인: 50명 이상 2027. 1. 1., 50명 미만 2028. 1. 1.)
+{ const ws=k=>(I[k]||[]).map(x=>x.w).sort().join();
+  chk('역연결 법 제36조 → 위험성평가',ws('OSH:제36조')==='risk',ws('OSH:제36조'));
+  chk('역연결 법 제29조 → 안전보건교육',ws('OSH:제29조')==='edu',ws('OSH:제29조'));
+  chk('역연결 법 제114조 → 관리대상 유해물질·MSDS',ws('OSH:제114조')==='chem,msds',ws('OSH:제114조'));
+  chk('역연결 시행규칙 제79조(협의체) → 도급·위험성평가',ws('SR:제79조')==='risk,subcon',ws('SR:제79조'));
+  chk('역연결 시행령 제53조(총괄책임자 직무) → 도급·위험성평가',ws('SD:제53조')==='risk,subcon',ws('SD:제53조'));
+  chk('역연결 법 제57조 → 재해 보고·작업중지',ws('OSH:제57조')==='accident',ws('OSH:제57조'));
+  chk('역연결 위험성평가 지침 제15조(수시평가) → 위험성평가',ws('RAG:제15조')==='risk',ws('RAG:제15조'));
+  const R=W.find(w=>w.id==='risk'), s0=R&&R.sec[0];
+  if(!R)chk('위험성평가 작업 있음(6차)',false); else {
+  chk('위험성평가 첫 칸 = 실시 의무·과태료 시행 2027. 1. 1.(50명 미만 2028. 1. 1.)',!!s0&&s0.h==='실시 의무'&&/2027\. 1\. 1\./.test(s0.s)&&/50명 미만 2028\. 1\. 1\./.test(s0.s),s0&&s0.s);
+  const e36=D.byKey['OSH:제36조'];
+  [['제36조제1항','제175조제4항제2호의2'],['제36조제2항','제175조제5항제1호'],['제36조제5항','제175조제6항제2호의2']].forEach(([p,b])=>chk('법 제36조 위반 조항 '+p+' → 과태료 '+b,(e36.s||[]).some(z=>z.kind==='과태료'&&z.basis===b&&String(z.qual).indexOf(p)===0)&&[].concat(s0.a[0].pk).includes(p)));
+  const sd15=R.sec.flatMap(s=>s.a||[]).find(i=>i.k==='SD:제15조'), L15=C.workLines(D.byKey['SD:제15조'].x,sd15.ln);
+  chk('시행령 제15조 발췌 = 제6호 위험성평가 + 가·나목 3줄',L15.length===3&&/위험성평가/.test(L15[0])&&/^가\. 유해/.test(L15[1])&&/^나\. 개선조치/.test(L15[2]),L15);
+  R.sec.flatMap(s=>s.a||[]).filter(i=>i.x&&i.k!=='SD:제15조').forEach(i=>{ const L=C.workLines(D.byKey[i.k].x,i.ln); chk('위험성평가 발췌 한 줄·위험성평가 문구 '+i.k,L.length===1&&/위험성/.test(L[0]),L); });
+  chk('공통 6개는 묶음 근거(sb) 없이 조문 줄로(역연결되게)',['risk','edu','subcon','accident','msds','health'].every(id=>(W.find(w=>w.id===id)||{sec:[]}).sec.every(s=>!s.sb)));
+  chk('공통 6개만 cm 표시(제목·카드 "○○ 기준")',W.filter(w=>w.cm).map(w=>w.id).join()==='risk,edu,subcon,accident,msds,health');
+  chk('제목·카드·역연결 코드: 공통은 "기준"',html.includes("(W.cm?' 기준':' 작업 기준')")&&html.includes("return W?(W.cm?'cm':wkF(W)):'osh';"));
+  chk('MSDS 칩 이름 두 줄(물질안전 보건자료)',(W.find(w=>w.id==='msds')||{}).cn==='물질안전 보건자료');
+  chk('지침 인정·지원 조문(제22~33조)은 넣지 않음',!R.sec.flatMap(s=>s.a||[]).some(i=>/^RAG:제(2[2-9]|3[0-3])조$/.test(i.k||''))); }
+}
 
 // 6-2. 항 단위 발췌(④ → 그 항의 호·목까지)
 chk('workLines 제42조 ④ → 호 7개·목 3개 포함',C.workLines(D.byKey['RULE:제42조'].x,['④']).length===11,C.workLines(D.byKey['RULE:제42조'].x,['④']).length);
@@ -145,12 +177,13 @@ D.items.forEach(it=>(it.edu||[]).forEach(x=>{ if(x.c==='특별교육')chk('주�
 chk('작업 기준 칸 제목이 줄어들지 않음(320 큰 글자 낱말 중간 꺾임 방지, 5-65)',html.includes('<h3 class="gl wgl"><b class="gh">')&&html.includes('.gl .gh{flex:none;font-weight:inherit}'));
 chk('작업 묶음 함수 있음(workGroups)',!!C.workGroups);
 if(C.workGroups){ const G=C.workGroups(D), all=G.flatMap(g=>g.list.map(w=>w.id));
-  chk('묶음 이름·순서',G.map(g=>g.h).join()==='하역·양중,건설·추락,제조 기계,위험작업,보건',G.map(g=>g.h));
+  chk('묶음 이름·순서',G.map(g=>g.h).join()==='공통,하역·양중,건설·추락,제조 기계,위험작업,보건',G.map(g=>g.h));
   chk('모든 작업이 묶음에 한 번씩(기타 없음)',all.length===W.length&&new Set(all).size===W.length&&!G.some(g=>g.h==='기타'),all);
-  chk('하역·양중 = 지게차·크레인·리프트·고소작업대·구내운반차·화물·중량물',G[0].list.map(w=>w.id).join()==='forklift,crane,lift,aerial,cart,truck,heavy',G[0].list.map(w=>w.id));
-  chk('보건 = 석면·관리대상·허가대상·분진·소음·폭염·근골격계',G[4]&&G[4].list.map(w=>w.id).join()==='asbestos,chem,permit,dust,noise,heat,msd',G[4]&&G[4].list.map(w=>w.id));
-  chk('제조 기계 끝 = 목재가공·보일러·주물단조(5차)',G[2].list.slice(-3).map(w=>w.id).join()==='wood,boiler,foundry',G[2].list.map(w=>w.id));
-  chk('위험작업 = 밀폐·화기·전기·위험물·건조설비·벌목(5차)',G[3].list.map(w=>w.id).join()==='confined,hotwork,electric,hazmat,dryer,logging',G[3].list.map(w=>w.id));
+  chk('공통(맨 앞, 6차) = 위험성평가·교육·도급·재해 보고·MSDS·건강진단',G[0].list.map(w=>w.id).join()==='risk,edu,subcon,accident,msds,health',G[0].list.map(w=>w.id));
+  chk('하역·양중 = 지게차·크레인·리프트·고소작업대·구내운반차·화물·중량물',G[1].list.map(w=>w.id).join()==='forklift,crane,lift,aerial,cart,truck,heavy',G[1].list.map(w=>w.id));
+  chk('보건 = 석면·관리대상·허가대상·분진·소음·폭염·근골격계',G[5]&&G[5].list.map(w=>w.id).join()==='asbestos,chem,permit,dust,noise,heat,msd',G[5]&&G[5].list.map(w=>w.id));
+  chk('제조 기계 끝 = 목재가공·보일러·주물단조(5차)',G[3].list.slice(-3).map(w=>w.id).join()==='wood,boiler,foundry',G[3].list.map(w=>w.id));
+  chk('위험작업 = 밀폐·화기·전기·위험물·건조설비·벌목(5차)',G[4].list.map(w=>w.id).join()==='confined,hotwork,electric,hazmat,dryer,logging',G[4].list.map(w=>w.id));
   chk('묶음에 없는 새 작업은 기타로 표시(빠지지 않음)',C.workGroups({work:W.concat([{id:'zz',n:'새 작업'}])}).slice(-1)[0].h==='기타'); }
 
 // 2026-10-24(5-80) 낱말마다 기준 카드(입력 순서, 2개까지) — 작업 카드에는 추락 방지 조문(제42~45조·제13조)이 없어 둘 다 보여 줌. 한 낱말·검색어 전체가 맞는 말은 카드 1개
@@ -158,7 +191,7 @@ if(!C.workAll)chk('workAll 함수 있음',false);
 else { const WA=(q,f)=>C.workAll(D,q,f||'osh').map(w=>w.id).join();
   for(const [q,f,exp] of [['철골 추락','osh','steel,fall'],['추락 철골','osh','fall,steel'],['지게차 추락','osh','forklift,fall'],['비계 추락','osh','scaffold,fall'],['굴착 추락','osh','excav,fall'],
       ['추락','osh','fall'],['지붕 추락','osh','fall'],['개구부 안전난간','osh','fall'],['석면 해체','osh','asbestos'],['석면 철거','osh','asbestos'],['비계 철골 추락','osh','scaffold,steel'],
-      ['자재 추락','osh','fall'],['안전교육','osh',''],['퇴직금 체불','labor','lb_ret'],['주휴수당','labor','lb_rest']])
+      ['자재 추락','osh','fall'],['안전교육','osh','edu'],['휴게시간','osh',''],['위험성평가 지침','osh','risk'],['도급 작업중지','osh','subcon,accident'],['퇴직금 체불','labor','lb_ret'],['주휴수당','labor','lb_rest']])
     chk('카드 "'+q+'" → '+(exp||'없음'),WA(q,f)===exp,WA(q,f));
   chk('workOf = 첫 카드(철골 추락 → 철골)',(C.workOf(D,'철골 추락','osh')||{}).id==='steel');
   const FALLK=['RULE:제42조','RULE:제43조','RULE:제44조','RULE:제45조','RULE:제13조'], ks=w=>W.find(x=>x.id===w).sec.reduce((a,s)=>a.concat((s.a||[]).map(x=>x.k)),[]);
