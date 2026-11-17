@@ -1,4 +1,4 @@
-# 법ON 의견 보내기 화면 검사(2026-11-17) — 설정 맨 아래 버튼 → 아래 창 → 전송(워커 응답 흉내) → 관리자 화면 의견 목록, 뒤로 버튼, 배포 주소에서 무작위 번호
+# 법ON 의견 보내기 화면 검사(2026-11-17) — 홈 화면 맨 아래 문의 줄(설정 창에는 없음 — 5-93) → 아래 창 → 전송(워커 응답 흉내) → 관리자 화면 의견 목록, 뒤로 버튼, 배포 주소에서 무작위 번호
 # 사용: python3 claude_fb_ui_test.py <파일명.html> [캡처 폴더]   (tests 폴더 기준 파일명 — index.html을 tests/_t.html로 복사해 _t.html)
 import sys, os, json, threading, functools, http.server, socketserver
 from playwright.sync_api import sync_playwright
@@ -48,10 +48,10 @@ class Net:   # 워커 흉내: mode = 200 | 429 | 500 | 'abort' | 'hang'
             try: r.abort()
             except Exception: pass
         self.held = []
-def open_fb(p):
-    p.click('#gear'); p.wait_for_timeout(250)
-    p.locator('#sheet [data-fbopen]').scroll_into_view_if_needed(); p.wait_for_timeout(100)
-    p.click('#sheet [data-fbopen]'); p.wait_for_timeout(250)
+def open_fb(p):   # 5-93: 여는 곳은 홈 화면 맨 아래 문의 줄 하나 — 다른 화면이면 탭바 '홈'으로 간 뒤 누름
+    if p.evaluate("()=>document.getElementById('vStart').hidden"): p.click('#tabbar [data-home]'); p.wait_for_timeout(300)
+    p.locator('#vStart .sfb').scroll_into_view_if_needed(); p.wait_for_timeout(100)
+    p.click('#vStart .sfb'); p.wait_for_timeout(250)
 
 def run(w, h, big, dark, cap=False):
     tag = '%dx%d%s%s' % (w, h, ' 크게' if big else '', ' 어둡게' if dark else '')
@@ -71,18 +71,14 @@ def run(w, h, big, dark, cap=False):
         if cap: shot(p, '0_홈_문의줄_창')
         p.click('#fsheet .shh [data-fbclose]'); p.wait_for_timeout(250)
         ok(tag + ' 닫으면 홈 화면 그대로', p.evaluate(OPEN) == '' and p.evaluate(VIEW) == 'vStart')
-        # ── 설정 맨 아래 ──
+        # ── 설정 창에는 없음(5-93) ──
         p.click('#gear'); p.wait_for_timeout(300)
-        last = p.evaluate("()=>{const c=document.querySelector('#sheet .shcard'); const k=[...c.children].filter(x=>!x.hidden); const e=k[k.length-1], q=k[k.length-2]; return [e.tagName, e.textContent.trim(), e.hasAttribute('data-fbopen'), q.textContent.trim()];}")
-        ok(tag + " 설정 창 맨 아래 = '문의 · 오류 신고' + [의견 보내기]", last == ['BUTTON', '의견 보내기', True, '문의 · 오류 신고'], last)
-        ok(tag + " 설정 창에 '비공식'·메일 주소 없음", p.evaluate("()=>{const t=document.querySelector('#sheet').textContent; return !/비공식|korea\\.kr|@/.test(t) && /제작 연쓰/.test(t);}"))
-        p.locator('#sheet [data-fbopen]').scroll_into_view_if_needed(); p.wait_for_timeout(150)
-        r = p.evaluate(RECT, '#sheet [data-fbopen]')
-        ok(tag + ' 버튼이 화면 안·누를 수 있는 크기(44px 이상)', r and r[1] >= 0 and r[3] <= h + 1 and r[3] - r[1] >= 44 and r[0] >= 0 and r[2] <= w, r)
-        if cap: shot(p, '1_설정_맨아래')
-        p.click('#sheet [data-fbopen]'); p.wait_for_timeout(300)
+        ok(tag + " 설정 창에 의견 보내기·문의 없음", p.evaluate("()=>{const t=document.querySelector('#sheet').textContent; return !document.querySelector('#sheet [data-fbopen]') && !/의견 보내기|문의 · 오류 신고|비공식|korea\\.kr|@/.test(t) && /제작 연쓰/.test(t);}"))
+        p.keyboard.press('Escape'); p.wait_for_timeout(250)
+        if cap: shot(p, '1_홈_문의줄')
+        p.click('#vStart .sfb'); p.wait_for_timeout(300)
         # ── 의견 보내기 창 ──
-        ok(tag + ' 의견 보내기 창만 열림(설정 창은 닫힘)', p.evaluate(OPEN) == 'fsheet', p.evaluate(OPEN))
+        ok(tag + ' 의견 보내기 창만 열림', p.evaluate(OPEN) == 'fsheet', p.evaluate(OPEN))
         c = p.evaluate(RECT, '#fsheet .shcard')
         ok(tag + ' 창이 화면 안', c and c[1] >= 0 and c[3] <= h + 1 and c[0] >= 0 and c[2] <= w + 1, c)
         ok(tag + ' 가로 넘침 없음', not p.evaluate("()=>document.documentElement.scrollWidth>document.documentElement.clientWidth+1"))
@@ -153,19 +149,13 @@ def run(w, h, big, dark, cap=False):
         # 바깥(어두운 곳) 누르면 닫힘
         open_fb(p); p.mouse.click(w // 2, 6); p.wait_for_timeout(250)
         ok(tag + ' 창 바깥을 누르면 닫힘', p.evaluate(OPEN) == '')
-        # 보던 탭 이름
+        # 검색어·입력 조건은 보내지 않음(검색하다 홈으로 와서 보냄)
         p.click('.pick[data-field="osh"]'); p.wait_for_timeout(300)
-        p.click('#tabbar [data-nav="site"]'); p.wait_for_timeout(300)
-        open_fb(p); p.fill('#fbText', '탭 확인'); p.click('#fbSend'); p.wait_for_timeout(400)
-        ok(tag + " 보던 탭 = '산업안전 · 적용 확인'", json.loads(net.fb[-1]['body'])['tab'] == '산업안전 · 적용 확인', net.fb[-1]['body'])
-        p.click('#fbDone [data-fbclose]'); p.wait_for_timeout(250)
-        ok(tag + ' 닫은 뒤 보던 화면 그대로(적용 확인)', p.evaluate(VIEW) == 'vSite' and p.evaluate(OPEN) == '')
-        # 검색어·입력 조건은 보내지 않음
         p.click('#tabbar [data-nav="find"]'); p.wait_for_timeout(300); p.fill('#q', '비밀검색어'); p.wait_for_timeout(400)
         open_fb(p); p.fill('#fbText', '검색 중 의견'); p.click('#fbSend'); p.wait_for_timeout(400)
-        ok(tag + ' 검색어는 보내지 않음', '비밀검색어' not in net.fb[-1]['body'] and json.loads(net.fb[-1]['body'])['tab'] == '산업안전 · 법령 검색', net.fb[-1]['body'])
+        ok(tag + " 검색어는 보내지 않음·보던 탭 = '첫 화면'", '비밀검색어' not in net.fb[-1]['body'] and json.loads(net.fb[-1]['body'])['tab'] == '첫 화면', net.fb[-1]['body'])
         p.click('#fbDone [data-fbclose]'); p.wait_for_timeout(250)
-        ok(tag + ' 닫은 뒤 검색 결과 그대로', p.input_value('#q') == '비밀검색어' and p.evaluate(VIEW) == 'vFind')
+        ok(tag + ' 닫은 뒤 홈 화면 그대로', p.evaluate(VIEW) == 'vStart' and p.evaluate(OPEN) == '')
         # 응답 없음 → 15초 뒤 실패 안내(시계 앞당김)
         ok(tag + ' 스크립트 오류 없음', not errs, errs)
         b.close()
@@ -175,7 +165,7 @@ def run_timeout():
         b = pw.chromium.launch(); ctx = b.new_context(viewport={'width': 390, 'height': 844}, service_workers='block')
         net = Net(ctx); p = ctx.new_page(); errs = []; p.on('pageerror', lambda e: errs.append(str(e)))
         p.clock.install(); p.goto(URL); p.clock.run_for(1000)
-        p.click('#gear'); p.clock.run_for(300); p.click('#sheet [data-fbopen]'); p.clock.run_for(300)
+        p.click('#vStart .sfb'); p.clock.run_for(300)
         p.fill('#fbText', '응답 없음'); net.mode = 'hang'; p.click('#fbSend'); p.clock.run_for(5000)
         ok("응답 없음: 5초째 '보내는 중…'·버튼 잠김", p.evaluate("()=>{const b=document.getElementById('fbSend');return b.disabled&&b.textContent==='보내는 중…';}"))
         p.clock.run_for(11000)
@@ -201,28 +191,27 @@ def run_back():   # 안드로이드 뒤로 버튼 / 아이폰(방문기록 안 �
         p.goto(URL); p.wait_for_timeout(900)
         p.tap('.pick[data-field="osh"]'); p.wait_for_timeout(400)
         p.tap('#tabbar [data-nav="book"]'); p.wait_for_timeout(400)
-        hl = p.evaluate('()=>history.length')
-        p.tap('#gear'); p.wait_for_timeout(300); h1 = p.evaluate('()=>history.length')
-        p.locator('#sheet [data-fbopen]').scroll_into_view_if_needed(); p.tap('#sheet [data-fbopen]'); p.wait_for_timeout(300)
-        ok('안드로이드: 설정 → 의견 보내기는 기록을 더 쌓지 않음', p.evaluate('()=>history.length') == h1 and h1 == hl + 1 and p.evaluate(OPEN) == 'fsheet', (hl, h1, p.evaluate('()=>history.length')))
+        p.tap('#tabbar [data-home]'); p.wait_for_timeout(400)
+        hl = p.evaluate('()=>history.length'); st0 = p.evaluate('()=>JSON.stringify(history.state)')
+        p.locator('#vStart .sfb').scroll_into_view_if_needed(); p.tap('#vStart .sfb'); p.wait_for_timeout(300)
+        ok('안드로이드: 홈 문의 줄 → 창이 열리며 창 기록이 생김(뒤로로 닫히게)', p.evaluate(OPEN) == 'fsheet' and p.evaluate('()=>JSON.stringify(history.state)') != st0, (st0, p.evaluate('()=>JSON.stringify(history.state)')))   # 홈으로 올 때 앞쪽 기록이 남아 있어 history.length는 그대로일 수 있음
         back()
-        ok('안드로이드: 뒤로 → 창만 닫힘, 보던 화면(법령집) 그대로', p.url.startswith('http://127') and p.evaluate(OPEN) == '' and p.evaluate(VIEW) == 'vBook', (p.evaluate(OPEN), p.evaluate(VIEW)))
-        p.tap('#gear'); p.wait_for_timeout(300); p.locator('#sheet [data-fbopen]').scroll_into_view_if_needed(); p.tap('#sheet [data-fbopen]'); p.wait_for_timeout(300)
+        ok('안드로이드: 뒤로 → 창만 닫힘, 홈 화면 그대로', p.url.startswith('http://127') and p.evaluate(OPEN) == '' and p.evaluate(VIEW) == 'vStart' and p.evaluate('()=>JSON.stringify(history.state)') == st0, (p.evaluate(OPEN), p.evaluate(VIEW)))
+        p.tap('#vStart .sfb'); p.wait_for_timeout(300)
         p.fill('#fbText', '뒤로 버튼'); p.tap('#fbSend'); p.wait_for_timeout(500)
         ok('안드로이드: 전송 → 완료 화면', p.evaluate("()=>!document.getElementById('fbDone').hidden"))
         p.tap('#fbDone [data-fbclose]'); p.wait_for_timeout(500)
-        ok('안드로이드: 확인으로 닫음 → 법령집 그대로', p.evaluate(OPEN) == '' and p.evaluate(VIEW) == 'vBook')
+        ok('안드로이드: 확인으로 닫음 → 홈 화면, 창 기록이 남지 않음', p.evaluate(OPEN) == '' and p.evaluate(VIEW) == 'vStart' and p.evaluate('()=>JSON.stringify(history.state)') == st0, p.evaluate('()=>JSON.stringify(history.state)'))
         back()
-        ok('안드로이드: 그다음 뒤로 → 분야 선택(창 기록이 남지 않음)', p.url.startswith('http://127') and p.evaluate(VIEW) == 'vStart' and p.evaluate(OPEN) == '', p.evaluate(VIEW))
+        ok('안드로이드: 그다음 뒤로 → 앱 안에 머묾·창 안 열림', p.url.startswith('http://127') and p.evaluate(OPEN) == '', p.url)
         ok('안드로이드: 스크립트 오류 없음', not errs, errs)
         ctx.close()
         ctx = b.new_context(user_agent=IOS, viewport={'width': 390, 'height': 800}, has_touch=True, is_mobile=True, service_workers='block'); net = Net(ctx)
         p = ctx.new_page(); errs = []; p.on('pageerror', lambda e: errs.append(str(e)))
         p.goto(URL); p.wait_for_timeout(900); hl = p.evaluate('()=>history.length')
-        p.tap('.pick[data-field="labor"]'); p.wait_for_timeout(400)
-        p.tap('#gear'); p.wait_for_timeout(300); p.locator('#sheet [data-fbopen]').scroll_into_view_if_needed(); p.tap('#sheet [data-fbopen]'); p.wait_for_timeout(300)
+        p.locator('#vStart .sfb').scroll_into_view_if_needed(); p.tap('#vStart .sfb'); p.wait_for_timeout(300)
         p.fill('#fbText', '아이폰'); p.tap('#fbSend'); p.wait_for_timeout(500); p.tap('#fbDone [data-fbclose]'); p.wait_for_timeout(300)
-        ok('아이폰: 방문기록을 쓰지 않음·전송·닫기 동작', p.evaluate('()=>history.length') == hl and p.evaluate(OPEN) == '' and len(net.fb) == 1 and json.loads(net.fb[0]['body'])['tab'] == '근로기준 · 법령 검색', (hl, p.evaluate('()=>history.length'), net.fb))
+        ok('아이폰: 방문기록을 쓰지 않음·전송·닫기 동작', p.evaluate('()=>history.length') == hl and p.evaluate(OPEN) == '' and len(net.fb) == 1 and json.loads(net.fb[0]['body'])['tab'] == '첫 화면', (hl, p.evaluate('()=>history.length'), net.fb))
         ok('아이폰: 스크립트 오류 없음', not errs, errs)
         b.close()
 
@@ -290,7 +279,7 @@ def run_deployed():   # 배포 주소 흉내: 무작위 번호 하나를 집계(
         import re
         ok('배포 주소: 열 때 무작위 번호를 만들어 /ping 한 번', len(net.ping) == 1 and uid and re.match(r'^[0-9a-f-]{32,40}$', uid) is not None and json.loads(net.ping[0]) == {'uid': uid}, (net.ping, uid))
         ok('배포 주소: 집계 완료 표시(lawon.ping = 오늘)', p.evaluate("()=>/^\\d{4}-\\d\\d-\\d\\d$/.test(localStorage.getItem('lawon.ping')||'')"))
-        p.click('#gear'); p.wait_for_timeout(250); p.locator('#sheet [data-fbopen]').scroll_into_view_if_needed(); p.click('#sheet [data-fbopen]'); p.wait_for_timeout(250)
+        p.click('#vStart .sfb'); p.wait_for_timeout(250)
         p.fill('#fbText', '배포 주소'); p.click('#fbSend'); p.wait_for_timeout(500)
         ok('배포 주소: 의견 보내기는 같은 번호를 씀(새로 만들지 않음)', len(net.fb) == 1 and json.loads(net.fb[0]['body'])['uid'] == uid and p.evaluate("()=>localStorage.getItem('lawon.uid')") == uid)
         p.reload(); p.wait_for_timeout(1000)

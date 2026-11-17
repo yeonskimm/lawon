@@ -1,4 +1,4 @@
-// 의견 보내기(2026-11-17, 설정 맨 아래 → 아래 창 → 워커 POST /feedback → 관리자 화면 의견 목록) 확인
+// 의견 보내기(2026-11-17, 홈 화면 맨 아래 문의 줄 → 아래 창 → 워커 POST /feedback → 관리자 화면 의견 목록) 확인
 // 사용: node tests/fb_check.js index.html [워커 파일]   (워커 파일 기본값 tools/lawon-stats-worker.js)
 // ① 앱 화면·문구·전송 항목 ② 예시 문구가 법령과 맞는지(산업안전보건법 제29조 = 과태료, 시행령 별표 35 = 과태료의 부과기준)
 // ③ 워커를 가짜 D1(node:sqlite) 위에서 실제로 돌려 접수·제한(기기 10분 3건, IP 1시간 30건)·180일 삭제·관리자 목록 확인
@@ -11,10 +11,9 @@ const cnt = (s, x) => s.split(x).length - 1;
 // ── ① 앱 ──
 const sheet = (/<div class="sheet" id="sheet"[\s\S]*?\n<\/div>\n/.exec(html) || [''])[0];
 const fsheet = (/<div class="sheet" id="fsheet"[\s\S]*?\n<\/div>\n/.exec(html) || [''])[0];
-ok('설정 창에 의견 보내기 버튼 1개', cnt(sheet, 'data-fbopen') === 1 && />의견 보내기<\/button>/.test(sheet));
-ok('버튼은 설정 창 맨 아래(수록 법령과 기준 상세 보기 뒤)', sheet.indexOf('data-fbopen') > sheet.indexOf('</details>') && sheet.indexOf('</details>') > 0 && /<p class="slb">문의 · 오류 신고<\/p>\s*<button[^>]*data-fbopen/.test(sheet));
+ok('설정 창에는 의견 보내기 없음(5-93 — 홈 화면 한 곳)', !!sheet && !/data-fbopen|의견 보내기|문의 · 오류 신고/.test(sheet) && /<\/details>\s*<\/div>\s*<\/div>\n$/.test(sheet));
 const vStart = (/<section[^>]*id="vStart"[\s\S]*?<\/section>/.exec(html) || [''])[0];
-ok('홈 화면 맨 아래 문의 줄(5-92) — 계산 도구 뒤 마지막 칸, 같은 창을 엶', cnt(vStart, 'data-fbopen') === 1 && /<button type="button" class="sfb" data-fbopen="1" aria-label="문의 · 오류 신고 — 의견 보내기">[\s\S]*?<span>문의 · 오류 신고<\/span><em>의견 보내기<\/em>[\s\S]*?<\/button>\s*<\/div>\s*<\/section>/.test(vStart) && vStart.indexOf('data-fbopen') > vStart.indexOf('id="instStart"') && cnt(html, 'data-fbopen=') === 2);
+ok('홈 화면 맨 아래 문의 줄(5-92) — 계산 도구 뒤 마지막 칸, 같은 창을 엶', cnt(vStart, 'data-fbopen') === 1 && /<button type="button" class="sfb" data-fbopen="1" aria-label="문의 · 오류 신고 — 의견 보내기">[\s\S]*?<span>문의 · 오류 신고<\/span><em>의견 보내기<\/em>[\s\S]*?<\/button>\s*<\/div>\s*<\/section>/.test(vStart) && vStart.indexOf('data-fbopen') > vStart.indexOf('id="instStart"') && cnt(html, 'data-fbopen=') === 1);
 ok('설정 창 기존 고지 그대로(이름·연락처 받지 않음, 검색어·조건 전송 안 함)', /이름·연락처 등을 받지 않습니다\./.test(sheet) && /검색어와 입력한 조건은 전송하지 않습니다\./.test(sheet) && /제작 연쓰/.test(sheet));
 ok('의견 보내기 창 있음(창 목록·Esc 닫기 포함)', !!fsheet && /var SHEETS=\[[^\]]*'fsheet'[^\]]*\];/.test(html) && /else if\(!\$\('fsheet'\)\.hidden\)fbClose\(\);/.test(html));
 ok('입력칸은 글 칸 하나뿐(연락처·이름 칸 없음)', cnt(fsheet, '<textarea') === 1 && cnt(fsheet, '<input') === 0 && /maxlength="500"/.test(fsheet));
